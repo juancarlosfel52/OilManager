@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OilManager — Route Recorder</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#F5A623;--amber:#E8860A;
+  --dark:#060810;--dark2:#0D1020;--dark3:#141828;
+  --card:#101422;--border:#1E2438;--border2:#2A3050;
+  --text:#E8EAF0;--muted:#6B7280;
+  --green:#4CAF50;--red:#F44336;--blue:#4488FF;
+  --orange:#FF6D00;
+}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--dark);color:var(--text);
+  height:100vh;display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--dark2);border-bottom:1px solid var(--border);
+  padding:0 1rem;height:52px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  z-index:50;
+}
+.topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:2px;color:#fff}
+.topbar-logo span{color:var(--gold)}
+.topbar-back{
+  background:transparent;border:1px solid var(--border2);
+  color:var(--muted);padding:0.3rem 0.7rem;border-radius:6px;
+  font-size:0.78rem;cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all 0.15s;
+}
+.topbar-back:hover{color:var(--text);border-color:var(--text)}
+.rec-status{
+  display:flex;align-items:center;gap:0.5rem;
+  font-size:0.78rem;font-weight:600;
+}
+.rec-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--muted);
+}
+.rec-dot.recording{background:var(--red);animation:blink 1s ease-in-out infinite}
+.rec-dot.paused{background:var(--gold);animation:none}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+/* ── MAP ── */
+#map{flex:1;width:100%;position:relative}
+#mapbox-map{position:absolute;inset:0}
+
+/* ── STATS OVERLAY ── */
+.stats-overlay{
+  position:absolute;top:12px;left:12px;z-index:10;
+  display:flex;gap:0.5rem;flex-wrap:wrap;
+  pointer-events:none;
+}
+.stat-pill{
+  background:rgba(6,8,16,0.88);
+  border:1px solid var(--border2);
+  border-radius:20px;padding:5px 12px;
+  display:flex;align-items:center;gap:6px;
+  font-size:0.78rem;
+}
+.stat-pill-val{font-weight:700;color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.5px}
+.stat-pill-label{color:var(--muted);font-size:0.7rem}
+.stat-pill.recording-active{border-color:rgba(244,67,54,0.5)}
+
+/* ── BOTTOM PANEL ── */
+.bottom-panel{
+  position:absolute;bottom:0;left:0;right:0;z-index:20;
+  background:var(--dark2);
+  border-top:1px solid var(--border);
+  padding:1rem;
+  transition:transform 0.3s ease;
+}
+
+/* ── ROUTE NAME INPUT ── */
+.route-name-row{
+  display:flex;gap:0.6rem;align-items:center;
+  margin-bottom:0.8rem;
+}
+.route-name-input{
+  flex:1;background:var(--dark3);border:1px solid var(--border2);
+  border-radius:8px;padding:0.55rem 0.8rem;
+  color:var(--text);font-size:0.875rem;font-family:'Inter',sans-serif;
+  outline:none;transition:border-color 0.2s;
+}
+.route-name-input:focus{border-color:var(--gold)}
+.route-name-input::placeholder{color:var(--muted)}
+
+/* ── CONTROL BUTTONS ── */
+.controls{display:flex;gap:0.6rem;margin-bottom:0.8rem}
+.btn-record{
+  flex:2;padding:0.75rem;border-radius:10px;
+  border:none;font-size:0.95rem;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;
+  transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;
+}
+.btn-record.start{background:var(--green);color:#fff}
+.btn-record.start:hover{background:#43A047}
+.btn-record.pause{background:var(--gold);color:var(--dark)}
+.btn-record.pause:hover{background:var(--amber)}
+.btn-record.resume{background:var(--blue);color:#fff}
+.btn-record.resume:hover{background:#3a7ae8}
+.btn-stop{
+  flex:1;padding:0.75rem;border-radius:10px;
+  background:rgba(244,67,54,0.15);border:1px solid rgba(244,67,54,0.35);
+  color:var(--red);font-size:0.875rem;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:0.4rem;
+}
+.btn-stop:hover{background:rgba(244,67,54,0.28)}
+.btn-stop:disabled{opacity:0.35;cursor:default}
+.btn-landmark{
+  flex:1;padding:0.75rem;border-radius:10px;
+  background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);
+  color:var(--gold);font-size:0.875rem;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:0.4rem;
+}
+.btn-landmark:hover{background:rgba(245,166,35,0.22)}
+.btn-landmark:disabled{opacity:0.35;cursor:default}
+
+/* ── LANDMARK LIST ── */
+.landmark-scroll{
+  max-height:100px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:4px;
+}
+.landmark-item{
+  background:var(--dark3);border:1px solid var(--border);
+  border-radius:6px;padding:5px 10px;
+  display:flex;align-items:center;gap:8px;
+  font-size:0.78rem;
+}
+.landmark-icon{font-size:1rem;flex-shrink:0}
+.landmark-text{flex:1;color:var(--text);font-weight:500}
+.landmark-dist{color:var(--muted);font-size:0.7rem;flex-shrink:0}
+
+/* ── LANDMARK MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);
+  z-index:200;display:none;align-items:flex-end;justify-content:center;
+  backdrop-filter:blur(6px);
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:16px 16px 0 0;padding:1.5rem;
+  width:100%;max-width:480px;
+}
+.modal-title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:1.2rem;display:flex;align-items:center;gap:0.5rem}
+.landmark-types{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;
+  margin-bottom:1rem;
+}
+.lm-type{
+  background:var(--dark3);border:1px solid var(--border2);
+  border-radius:8px;padding:0.6rem 0.4rem;
+  text-align:center;cursor:pointer;transition:all 0.15s;
+}
+.lm-type:hover,.lm-type.selected{
+  border-color:var(--gold);background:rgba(245,166,35,0.1);
+}
+.lm-type-icon{font-size:1.4rem;display:block;margin-bottom:3px}
+.lm-type-label{font-size:0.62rem;color:var(--muted);font-weight:600;letter-spacing:0.5px}
+.lm-type.selected .lm-type-label{color:var(--gold)}
+.modal label{
+  display:block;font-size:0.72rem;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+  margin-bottom:0.4rem;
+}
+.modal input,.modal textarea{
+  width:100%;padding:0.65rem 0.8rem;
+  background:var(--dark3);border:1px solid var(--border2);
+  border-radius:8px;color:var(--text);font-size:0.875rem;
+  font-family:'Inter',sans-serif;outline:none;
+  transition:border-color 0.2s;margin-bottom:0.8rem;
+}
+.modal input:focus,.modal textarea:focus{border-color:var(--gold)}
+.modal textarea{resize:none;height:70px}
+.modal-btns{display:flex;gap:0.7rem}
+.btn-cancel{
+  flex:1;padding:0.65rem;background:transparent;
+  border:1px solid var(--border2);border-radius:8px;
+  color:var(--muted);font-size:0.875rem;cursor:pointer;font-family:'Inter',sans-serif;
+}
+.btn-save-lm{
+  flex:2;padding:0.65rem;background:var(--gold);
+  border:none;border-radius:8px;color:var(--dark);
+  font-size:0.875rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+}
+
+/* ── SAVE MODAL ── */
+.save-modal{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:16px 16px 0 0;padding:1.5rem;
+  width:100%;max-width:480px;
+}
+.route-summary{
+  background:var(--dark3);border:1px solid var(--border);
+  border-radius:10px;padding:1rem;margin-bottom:1rem;
+}
+.route-summary-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;text-align:center;
+}
+.rs-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--gold);letter-spacing:1px}
+.rs-label{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.btn-save-route{
+  width:100%;padding:0.8rem;background:var(--gold);
+  border:none;border-radius:10px;color:var(--dark);
+  font-size:1rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+  margin-bottom:0.6rem;transition:background 0.2s;
+}
+.btn-save-route:hover{background:var(--amber)}
+.btn-discard{
+  width:100%;padding:0.65rem;background:transparent;
+  border:1px solid rgba(244,67,54,0.3);border-radius:10px;
+  color:var(--red);font-size:0.875rem;cursor:pointer;font-family:'Inter',sans-serif;
+}
+
+/* ── SAVED ROUTES LIST ── */
+.saved-section{
+  position:absolute;top:12px;right:12px;z-index:10;
+}
+.btn-saved{
+  background:rgba(6,8,16,0.88);border:1px solid var(--border2);
+  border-radius:8px;padding:6px 12px;
+  color:var(--gold);font-size:0.78rem;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  display:flex;align-items:center;gap:5px;
+}
+.saved-dropdown{
+  position:absolute;top:calc(100% + 6px);right:0;
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:10px;min-width:240px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  display:none;overflow:hidden;max-height:300px;overflow-y:auto;
+}
+.saved-dropdown.open{display:block}
+.saved-route-item{
+  padding:0.8rem 1rem;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background 0.12s;
+}
+.saved-route-item:last-child{border-bottom:none}
+.saved-route-item:hover{background:rgba(245,166,35,0.06)}
+.sri-name{font-size:0.85rem;font-weight:600;color:var(--text)}
+.sri-meta{font-size:0.72rem;color:var(--muted);margin-top:2px}
+.sri-meta span{color:var(--gold);font-weight:600}
+.no-saved{padding:1rem;text-align:center;color:var(--muted);font-size:0.82rem}
+
+/* Mapbox controls */
+.mapboxgl-ctrl-logo{display:none!important}
+.mapboxgl-ctrl-attrib{display:none!important}
+.mapboxgl-ctrl-group{background:var(--card)!important;border:1px solid var(--border2)!important}
+.mapboxgl-ctrl-group button{background:var(--card)!important}
+.mapboxgl-ctrl-icon{filter:invert(1) brightness(0.7)}
+
+/* ── USER LOCATION DOT ── */
+.user-dot{
+  width:16px;height:16px;border-radius:50%;
+  background:var(--blue);border:3px solid #fff;
+  box-shadow:0 0 0 4px rgba(68,136,255,0.3);
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='dashboard-boss.html'">← Dashboard</button>
+  <div class="topbar-logo">Oil<span>Manager</span> — Route Recorder</div>
+  <div class="rec-status">
+    <div class="rec-dot" id="rec-dot"></div>
+    <span id="rec-label" style="color:var(--muted)">Ready</span>
+  </div>
+</div>
+
+<!-- MAP -->
+<div id="map">
+  <div id="mapbox-map"></div>
+
+  <!-- STATS OVERLAY -->
+  <div class="stats-overlay">
+    <div class="stat-pill" id="pill-dist">
+      <div><div class="stat-pill-val" id="val-dist">0.0</div><div class="stat-pill-label">miles</div></div>
+    </div>
+    <div class="stat-pill" id="pill-time">
+      <div><div class="stat-pill-val" id="val-time">0:00</div><div class="stat-pill-label">elapsed</div></div>
+    </div>
+    <div class="stat-pill" id="pill-pts">
+      <div><div class="stat-pill-val" id="val-pts">0</div><div class="stat-pill-label">points</div></div>
+    </div>
+    <div class="stat-pill" id="pill-lm">
+      <div><div class="stat-pill-val" id="val-lm">0</div><div class="stat-pill-label">landmarks</div></div>
+    </div>
+  </div>
+
+  <!-- SAVED ROUTES -->
+  <div class="saved-section">
+    <button class="btn-saved" onclick="toggleSaved()">📂 Saved Routes</button>
+    <div class="saved-dropdown" id="saved-dropdown"></div>
+  </div>
+</div>
+
+<!-- BOTTOM PANEL -->
+<div class="bottom-panel">
+  <div class="route-name-row">
+    <input type="text" class="route-name-input" id="route-name" placeholder="Route name (e.g. Cattle Guard Entrance → Pump Unit 14)" maxlength="80">
+  </div>
+  <div class="controls">
+    <button class="btn-record start" id="btn-record" onclick="toggleRecord()">▶ Start Recording</button>
+    <button class="btn-landmark" id="btn-landmark" onclick="openLandmark()" disabled>📍 Landmark</button>
+    <button class="btn-stop" id="btn-stop" onclick="stopRecording()" disabled>⏹ Stop</button>
+  </div>
+  <div class="landmark-scroll" id="landmark-scroll"></div>
+</div>
+
+<!-- LANDMARK MODAL -->
+<div class="modal-bg" id="lm-modal">
+  <div class="modal">
+    <div class="modal-title">📍 Add Landmark</div>
+    <div class="landmark-types" id="lm-types">
+      <div class="lm-type selected" onclick="selectType(this,'Cattle Guard')"><span class="lm-type-icon">🚧</span><span class="lm-type-label">Cattle Guard</span></div>
+      <div class="lm-type" onclick="selectType(this,'Gate')"><span class="lm-type-icon">🔒</span><span class="lm-type-label">Gate</span></div>
+      <div class="lm-type" onclick="selectType(this,'Sign')"><span class="lm-type-icon">🪧</span><span class="lm-type-label">Sign</span></div>
+      <div class="lm-type" onclick="selectType(this,'Turn')"><span class="lm-type-icon">↩️</span><span class="lm-type-label">Turn</span></div>
+      <div class="lm-type" onclick="selectType(this,'Intersection')"><span class="lm-type-icon">✚</span><span class="lm-type-label">Intersect</span></div>
+      <div class="lm-type" onclick="selectType(this,'Pump Unit')"><span class="lm-type-icon">⚙️</span><span class="lm-type-label">Pump Unit</span></div>
+      <div class="lm-type" onclick="selectType(this,'Tank')"><span class="lm-type-icon">🛢</span><span class="lm-type-label">Tank</span></div>
+      <div class="lm-type" onclick="selectType(this,'Hazard')"><span class="lm-type-icon">⚠️</span><span class="lm-type-label">Hazard</span></div>
+    </div>
+    <label>Description (what you see)</label>
+    <input type="text" id="lm-desc" placeholder="e.g. Red gate, chain lock, turn right after cattle guard">
+    <label>Driver Note</label>
+    <textarea id="lm-note" placeholder="e.g. Don't go past the water tank — road ends 200ft ahead"></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeLandmark()">Cancel</button>
+      <button class="btn-save-lm" onclick="saveLandmark()">Drop Pin & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE ROUTE MODAL -->
+<div class="modal-bg" id="save-modal">
+  <div class="save-modal">
+    <div class="modal-title">💾 Save Route</div>
+    <div class="route-summary">
+      <div class="route-summary-grid">
+        <div><div class="rs-val" id="sum-dist">0.0</div><div class="rs-label">Miles</div></div>
+        <div><div class="rs-val" id="sum-time">0:00</div><div class="rs-label">Duration</div></div>
+        <div><div class="rs-val" id="sum-lm">0</div><div class="rs-label">Landmarks</div></div>
+      </div>
+    </div>
+    <label style="font-size:0.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.4rem">Route Name</label>
+    <input type="text" id="save-name" style="width:100%;padding:0.65rem 0.8rem;background:var(--dark3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:0.875rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:1rem">
+    <button class="btn-save-route" onclick="saveRoute()">💾 Save Route</button>
+    <button class="btn-discard" onclick="discardRoute()">Discard & Start Over</button>
+  </div>
+</div>
+
+<script>
+mapboxgl.accessToken = 'MAPBOX_TOKEN_HERE';
+
+const map = new mapboxgl.Map({
+  container: 'mapbox-map',
+  style: 'mapbox://styles/mapbox/navigation-night-v1',
+  center: [-102.55, 32.32],
+  zoom: 13,
+  pitch: 45,
+  antialias: true,
+});
+
+map.addControl(new mapboxgl.NavigationControl({ visualizePitch:true }), 'top-right');
+map.addControl(new mapboxgl.GeolocateControl({
+  positionOptions:{ enableHighAccuracy:true },
+  trackUserLocation:true,
+  showUserHeading:true,
+  showAccuracyCircle:true,
+}), 'top-right');
+
+// ── STATE ──────────────────────────────────────────────────
+let recording  = false;
+let paused     = false;
+let watchId    = null;
+let routeCoords = [];
+let landmarks  = [];
+let startTime  = null;
+let elapsedMs  = 0;
+let timerInt   = null;
+let currentPos = null;
+let selectedLandmarkType = 'Cattle Guard';
+let lmMarkers  = [];
+
+// ── MAP SOURCES SETUP ──────────────────────────────────────
+map.on('load', () => {
+  // 3D terrain
+  map.addSource('dem', { type:'raster-dem', url:'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize:512 });
+  map.setTerrain({ source:'dem', exaggeration:1.5 });
+  map.setFog({ color:'rgba(6,8,16,0.8)', 'high-color':'rgba(20,24,40,0.9)', 'horizon-blend':0.06, 'space-color':'rgba(4,6,14,1)', 'star-intensity':0.5 });
+
+  // Route line source
+  map.addSource('route', {
+    type:'geojson',
+    data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[] } }
+  });
+
+  // Glow layer (wide soft)
+  map.addLayer({
+    id:'route-glow',
+    type:'line', source:'route',
+    paint:{
+      'line-color':'#F5A623',
+      'line-width':10,
+      'line-opacity':0.2,
+      'line-blur':4,
+    }
+  });
+
+  // Main route line
+  map.addLayer({
+    id:'route-line',
+    type:'line', source:'route',
+    layout:{ 'line-join':'round', 'line-cap':'round' },
+    paint:{
+      'line-color':'#F5A623',
+      'line-width':4,
+      'line-opacity':0.95,
+    }
+  });
+
+  // Start dot source
+  map.addSource('start-point', {
+    type:'geojson',
+    data:{ type:'Feature', geometry:{ type:'Point', coordinates:[] } }
+  });
+  map.addLayer({
+    id:'start-dot',
+    type:'circle', source:'start-point',
+    paint:{
+      'circle-radius':8,
+      'circle-color':'#4CAF50',
+      'circle-stroke-color':'#fff',
+      'circle-stroke-width':2,
+      'circle-opacity':0,
+    }
+  });
+
+  // Try to center on user location
+  if(navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      map.flyTo({ center:[pos.coords.longitude, pos.coords.latitude], zoom:14, speed:1.5 });
+      currentPos = [pos.coords.longitude, pos.coords.latitude];
+    }, () => {});
+  }
+
+  loadSavedRoutes();
+});
+
+// ── HAVERSINE DISTANCE ─────────────────────────────────────
+function haversine(a, b) {
+  const R = 3958.8; // miles
+  const dLat = (b[1]-a[1]) * Math.PI/180;
+  const dLon = (b[0]-a[0]) * Math.PI/180;
+  const s = Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.cos(a[1]*Math.PI/180)*Math.cos(b[1]*Math.PI/180)*
+            Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+}
+
+function totalDistance(coords) {
+  let d = 0;
+  for(let i=1;i<coords.length;i++) d += haversine(coords[i-1], coords[i]);
+  return d;
+}
+
+// ── TIMER ──────────────────────────────────────────────────
+function fmtTime(ms) {
+  const s = Math.floor(ms/1000);
+  const m = Math.floor(s/60);
+  const h = Math.floor(m/60);
+  if(h > 0) return `${h}:${String(m%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  return `${m}:${String(s%60).padStart(2,'0')}`;
+}
+
+function updateStats() {
+  elapsedMs = Date.now() - startTime;
+  document.getElementById('val-time').textContent = fmtTime(elapsedMs);
+  const dist = totalDistance(routeCoords);
+  document.getElementById('val-dist').textContent = dist.toFixed(2);
+  document.getElementById('val-pts').textContent = routeCoords.length;
+  document.getElementById('val-lm').textContent = landmarks.length;
+}
+
+// ── TOGGLE RECORD ──────────────────────────────────────────
+function toggleRecord() {
+  if(!recording) {
+    startRecording();
+  } else if(!paused) {
+    pauseRecording();
+  } else {
+    resumeRecording();
+  }
+}
+
+function startRecording() {
+  if(!navigator.geolocation) { alert('Geolocation not available on this device.'); return; }
+
+  recording = true;
+  paused    = false;
+  routeCoords = [];
+  landmarks   = [];
+  lmMarkers.forEach(m => m.remove());
+  lmMarkers = [];
+  startTime = Date.now();
+
+  // Update UI
+  setRecState('recording');
+
+  // Update route line on map to empty
+  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:[] } });
+  map.setPaintProperty('start-dot','circle-opacity',0);
+
+  timerInt = setInterval(updateStats, 1000);
+
+  // Watch GPS position
+  watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
+    enableHighAccuracy: true,
+    maximumAge: 2000,
+    timeout: 10000,
+  });
+}
+
+function pauseRecording() {
+  paused = true;
+  clearInterval(timerInt);
+  navigator.geolocation.clearWatch(watchId);
+  setRecState('paused');
+}
+
+function resumeRecording() {
+  paused    = false;
+  startTime = Date.now() - elapsedMs;
+  timerInt  = setInterval(updateStats, 1000);
+  watchId   = navigator.geolocation.watchPosition(onPosition, onGeoError, {
+    enableHighAccuracy:true, maximumAge:2000, timeout:10000,
+  });
+  setRecState('recording');
+}
+
+function stopRecording() {
+  if(!recording) return;
+  clearInterval(timerInt);
+  navigator.geolocation.clearWatch(watchId);
+  recording = false;
+  paused    = false;
+  setRecState('stopped');
+
+  if(routeCoords.length < 2) {
+    alert('Not enough GPS points recorded. Move around more before stopping.');
+    setRecState('ready');
+    return;
+  }
+
+  // Show save modal
+  document.getElementById('sum-dist').textContent = totalDistance(routeCoords).toFixed(2);
+  document.getElementById('sum-time').textContent = fmtTime(elapsedMs);
+  document.getElementById('sum-lm').textContent   = landmarks.length;
+  document.getElementById('save-name').value = document.getElementById('route-name').value || 'Unnamed Route';
+  document.getElementById('save-modal').classList.add('open');
+}
+
+function onPosition(pos) {
+  const coord = [pos.coords.longitude, pos.coords.latitude];
+  currentPos  = coord;
+
+  // Minimum distance filter — only add point if moved > 5 meters
+  if(routeCoords.length > 0) {
+    const last = routeCoords[routeCoords.length-1];
+    const dist = haversine(last, coord) * 1609.34; // convert to meters
+    if(dist < 5) return;
+  }
+
+  routeCoords.push(coord);
+
+  // Set start dot on first point
+  if(routeCoords.length === 1) {
+    map.getSource('start-point').setData({ type:'Feature', geometry:{ type:'Point', coordinates:coord } });
+    map.setPaintProperty('start-dot','circle-opacity',1);
+    map.flyTo({ center:coord, zoom:15, pitch:45 });
+  }
+
+  // Update route line
+  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:routeCoords } });
+
+  // Follow user
+  map.easeTo({ center:coord, duration:800 });
+}
+
+function onGeoError(err) {
+  console.warn('GPS error:', err.message);
+}
+
+// ── REC STATE UI ───────────────────────────────────────────
+function setRecState(state) {
+  const dot   = document.getElementById('rec-dot');
+  const label = document.getElementById('rec-label');
+  const btn   = document.getElementById('btn-record');
+  const stop  = document.getElementById('btn-stop');
+  const lmbtn = document.getElementById('btn-landmark');
+
+  dot.className   = 'rec-dot';
+  if(state==='recording') {
+    dot.classList.add('recording');
+    label.textContent = 'Recording';
+    label.style.color = 'var(--red)';
+    btn.className = 'btn-record pause';
+    btn.innerHTML = '⏸ Pause';
+    stop.disabled  = false;
+    lmbtn.disabled = false;
+  } else if(state==='paused') {
+    dot.classList.add('paused');
+    label.textContent = 'Paused';
+    label.style.color = 'var(--gold)';
+    btn.className = 'btn-record resume';
+    btn.innerHTML = '▶ Resume';
+    stop.disabled  = false;
+    lmbtn.disabled = true;
+  } else {
+    label.textContent = 'Ready';
+    label.style.color = 'var(--muted)';
+    btn.className = 'btn-record start';
+    btn.innerHTML = '▶ Start Recording';
+    stop.disabled  = true;
+    lmbtn.disabled = true;
+  }
+}
+
+// ── LANDMARK ───────────────────────────────────────────────
+function openLandmark() {
+  if(!recording || paused) return;
+  document.getElementById('lm-desc').value = '';
+  document.getElementById('lm-note').value = '';
+  document.getElementById('lm-modal').classList.add('open');
+}
+function closeLandmark() {
+  document.getElementById('lm-modal').classList.remove('open');
+}
+function selectType(el, type) {
+  document.querySelectorAll('.lm-type').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedLandmarkType = type;
+}
+
+const LM_ICONS = {
+  'Cattle Guard':'🚧','Gate':'🔒','Sign':'🪧','Turn':'↩️',
+  'Intersection':'✚','Pump Unit':'⚙️','Tank':'🛢','Hazard':'⚠️'
+};
+
+function saveLandmark() {
+  const desc = document.getElementById('lm-desc').value.trim();
+  const note = document.getElementById('lm-note').value.trim();
+  if(!currentPos) { alert('No GPS position yet.'); return; }
+
+  const dist = totalDistance(routeCoords);
+  const lm = {
+    type: selectedLandmarkType,
+    desc: desc || selectedLandmarkType,
+    note,
+    coords: [...currentPos],
+    dist: dist.toFixed(2),
+    time: fmtTime(elapsedMs),
+    icon: LM_ICONS[selectedLandmarkType] || '📍',
+  };
+  landmarks.push(lm);
+
+  // Drop marker on map
+  const el = document.createElement('div');
+  el.style.cssText = `
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(6,8,16,0.9);
+    border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1rem;cursor:pointer;
+    box-shadow:0 0 10px rgba(245,166,35,0.5);
+  `;
+  el.textContent = lm.icon;
+
+  const popup = new mapboxgl.Popup({ offset:20, closeButton:false })
+    .setHTML(`
+      <div style="font-family:'Inter',sans-serif;font-size:0.8rem">
+        <div style="font-weight:700;color:#fff;margin-bottom:3px">${lm.icon} ${lm.type}</div>
+        ${lm.desc ? `<div style="color:#E8EAF0;margin-bottom:3px">${lm.desc}</div>` : ''}
+        ${lm.note ? `<div style="color:#6B7280;font-size:0.72rem;margin-bottom:3px">📝 ${lm.note}</div>` : ''}
+        <div style="color:#F5A623;font-size:0.7rem">@ ${lm.dist} mi · ${lm.time}</div>
+      </div>
+    `);
+
+  const marker = new mapboxgl.Marker({ element:el })
+    .setLngLat(currentPos)
+    .setPopup(popup)
+    .addTo(map);
+  el.addEventListener('click', () => popup.isOpen() ? popup.remove() : popup.addTo(map).setLngLat(currentPos));
+  lmMarkers.push(marker);
+
+  // Add to bottom list
+  renderLandmarkList();
+  document.getElementById('val-lm').textContent = landmarks.length;
+  closeLandmark();
+}
+
+function renderLandmarkList() {
+  const container = document.getElementById('landmark-scroll');
+  container.innerHTML = landmarks.slice().reverse().map(lm => `
+    <div class="landmark-item">
+      <span class="landmark-icon">${lm.icon}</span>
+      <span class="landmark-text">${lm.type}${lm.desc ? ' — '+lm.desc : ''}</span>
+      <span class="landmark-dist">${lm.dist} mi</span>
+    </div>
+  `).join('');
+}
+
+// ── SAVE / DISCARD ─────────────────────────────────────────
+function saveRoute() {
+  const name = document.getElementById('save-name').value.trim() || 'Unnamed Route';
+  const route = {
+    id: Date.now(),
+    name,
+    coords: routeCoords,
+    landmarks,
+    dist: parseFloat(totalDistance(routeCoords).toFixed(2)),
+    duration: fmtTime(elapsedMs),
+    saved: new Date().toLocaleDateString(),
+    points: routeCoords.length,
+  };
+
+  const saved = JSON.parse(localStorage.getItem('om_routes') || '[]');
+  saved.unshift(route);
+  localStorage.setItem('om_routes', JSON.stringify(saved));
+
+  document.getElementById('save-modal').classList.remove('open');
+  document.getElementById('route-name').value = '';
+  document.getElementById('landmark-scroll').innerHTML = '';
+  setRecState('ready');
+  resetStats();
+  loadSavedRoutes();
+  alert(`✅ Route "${name}" saved — ${route.dist} miles, ${landmarks.length} landmarks.`);
+}
+
+function discardRoute() {
+  document.getElementById('save-modal').classList.remove('open');
+  routeCoords = [];
+  landmarks   = [];
+  lmMarkers.forEach(m => m.remove());
+  lmMarkers = [];
+  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:[] } });
+  map.setPaintProperty('start-dot','circle-opacity',0);
+  document.getElementById('landmark-scroll').innerHTML = '';
+  setRecState('ready');
+  resetStats();
+}
+
+function resetStats() {
+  elapsedMs = 0;
+  document.getElementById('val-dist').textContent = '0.0';
+  document.getElementById('val-time').textContent = '0:00';
+  document.getElementById('val-pts').textContent  = '0';
+  document.getElementById('val-lm').textContent   = '0';
+}
+
+// ── SAVED ROUTES ───────────────────────────────────────────
+function loadSavedRoutes() {
+  const saved = JSON.parse(localStorage.getItem('om_routes') || '[]');
+  const dd = document.getElementById('saved-dropdown');
+  if(!saved.length) {
+    dd.innerHTML = '<div class="no-saved">No saved routes yet</div>';
+    return;
+  }
+  dd.innerHTML = saved.map((r,i) => `
+    <div class="saved-route-item" onclick="loadRoute(${i})">
+      <div class="sri-name">📍 ${r.name}</div>
+      <div class="sri-meta"><span>${r.dist} mi</span> · ${r.duration} · ${r.landmarks.length} landmarks · ${r.saved}</div>
+    </div>
+  `).join('');
+}
+
+function loadRoute(idx) {
+  const saved = JSON.parse(localStorage.getItem('om_routes') || '[]');
+  const route = saved[idx];
+  if(!route || !route.coords.length) return;
+
+  // Draw route on map
+  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:route.coords } });
+  map.getSource('start-point').setData({ type:'Feature', geometry:{ type:'Point', coordinates:route.coords[0] } });
+  map.setPaintProperty('start-dot','circle-opacity',1);
+
+  // Clear old landmark markers
+  lmMarkers.forEach(m => m.remove());
+  lmMarkers = [];
+
+  // Drop landmark markers
+  route.landmarks.forEach(lm => {
+    const el = document.createElement('div');
+    el.style.cssText = `width:28px;height:28px;border-radius:50%;background:rgba(6,8,16,0.9);border:2px solid #F5A623;display:flex;align-items:center;justify-content:center;font-size:0.9rem;cursor:pointer;box-shadow:0 0 8px rgba(245,166,35,0.4)`;
+    el.textContent = lm.icon;
+    const popup = new mapboxgl.Popup({ offset:18, closeButton:false })
+      .setHTML(`<div style="font-family:'Inter',sans-serif;font-size:0.8rem"><div style="font-weight:700;color:#fff;margin-bottom:3px">${lm.icon} ${lm.type}</div>${lm.desc?`<div style="color:#E8EAF0;margin-bottom:3px">${lm.desc}</div>`:''}${lm.note?`<div style="color:#6B7280;font-size:0.72rem;margin-bottom:3px">📝 ${lm.note}</div>`:''}<div style="color:#F5A623;font-size:0.7rem">@ ${lm.dist} mi · ${lm.time}</div></div>`);
+    const marker = new mapboxgl.Marker({ element:el }).setLngLat(lm.coords).setPopup(popup).addTo(map);
+    el.addEventListener('click', () => popup.isOpen() ? popup.remove() : popup.addTo(map).setLngLat(lm.coords));
+    lmMarkers.push(marker);
+  });
+
+  // Fly to route
+  const bounds = route.coords.reduce((b,c) => b.extend(c), new mapboxgl.LngLatBounds(route.coords[0], route.coords[0]));
+  map.fitBounds(bounds, { padding:60, pitch:45, duration:1400 });
+
+  document.getElementById('route-name').value = route.name;
+  toggleSaved();
+}
+
+function toggleSaved() {
+  document.getElementById('saved-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const s = document.querySelector('.saved-section');
+  if(s && !s.contains(e.target)) document.getElementById('saved-dropdown').classList.remove('open');
+});
+</script>
+</body>
+</html>

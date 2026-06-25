@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OilManager — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#F5A623;--amber:#E8860A;
+  --dark:#060810;--dark2:#0D1020;--dark3:#141828;
+  --card:#101422;--border:#1E2438;--border2:#2A3050;
+  --text:#E8EAF0;--muted:#6B7280;
+}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--dark);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── BG CANVAS ── */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ── WRAP ── */
+.wrap{
+  position:relative;z-index:1;
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:2rem;min-height:100vh;
+}
+
+/* ── LOGO ── */
+.logo{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2.2rem;letter-spacing:3px;
+  color:#fff;margin-bottom:0.3rem;text-align:center;
+}
+.logo span{color:var(--gold)}
+.logo-sub{
+  font-size:0.75rem;color:var(--muted);
+  letter-spacing:2px;text-transform:uppercase;
+  text-align:center;margin-bottom:2.5rem;
+}
+
+/* ── ROLE TOGGLE ── */
+.role-toggle{
+  display:flex;gap:0;margin-bottom:2rem;
+  background:var(--dark3);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+  width:100%;max-width:380px;
+}
+.role-btn{
+  flex:1;padding:0.7rem;
+  background:transparent;border:none;
+  color:var(--muted);font-size:0.85rem;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:all 0.2s;
+  font-family:'Inter',sans-serif;
+}
+.role-btn.active{
+  background:var(--gold);color:var(--dark);
+}
+.role-btn:not(.active):hover{color:var(--text)}
+
+/* ── CARD ── */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;padding:2.5rem;
+  width:100%;max-width:380px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.card-title{
+  font-size:1.2rem;font-weight:700;
+  color:#fff;margin-bottom:0.3rem;
+}
+.card-sub{
+  font-size:0.85rem;color:var(--muted);
+  margin-bottom:2rem;line-height:1.5;
+}
+
+/* ── FORM ── */
+.field{margin-bottom:1.2rem}
+label{
+  display:block;font-size:0.78rem;
+  font-weight:600;letter-spacing:1px;
+  text-transform:uppercase;color:var(--muted);
+  margin-bottom:0.5rem;
+}
+input{
+  width:100%;padding:0.75rem 1rem;
+  background:var(--dark3);
+  border:1px solid var(--border2);
+  border-radius:8px;color:var(--text);
+  font-size:0.95rem;font-family:'Inter',sans-serif;
+  outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+}
+input:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(245,166,35,0.12);
+}
+input::placeholder{color:var(--muted)}
+
+/* ── SUBMIT ── */
+.btn-submit{
+  width:100%;padding:0.85rem;
+  background:var(--gold);color:var(--dark);
+  border:none;border-radius:8px;
+  font-size:1rem;font-weight:800;
+  font-family:'Inter',sans-serif;
+  cursor:pointer;letter-spacing:0.5px;
+  transition:background 0.2s,transform 0.1s;
+  margin-top:0.5rem;
+}
+.btn-submit:hover{background:var(--amber);transform:translateY(-1px)}
+.btn-submit:active{transform:translateY(0)}
+
+/* ── DIVIDER ── */
+.divider{
+  display:flex;align-items:center;gap:0.8rem;
+  margin:1.5rem 0;
+}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider span{font-size:0.75rem;color:var(--muted)}
+
+/* ── WORKER CODE ── */
+.worker-section{display:none}
+.worker-section.active{display:block}
+.boss-section{display:block}
+.boss-section.hidden{display:none}
+
+.code-input{
+  text-align:center;
+  font-size:1.4rem;font-weight:700;
+  letter-spacing:6px;
+  text-transform:uppercase;
+}
+
+/* ── ERROR / SUCCESS ── */
+.msg{
+  font-size:0.82rem;padding:0.6rem 0.8rem;
+  border-radius:6px;margin-bottom:1rem;
+  display:none;
+}
+.msg.error{background:rgba(244,67,54,0.12);border:1px solid rgba(244,67,54,0.3);color:#FF6B6B}
+.msg.success{background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);color:#66BB6A}
+.msg.show{display:block}
+
+/* ── FORGOT ── */
+.forgot{
+  text-align:center;margin-top:1.2rem;
+  font-size:0.82rem;color:var(--muted);
+}
+.forgot a{color:var(--gold);text-decoration:none}
+.forgot a:hover{text-decoration:underline}
+
+/* ── FOOTER ── */
+.login-footer{
+  position:relative;z-index:1;
+  text-align:center;padding:1.5rem;
+  font-size:0.78rem;color:var(--muted);
+  letter-spacing:1px;
+}
+.login-footer span{color:var(--gold)}
+
+/* ── LOADING SPINNER ── */
+.spinner{
+  display:none;width:18px;height:18px;
+  border:2px solid rgba(6,8,16,0.3);
+  border-top-color:var(--dark);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  margin:0 auto;
+}
+.btn-submit.loading .spinner{display:inline-block}
+.btn-submit.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── DEMO BADGE ── */
+.demo-creds{
+  background:rgba(245,166,35,0.07);
+  border:1px solid rgba(245,166,35,0.2);
+  border-radius:8px;padding:0.8rem 1rem;
+  margin-bottom:1.5rem;
+  font-size:0.78rem;color:var(--muted);
+  line-height:1.8;
+}
+.demo-creds strong{color:var(--gold);font-weight:600}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="wrap">
+  <div class="logo">Oil<span>Manager</span></div>
+  <div class="logo-sub">Permian Basin Field Operations</div>
+
+  <!-- Role Toggle -->
+  <div class="role-toggle">
+    <button class="role-btn active" onclick="setRole('boss')">⚙ Boss / Supervisor</button>
+    <button class="role-btn" onclick="setRole('worker')">👷 Field Worker</button>
+  </div>
+
+  <!-- BOSS LOGIN -->
+  <div class="card" id="boss-card">
+    <div class="card-title">Supervisor Login</div>
+    <div class="card-sub">Access your crew dashboard, job dispatch, and time card approvals.</div>
+
+    <div class="demo-creds">
+      <strong>Demo credentials</strong><br>
+      Email: <strong>boss@oilmanager.com</strong><br>
+      Password: <strong>demo1234</strong>
+    </div>
+
+    <div class="msg error" id="boss-error">Incorrect email or password. Try again.</div>
+    <div class="msg success" id="boss-success">Login successful — loading dashboard...</div>
+
+    <div class="field">
+      <label>Email Address</label>
+      <input type="email" id="boss-email" placeholder="you@company.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="boss-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn-submit" id="boss-btn" onclick="bossLogin()">
+      <span class="btn-text">Sign In to Dashboard</span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="forgot"><a href="#">Forgot password?</a> · <a href="index.html">Back to site</a></div>
+  </div>
+
+  <!-- WORKER LOGIN -->
+  <div class="card" id="worker-card" style="display:none">
+    <div class="card-title">Worker Check-In</div>
+    <div class="card-sub">Enter your worker code to see your assigned jobs for today.</div>
+
+    <div class="demo-creds">
+      <strong>Demo worker code</strong><br>
+      Code: <strong>JR-4821</strong>
+    </div>
+
+    <div class="msg error" id="worker-error">Invalid worker code. Check with your supervisor.</div>
+    <div class="msg success" id="worker-success">Code verified — loading your jobs...</div>
+
+    <div class="field">
+      <label>Worker Code</label>
+      <input type="text" id="worker-code" class="code-input" placeholder="XX-0000" maxlength="7" autocomplete="off" oninput="formatCode(this)">
+    </div>
+
+    <button class="btn-submit" id="worker-btn" onclick="workerLogin()">
+      <span class="btn-text">View My Jobs</span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="forgot"><a href="#">Need help?</a> · <a href="index.html">Back to site</a></div>
+  </div>
+</div>
+
+<div class="login-footer">
+  <span>OilManager</span> · Built in Andrews, TX · Serving the Permian Basin
+</div>
+
+<script>
+// ── ROLE TOGGLE ──────────────────────────────────────────
+function setRole(role) {
+  document.querySelectorAll('.role-btn').forEach((b,i) => {
+    b.classList.toggle('active', (role==='boss'&&i===0)||(role==='worker'&&i===1));
+  });
+  document.getElementById('boss-card').style.display   = role==='boss'   ? 'block' : 'none';
+  document.getElementById('worker-card').style.display = role==='worker' ? 'block' : 'none';
+}
+
+// ── FORMAT WORKER CODE ───────────────────────────────────
+function formatCode(el) {
+  let v = el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  if(v.length > 2) v = v.slice(0,2) + '-' + v.slice(2,6);
+  el.value = v;
+}
+
+// ── BOSS LOGIN ───────────────────────────────────────────
+function bossLogin() {
+  const email = document.getElementById('boss-email').value.trim();
+  const pass  = document.getElementById('boss-pass').value;
+  const btn   = document.getElementById('boss-btn');
+  const err   = document.getElementById('boss-error');
+  const ok    = document.getElementById('boss-success');
+
+  err.classList.remove('show');
+  ok.classList.remove('show');
+
+  if(!email || !pass) { err.textContent='Please fill in all fields.'; err.classList.add('show'); return; }
+
+  btn.classList.add('loading');
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    if(email === 'boss@oilmanager.com' && pass === 'demo1234') {
+      ok.classList.add('show');
+      setTimeout(() => window.location.href = 'dashboard-boss.html', 1200);
+    } else {
+      err.textContent = 'Incorrect email or password. Try again.';
+      err.classList.add('show');
+    }
+  }, 1200);
+}
+
+// ── WORKER LOGIN ─────────────────────────────────────────
+function workerLogin() {
+  const code = document.getElementById('worker-code').value.trim().toUpperCase();
+  const btn  = document.getElementById('worker-btn');
+  const err  = document.getElementById('worker-error');
+  const ok   = document.getElementById('worker-success');
+
+  err.classList.remove('show');
+  ok.classList.remove('show');
+
+  if(!code || code.length < 7) { err.textContent='Enter your full worker code (e.g. JR-4821).'; err.classList.add('show'); return; }
+
+  btn.classList.add('loading');
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    if(code === 'JR-4821') {
+      ok.classList.add('show');
+      setTimeout(() => window.location.href = 'dashboard-worker.html', 1200);
+    } else {
+      err.textContent = 'Invalid worker code. Check with your supervisor.';
+      err.classList.add('show');
+    }
+  }, 1200);
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  if(document.getElementById('boss-card').style.display !== 'none') bossLogin();
+  else workerLogin();
+});
+
+// ── BACKGROUND PARTICLE FIELD ────────────────────────────
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let W, H, dots = [];
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+for(let i=0;i<120;i++) {
+  dots.push({
+    x: Math.random()*1920, y: Math.random()*1080,
+    vx:(Math.random()-0.5)*0.18, vy:(Math.random()-0.5)*0.18,
+    r: Math.random()*1.5+0.3,
+    a: Math.random()*0.5+0.1
+  });
+}
+
+function drawBg(t) {
+  ctx.clearRect(0,0,W,H);
+
+  // Grid lines
+  ctx.strokeStyle='rgba(30,36,56,0.6)';
+  ctx.lineWidth=1;
+  const gs=60;
+  for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+  // Dots
+  dots.forEach(d => {
+    d.x += d.vx; d.y += d.vy;
+    if(d.x<0)d.x=W; if(d.x>W)d.x=0;
+    if(d.y<0)d.y=H; if(d.y>H)d.y=0;
+    ctx.beginPath();
+    ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(245,166,35,${d.a})`;
+    ctx.fill();
+  });
+
+  // Connection lines
+  for(let i=0;i<dots.length;i++){
+    for(let j=i+1;j<dots.length;j++){
+      const dx=dots[i].x-dots[j].x, dy=dots[i].y-dots[j].y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<120){
+        ctx.beginPath();
+        ctx.moveTo(dots[i].x,dots[i].y);
+        ctx.lineTo(dots[j].x,dots[j].y);
+        ctx.strokeStyle=`rgba(245,166,35,${0.08*(1-dist/120)})`;
+        ctx.lineWidth=0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+(function loop(t){requestAnimationFrame(loop);drawBg(t)})(0);
+</script>
+</body>
+</html>

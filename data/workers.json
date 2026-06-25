@@ -1,0 +1,7 @@
+[
+  { "id": "w1", "name": "Carlos Reyes",    "role": "Operator",    "phone": "", "jobsite": "Section 14 — Pad A" },
+  { "id": "w2", "name": "Mike Dominguez",  "role": "Driller",     "phone": "", "jobsite": "Section 14 — Pad B" },
+  { "id": "w3", "name": "Jesse Trevino",   "role": "Roughneck",   "phone": "", "jobsite": "Section 22 — GLO Lease" },
+  { "id": "w4", "name": "Danny Flores",    "role": "Operator",    "phone": "", "jobsite": "Section 8 — Tank Farm" },
+  { "id": "w5", "name": "Ray Gutierrez",   "role": "Supervisor",  "phone": "", "jobsite": "Section 14 — Pad A" }
+]

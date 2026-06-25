@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OilManager — SMS Dispatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --dark:#06080f;
+  --card:#0c1220;
+  --border:rgba(80,140,255,0.15);
+  --gold:#F5A623;
+  --blue:#4a8cff;
+  --green:#22c55e;
+  --red:#ef4444;
+  --white:#eef0f5;
+  --muted:rgba(180,190,210,0.6);
+  --warn:#f59e0b;
+}
+body{
+  background:var(--dark);
+  color:var(--white);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+}
+
+/* ── NAV ── */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 2rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(6,8,15,0.95);
+  backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:100;
+}
+.nav-logo{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.4rem;letter-spacing:3px;
+  color:var(--gold);
+}
+.nav-logo span{color:var(--white);opacity:0.5;font-size:0.9rem;margin-left:10px;letter-spacing:1px}
+.nav-back{
+  font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;
+  transition:color 0.2s;
+}
+.nav-back:hover{color:var(--white)}
+
+/* ── LAYOUT ── */
+.page{
+  max-width:1200px;margin:0 auto;
+  padding:2.5rem 2rem 4rem;
+  display:grid;
+  grid-template-columns:1fr 340px;
+  grid-template-rows:auto 1fr;
+  gap:1.5rem;
+}
+.page-header{
+  grid-column:1/-1;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding-bottom:0.5rem;
+  border-bottom:1px solid var(--border);
+}
+.page-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2.2rem;letter-spacing:3px;
+  color:var(--white);
+}
+.page-title span{color:var(--gold)}
+.page-sub{
+  font-size:0.82rem;color:var(--muted);
+  margin-top:0.3rem;letter-spacing:0.5px;
+}
+.twilio-badge{
+  font-size:0.72rem;letter-spacing:2px;text-transform:uppercase;
+  color:var(--blue);
+  border:1px solid rgba(74,140,255,0.3);
+  padding:0.3rem 0.8rem;border-radius:20px;
+}
+
+/* ── CARD BASE ── */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:1.5rem;
+}
+.card-label{
+  font-size:0.68rem;letter-spacing:3px;text-transform:uppercase;
+  color:var(--blue);margin-bottom:1rem;
+}
+
+/* ── PRIVACY WARNING ── */
+.privacy-warning{
+  grid-column:1/-1;
+  display:flex;align-items:flex-start;gap:1rem;
+  background:rgba(245,158,11,0.07);
+  border:1px solid rgba(245,158,11,0.3);
+  border-radius:12px;
+  padding:1rem 1.25rem;
+}
+.privacy-warning .icon{
+  font-size:1.4rem;flex-shrink:0;margin-top:2px;
+}
+.privacy-warning strong{
+  display:block;font-size:0.85rem;font-weight:700;
+  color:var(--warn);letter-spacing:0.5px;
+  margin-bottom:0.3rem;
+}
+.privacy-warning p{
+  font-size:0.8rem;color:rgba(245,158,11,0.75);
+  line-height:1.6;
+}
+
+/* ── BOSS PHONE SETTINGS ── */
+.settings-card{}
+.phone-row{
+  display:flex;gap:0.75rem;align-items:flex-end;
+  margin-top:0.5rem;
+}
+.phone-input-wrap{flex:1}
+.phone-input-wrap label{
+  display:block;font-size:0.75rem;letter-spacing:1px;
+  color:var(--muted);margin-bottom:0.4rem;
+  text-transform:uppercase;
+}
+.phone-input-wrap input{
+  width:100%;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:0.65rem 1rem;
+  color:var(--white);
+  font-family:'Inter',sans-serif;
+  font-size:0.9rem;
+  outline:none;
+  transition:border-color 0.2s;
+}
+.phone-input-wrap input:focus{
+  border-color:rgba(74,140,255,0.5);
+}
+.phone-input-wrap input::placeholder{color:rgba(255,255,255,0.2)}
+.btn-save{
+  background:var(--gold);color:#0a0a0a;
+  border:none;border-radius:8px;
+  padding:0.65rem 1.4rem;
+  font-family:'Inter',sans-serif;
+  font-size:0.82rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;
+  transition:opacity 0.2s,transform 0.15s;
+  white-space:nowrap;flex-shrink:0;
+}
+.btn-save:hover{opacity:0.85;transform:translateY(-1px)}
+.phone-status{
+  font-size:0.75rem;margin-top:0.5rem;
+  min-height:1rem;
+}
+.phone-status.ok{color:var(--green)}
+.phone-status.err{color:var(--red)}
+
+/* ── WORKER LIST ── */
+.compose-col{}
+.worker-list{
+  display:flex;flex-direction:column;gap:0.5rem;
+  margin-top:0.5rem;
+  max-height:260px;overflow-y:auto;
+  padding-right:4px;
+}
+.worker-list::-webkit-scrollbar{width:4px}
+.worker-list::-webkit-scrollbar-track{background:transparent}
+.worker-list::-webkit-scrollbar-thumb{background:rgba(74,140,255,0.2);border-radius:2px}
+.worker-row{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:0.7rem 0.9rem;
+  border:1px solid var(--border);
+  border-radius:8px;
+  cursor:pointer;
+  transition:background 0.2s,border-color 0.2s;
+  user-select:none;
+}
+.worker-row:hover{background:rgba(74,140,255,0.06)}
+.worker-row.selected{
+  background:rgba(74,140,255,0.1);
+  border-color:rgba(74,140,255,0.4);
+}
+.worker-row input[type=checkbox]{
+  accent-color:var(--blue);
+  width:16px;height:16px;flex-shrink:0;
+}
+.worker-info{flex:1;min-width:0}
+.worker-name{font-size:0.88rem;font-weight:600;color:var(--white)}
+.worker-role{font-size:0.73rem;color:var(--muted)}
+.worker-site{
+  font-size:0.7rem;color:rgba(74,140,255,0.6);
+  margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.worker-phone-tag{
+  font-size:0.68rem;
+  padding:2px 8px;border-radius:20px;
+  flex-shrink:0;
+}
+.worker-phone-tag.has-phone{background:rgba(34,197,94,0.12);color:var(--green)}
+.worker-phone-tag.no-phone{background:rgba(239,68,68,0.1);color:var(--red)}
+
+.select-row{
+  display:flex;gap:0.75rem;margin-bottom:0.75rem;
+}
+.btn-link{
+  background:none;border:none;
+  font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;
+  color:var(--blue);cursor:pointer;
+  padding:0;transition:opacity 0.2s;
+}
+.btn-link:hover{opacity:0.7}
+
+/* ── MESSAGE COMPOSER ── */
+.composer-card{margin-top:0}
+.msg-templates{
+  display:flex;flex-wrap:wrap;gap:0.5rem;
+  margin-bottom:0.85rem;
+}
+.tpl-btn{
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:0.3rem 0.7rem;
+  font-size:0.72rem;letter-spacing:0.5px;
+  color:var(--muted);cursor:pointer;
+  transition:background 0.2s,color 0.2s,border-color 0.2s;
+}
+.tpl-btn:hover{
+  background:rgba(74,140,255,0.1);
+  border-color:rgba(74,140,255,0.3);
+  color:var(--white);
+}
+textarea#msg-body{
+  width:100%;min-height:120px;resize:vertical;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:0.9rem 1rem;
+  color:var(--white);
+  font-family:'Inter',sans-serif;
+  font-size:0.88rem;
+  line-height:1.6;
+  outline:none;
+  transition:border-color 0.2s;
+}
+textarea#msg-body:focus{border-color:rgba(74,140,255,0.5)}
+textarea#msg-body::placeholder{color:rgba(255,255,255,0.18)}
+.char-count{
+  font-size:0.72rem;color:var(--muted);
+  text-align:right;margin-top:0.4rem;
+}
+.char-count.over{color:var(--red)}
+.send-row{
+  display:flex;align-items:center;gap:1rem;
+  margin-top:1rem;
+}
+.btn-send{
+  flex:1;
+  background:linear-gradient(135deg,#1a4fa8,#2563eb);
+  border:1px solid rgba(74,140,255,0.4);
+  border-radius:10px;
+  padding:0.9rem 1.5rem;
+  color:#fff;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.1rem;letter-spacing:3px;
+  cursor:pointer;
+  transition:opacity 0.2s,transform 0.15s,box-shadow 0.2s;
+}
+.btn-send:hover:not(:disabled){
+  opacity:0.9;transform:translateY(-1px);
+  box-shadow:0 8px 24px rgba(37,99,235,0.35);
+}
+.btn-send:disabled{opacity:0.35;cursor:not-allowed}
+.btn-broadcast{
+  background:rgba(245,166,35,0.1);
+  border:1px solid rgba(245,166,35,0.3);
+  border-radius:10px;
+  padding:0.9rem 1.25rem;
+  color:var(--gold);
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1rem;letter-spacing:2px;
+  cursor:pointer;
+  transition:background 0.2s,transform 0.15s;
+  white-space:nowrap;
+}
+.btn-broadcast:hover:not(:disabled){
+  background:rgba(245,166,35,0.18);transform:translateY(-1px);
+}
+.btn-broadcast:disabled{opacity:0.35;cursor:not-allowed}
+
+/* ── SEND STATUS ── */
+.send-status{
+  margin-top:0.75rem;min-height:1.2rem;
+  font-size:0.8rem;
+}
+.send-status.ok{color:var(--green)}
+.send-status.err{color:var(--red)}
+.send-status.sending{color:var(--blue)}
+
+/* ── RIGHT SIDEBAR ── */
+.sidebar{}
+
+/* Twilio Setup Card */
+.setup-steps{
+  display:flex;flex-direction:column;gap:0.85rem;
+  margin-top:0.5rem;
+}
+.step{
+  display:flex;gap:0.75rem;align-items:flex-start;
+}
+.step-num{
+  width:24px;height:24px;border-radius:50%;
+  background:rgba(74,140,255,0.15);
+  border:1px solid rgba(74,140,255,0.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.72rem;font-weight:700;color:var(--blue);
+  flex-shrink:0;margin-top:1px;
+}
+.step-text{font-size:0.8rem;color:rgba(180,190,210,0.75);line-height:1.5}
+.step-text a{color:var(--blue);text-decoration:none}
+.step-text a:hover{text-decoration:underline}
+.step-text strong{color:var(--white);font-weight:600}
+
+/* SMS Log */
+.log-list{
+  display:flex;flex-direction:column;gap:0.6rem;
+  margin-top:0.5rem;
+  max-height:320px;overflow-y:auto;
+}
+.log-entry{
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;
+  padding:0.65rem 0.85rem;
+}
+.log-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:0.3rem;
+}
+.log-time{font-size:0.68rem;color:var(--muted)}
+.log-count{
+  font-size:0.68rem;padding:1px 7px;border-radius:10px;
+}
+.log-count.ok{background:rgba(34,197,94,0.12);color:var(--green)}
+.log-count.partial{background:rgba(245,158,11,0.12);color:var(--warn)}
+.log-msg{font-size:0.78rem;color:rgba(180,190,210,0.85);line-height:1.5}
+.log-empty{font-size:0.78rem;color:var(--muted);text-align:center;padding:1.5rem 0}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .page{grid-template-columns:1fr;grid-template-rows:auto}
+  .sidebar{grid-row:auto}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">OilManager <span>SMS DISPATCH</span></div>
+  <a class="nav-back" href="index.html">← Back to Site</a>
+</nav>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Boss <span>Messages</span></div>
+      <div class="page-sub">Send SMS alerts directly to field crews via Twilio</div>
+    </div>
+    <div class="twilio-badge">Powered by Twilio</div>
+  </div>
+
+  <!-- Privacy Warning -->
+  <div class="privacy-warning">
+    <div class="icon">⚠️</div>
+    <div>
+      <strong>We Strongly Recommend Using a Company / Work Phone</strong>
+      <p>
+        This feature sends SMS messages from your registered number to field workers.
+        OilManager does <strong>not</strong> store, sell, or share your personal phone number — it is saved
+        only on your own server. However, to protect your privacy, we strongly recommend using a
+        <strong>dedicated work or company phone number only</strong>. Never enter a personal cell number.
+        Your number will never be visible to workers — only to you as the sender.
+      </p>
+    </div>
+  </div>
+
+  <!-- Left: Compose + Workers -->
+  <div class="compose-col" style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <!-- Boss Phone Settings -->
+    <div class="card settings-card">
+      <div class="card-label">Company Phone Number</div>
+      <div class="phone-row">
+        <div class="phone-input-wrap">
+          <label for="boss-phone">Your Work / Company Number</label>
+          <input type="tel" id="boss-phone" placeholder="+1 (432) 000-0000  — WORK PHONE ONLY">
+        </div>
+        <button class="btn-save" onclick="saveBossPhone()">Save</button>
+      </div>
+      <div class="phone-status" id="phone-status"></div>
+    </div>
+
+    <!-- Worker Recipients -->
+    <div class="card">
+      <div class="card-label">Select Recipients</div>
+      <div class="select-row">
+        <button class="btn-link" onclick="selectAll()">Select All</button>
+        <button class="btn-link" onclick="selectNone()">Clear</button>
+        <span id="selected-count" style="font-size:0.75rem;color:var(--muted);margin-left:auto"></span>
+      </div>
+      <div class="worker-list" id="worker-list">
+        <div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem">Loading workers…</div>
+      </div>
+    </div>
+
+    <!-- Message Composer -->
+    <div class="card composer-card">
+      <div class="card-label">Message</div>
+      <div class="msg-templates" id="templates">
+        <button class="tpl-btn" onclick="useTemplate(this)">Report to Section 14 by 6AM</button>
+        <button class="tpl-btn" onclick="useTemplate(this)">Job complete — clock out now</button>
+        <button class="tpl-btn" onclick="useTemplate(this)">Safety briefing at main pad 7AM</button>
+        <button class="tpl-btn" onclick="useTemplate(this)">Weather delay — standby for update</button>
+        <button class="tpl-btn" onclick="useTemplate(this)">Payroll closes Friday — submit hours</button>
+      </div>
+      <textarea id="msg-body" placeholder="Type your message to the crew…" oninput="updateChar()"></textarea>
+      <div class="char-count" id="char-count">0 / 160</div>
+      <div class="send-row">
+        <button class="btn-send" id="btn-send" onclick="sendSMS()">Send to Selected</button>
+        <button class="btn-broadcast" id="btn-broadcast" onclick="broadcastSMS()">Broadcast All</button>
+      </div>
+      <div class="send-status" id="send-status"></div>
+    </div>
+
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="sidebar" style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <!-- Twilio Setup Guide -->
+    <div class="card">
+      <div class="card-label">Twilio Setup</div>
+      <div class="setup-steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            Go to <a href="https://www.twilio.com/try-twilio" target="_blank">twilio.com/try-twilio</a> and create a free account.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            From your Twilio Console, copy your <strong>Account SID</strong> and <strong>Auth Token</strong>.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            Buy a Twilio phone number (≈$1/mo). This is what workers will see as the sender.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">
+            Open <strong>.env</strong> in your OilManager folder and paste your <strong>TWILIO_ACCOUNT_SID</strong>, <strong>TWILIO_AUTH_TOKEN</strong>, and <strong>TWILIO_PHONE_NUMBER</strong>.
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-text">
+            Run <strong>npm install</strong> then <strong>node server.js</strong> (or use start.bat).
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-text">
+            Add worker phone numbers in <strong>data/workers.json</strong> or from the dashboard.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dispatch Log -->
+    <div class="card" style="flex:1">
+      <div class="card-label">Dispatch History</div>
+      <div class="log-list" id="log-list">
+        <div class="log-empty">No messages sent yet.</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const API = '';  // same origin — served by server.js
+
+let workers  = [];
+let selected = new Set();
+
+// ── Load ───────────────────────────────────────────────────────
+async function loadWorkers() {
+  try {
+    const res = await fetch(API + '/api/workers');
+    workers = await res.json();
+    renderWorkers();
+  } catch {
+    document.getElementById('worker-list').innerHTML =
+      '<div style="color:var(--red);font-size:0.8rem;text-align:center;padding:1rem">Could not load workers — is the server running?</div>';
+  }
+}
+
+async function loadLog() {
+  try {
+    const res = await fetch(API + '/api/sms/log');
+    const log = await res.json();
+    renderLog(log);
+  } catch { /* silent */ }
+}
+
+// ── Workers ────────────────────────────────────────────────────
+function renderWorkers() {
+  const list = document.getElementById('worker-list');
+  if (!workers.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem">No workers found.</div>';
+    return;
+  }
+  list.innerHTML = workers.map(w => `
+    <div class="worker-row ${selected.has(w.id)?'selected':''}" onclick="toggleWorker('${w.id}')">
+      <input type="checkbox" ${selected.has(w.id)?'checked':''} onclick="event.stopPropagation();toggleWorker('${w.id}')">
+      <div class="worker-info">
+        <div class="worker-name">${w.name}</div>
+        <div class="worker-role">${w.role}</div>
+        <div class="worker-site">${w.jobsite}</div>
+      </div>
+      <span class="worker-phone-tag ${w.phone?'has-phone':'no-phone'}">${w.phone?'SMS Ready':'No Number'}</span>
+    </div>
+  `).join('');
+  document.getElementById('selected-count').textContent =
+    selected.size ? `${selected.size} selected` : '';
+}
+
+function toggleWorker(id) {
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  renderWorkers();
+}
+function selectAll()  { workers.forEach(w => selected.add(w.id)); renderWorkers(); }
+function selectNone() { selected.clear(); renderWorkers(); }
+
+// ── Templates ─────────────────────────────────────────────────
+function useTemplate(btn) {
+  document.getElementById('msg-body').value = btn.textContent;
+  updateChar();
+}
+
+function updateChar() {
+  const len = document.getElementById('msg-body').value.length;
+  const el  = document.getElementById('char-count');
+  el.textContent = `${len} / 160`;
+  el.className = 'char-count' + (len > 160 ? ' over' : '');
+}
+
+// ── Boss Phone ────────────────────────────────────────────────
+async function saveBossPhone() {
+  const phone  = document.getElementById('boss-phone').value.trim();
+  const status = document.getElementById('phone-status');
+  if (!phone) { status.className='phone-status err'; status.textContent='Enter a phone number first.'; return; }
+  status.className='phone-status'; status.textContent='Saving…';
+  try {
+    const res  = await fetch(API + '/api/config/boss-phone', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      status.className = 'phone-status ok';
+      status.textContent = '✓ Company phone saved securely on your server.';
+      document.getElementById('boss-phone').value = '';
+    } else {
+      status.className = 'phone-status err';
+      status.textContent = data.error || 'Error saving phone.';
+    }
+  } catch {
+    status.className = 'phone-status err';
+    status.textContent = 'Server not reachable. Is node server.js running?';
+  }
+}
+
+// ── Send SMS ──────────────────────────────────────────────────
+async function sendSMS() {
+  const message = document.getElementById('msg-body').value.trim();
+  const status  = document.getElementById('send-status');
+  if (!message) { status.className='send-status err'; status.textContent='Write a message first.'; return; }
+  if (!selected.size) { status.className='send-status err'; status.textContent='Select at least one worker.'; return; }
+  setSendBusy(true);
+  status.className = 'send-status sending';
+  status.textContent = `Sending to ${selected.size} worker${selected.size>1?'s':''}…`;
+  try {
+    const res  = await fetch(API + '/api/sms/send', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ workerIds: [...selected], message })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      status.className = 'send-status ok';
+      status.textContent = `✓ Sent to ${data.sent} worker${data.sent!==1?'s':''}${data.failed?' — '+data.failed+' failed':''}`;
+      document.getElementById('msg-body').value = '';
+      updateChar();
+      loadLog();
+    } else {
+      status.className = 'send-status err';
+      status.textContent = data.error || 'Send failed.';
+    }
+  } catch {
+    status.className = 'send-status err';
+    status.textContent = 'Server not reachable.';
+  }
+  setSendBusy(false);
+}
+
+async function broadcastSMS() {
+  const message = document.getElementById('msg-body').value.trim();
+  const status  = document.getElementById('send-status');
+  if (!message) { status.className='send-status err'; status.textContent='Write a message first.'; return; }
+  if (!confirm(`Broadcast to ALL ${workers.length} workers?`)) return;
+  setSendBusy(true);
+  status.className = 'send-status sending';
+  status.textContent = `Broadcasting to all ${workers.length} workers…`;
+  try {
+    const res  = await fetch(API + '/api/sms/broadcast', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      status.className = 'send-status ok';
+      status.textContent = `✓ Broadcast sent to ${data.sent} worker${data.sent!==1?'s':''}${data.failed?' — '+data.failed+' failed':''}`;
+      document.getElementById('msg-body').value = '';
+      updateChar();
+      loadLog();
+    } else {
+      status.className = 'send-status err';
+      status.textContent = data.error || 'Broadcast failed.';
+    }
+  } catch {
+    status.className = 'send-status err';
+    status.textContent = 'Server not reachable.';
+  }
+  setSendBusy(false);
+}
+
+function setSendBusy(busy) {
+  document.getElementById('btn-send').disabled = busy;
+  document.getElementById('btn-broadcast').disabled = busy;
+}
+
+// ── Log ───────────────────────────────────────────────────────
+function renderLog(log) {
+  const el = document.getElementById('log-list');
+  if (!log.length) { el.innerHTML = '<div class="log-empty">No messages sent yet.</div>'; return; }
+  el.innerHTML = log.slice(0, 30).map(entry => {
+    const sent   = entry.results.filter(r => r.status === 'sent').length;
+    const failed = entry.results.filter(r => r.status === 'failed').length;
+    const dt     = new Date(entry.timestamp);
+    const label  = failed ? 'partial' : 'ok';
+    const countTxt = failed ? `${sent} sent, ${failed} failed` : `${sent} sent`;
+    return `<div class="log-entry">
+      <div class="log-meta">
+        <span class="log-time">${dt.toLocaleDateString()} ${dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+        <span class="log-count ${label}">${countTxt}</span>
+      </div>
+      <div class="log-msg">${entry.message}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────────
+loadWorkers();
+loadLog();
+</script>
+</body>
+</html>

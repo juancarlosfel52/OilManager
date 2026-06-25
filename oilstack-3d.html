@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OilManager — 3D Stack</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#060810;
+  overflow:hidden;
+  font-family:'Inter',sans-serif;
+}
+canvas{display:block;width:100vw;height:100vh}
+
+/* Layer labels */
+#labels{
+  position:fixed;inset:0;pointer-events:none;
+  z-index:10;
+}
+.layer-label{
+  position:absolute;
+  display:flex;align-items:center;gap:10px;
+  opacity:0;
+  transition:opacity 0.4s;
+}
+.layer-label.visible{opacity:1}
+.label-line{
+  width:60px;height:1px;
+  background:linear-gradient(to right,transparent,rgba(245,166,35,0.8));
+}
+.label-line.right{
+  background:linear-gradient(to left,transparent,rgba(245,166,35,0.8));
+}
+.label-text{
+  font-size:11px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(245,166,35,0.9);
+}
+.label-sub{
+  font-size:10px;color:rgba(200,200,220,0.6);
+  font-weight:400;letter-spacing:0.5px;
+  margin-top:2px;
+}
+
+/* Title overlay */
+#title{
+  position:fixed;top:40px;left:50%;transform:translateX(-50%);
+  text-align:center;z-index:10;pointer-events:none;
+}
+#title h2{
+  font-size:13px;font-weight:700;letter-spacing:4px;
+  text-transform:uppercase;color:rgba(245,166,35,0.7);
+  margin-bottom:4px;
+}
+#title p{
+  font-size:11px;color:rgba(180,185,200,0.5);
+  letter-spacing:2px;text-transform:uppercase;
+}
+
+/* Bottom hint */
+#hint{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:rgba(180,185,200,0.35);
+  letter-spacing:2px;text-transform:uppercase;
+  z-index:10;pointer-events:none;
+}
+
+/* Camera view switcher */
+#cam-switcher{
+  position:fixed;bottom:24px;right:20px;
+  display:flex;flex-direction:column;gap:6px;
+  z-index:20;
+}
+.cam-btn{
+  width:40px;height:40px;
+  background:rgba(10,14,28,0.82);
+  border:1px solid rgba(245,166,35,0.25);
+  border-radius:8px;
+  color:rgba(245,166,35,0.6);
+  font-size:16px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.18s;
+  backdrop-filter:blur(6px);
+  user-select:none;
+}
+.cam-btn:hover{
+  background:rgba(245,166,35,0.12);
+  border-color:rgba(245,166,35,0.7);
+  color:rgba(245,166,35,1);
+  transform:scale(1.08);
+}
+.cam-btn.active{
+  background:rgba(245,166,35,0.18);
+  border-color:#F5A623;
+  color:#F5A623;
+  box-shadow:0 0 10px rgba(245,166,35,0.3);
+}
+.cam-btn.focus-active{
+  background:rgba(0,200,255,0.18);
+  border-color:#00C8FF;
+  color:#00C8FF;
+  box-shadow:0 0 12px rgba(0,200,255,0.4);
+  animation:focus-pulse 1.4s ease-in-out infinite;
+}
+@keyframes focus-pulse{
+  0%,100%{box-shadow:0 0 10px rgba(0,200,255,0.3)}
+  50%{box-shadow:0 0 20px rgba(0,200,255,0.7)}
+}
+
+/* Focus mode cursor */
+body.focus-mode,body.focus-mode *{cursor:none!important}
+#focus-cursor{
+  position:fixed;pointer-events:none;z-index:100;
+  width:36px;height:36px;
+  transform:translate(-50%,-50%);
+  display:none;
+}
+body.focus-mode #focus-cursor{display:block}
+#focus-cursor svg{width:100%;height:100%;filter:drop-shadow(0 0 6px rgba(0,200,255,0.9))}
+
+/* Focus mode banner */
+#focus-banner{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:rgba(0,10,20,0.88);
+  border:1px solid rgba(0,200,255,0.5);
+  border-radius:10px;padding:8px 20px;
+  font-size:11px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:#00C8FF;
+  z-index:50;pointer-events:none;
+  display:none;
+  backdrop-filter:blur(8px);
+  box-shadow:0 0 18px rgba(0,200,255,0.2);
+}
+body.focus-mode #focus-banner{display:block}
+
+/* Focus mode auto-zoom toggle */
+#focus-controls{
+  position:fixed;bottom:24px;left:20px;
+  display:none;flex-direction:column;gap:6px;
+  z-index:20;
+}
+body.focus-mode #focus-controls{display:flex}
+.focus-ctrl-btn{
+  background:rgba(10,14,28,0.82);
+  border:1px solid rgba(0,200,255,0.3);
+  border-radius:8px;color:rgba(0,200,255,0.6);
+  font-size:9px;font-weight:700;letter-spacing:1px;
+  padding:6px 10px;cursor:pointer;
+  text-transform:uppercase;white-space:nowrap;
+  transition:all 0.15s;backdrop-filter:blur(6px);
+}
+.focus-ctrl-btn:hover{border-color:#00C8FF;color:#00C8FF}
+.focus-ctrl-btn.on{background:rgba(0,200,255,0.15);border-color:#00C8FF;color:#00C8FF}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="labels"></div>
+
+<div id="title">
+  <h2>OilManager</h2>
+  <p>Field Operations Platform</p>
+</div>
+
+<div id="hint">Drag to rotate · Scroll to zoom</div>
+
+<div id="cam-switcher">
+  <button class="cam-btn active" id="cv-iso"   title="Isometric (default)" onclick="setCamView('iso')">⬡</button>
+  <button class="cam-btn"        id="cv-top"   title="Top down"            onclick="setCamView('top')">⬆</button>
+  <button class="cam-btn"        id="cv-front" title="Front view"          onclick="setCamView('front')">▣</button>
+  <button class="cam-btn"        id="cv-side"  title="Side view"           onclick="setCamView('side')">◧</button>
+  <button class="cam-btn"        id="cv-focus" title="Focus Mode"          onclick="toggleFocusMode()">👁</button>
+</div>
+
+<!-- Custom eye cursor -->
+<div id="focus-cursor">
+  <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="18" cy="18" r="16" stroke="#00C8FF" stroke-width="1.2" opacity="0.4"/>
+    <ellipse cx="18" cy="18" rx="11" ry="7" stroke="#00C8FF" stroke-width="1.5"/>
+    <circle cx="18" cy="18" r="4" fill="#00C8FF" opacity="0.9"/>
+    <circle cx="18" cy="18" r="1.5" fill="white"/>
+    <line x1="18" y1="2" x2="18" y2="8"  stroke="#00C8FF" stroke-width="1.2"/>
+    <line x1="18" y1="28" x2="18" y2="34" stroke="#00C8FF" stroke-width="1.2"/>
+    <line x1="2"  y1="18" x2="8"  y2="18" stroke="#00C8FF" stroke-width="1.2"/>
+    <line x1="28" y1="18" x2="34" y2="18" stroke="#00C8FF" stroke-width="1.2"/>
+  </svg>
+</div>
+
+<!-- Focus mode banner -->
+<div id="focus-banner">👁 Focus Mode — Click where you want the camera to orbit</div>
+
+<!-- Focus mode controls (bottom-left) -->
+<div id="focus-controls">
+  <button class="focus-ctrl-btn on" id="btn-autozoom" onclick="toggleAutoZoom()">🔍 Auto Zoom: ON</button>
+  <button class="focus-ctrl-btn"    onclick="exitFocusMode()">✕ Exit Focus</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+
+// ── SCENE ──────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const W = window.innerWidth, H = window.innerHeight;
+
+const renderer = new THREE.WebGLRenderer({
+  canvas, antialias:true, alpha:false,
+  powerPreference:'high-performance'
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(W,H);
+renderer.setClearColor(0x060810,1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+
+// Isometric-ish perspective camera
+const camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 200);
+camera.position.set(14, 10, 14);
+camera.lookAt(0, 2, 0);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 8;
+controls.maxDistance = 35;
+controls.maxPolarAngle = Math.PI * 0.58;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.4;
+controls.target.set(0, 2, 0);
+
+// ── BLOOM ──────────────────────────────────────────────────
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+// Half-res bloom — ~4x cheaper, visually identical at this scene complexity
+const bloom = new UnrealBloomPass(new THREE.Vector2(W*0.5, H*0.5), 1.4, 0.7, 0.04);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// FXAA — post-process anti-aliasing (re-enables AA that EffectComposer breaks)
+const fxaa = new ShaderPass(FXAAShader);
+fxaa.material.uniforms['resolution'].value.set(1/(W * renderer.getPixelRatio()), 1/(H * renderer.getPixelRatio()));
+composer.addPass(fxaa);
+
+// ── COLORS ─────────────────────────────────────────────────
+const GOLD   = new THREE.Color(0xF5A623);
+const AMBER  = new THREE.Color(0xE8860A);
+const WHITE  = new THREE.Color(0xFFFFFF);
+const BLUE   = new THREE.Color(0x4488FF);
+const GREEN  = new THREE.Color(0x44FF88);
+const RED    = new THREE.Color(0xFF4444);
+const PLAT   = new THREE.Color(0x1A2040);
+
+// ── LAYER DEFINITIONS ──────────────────────────────────────
+const LAYERS = [
+  { id:0, label:'LAYER 1', name:'GPS Field Data',      color:GOLD,  y:0,    icons:['derrick','truck'] },
+  { id:1, label:'LAYER 2', name:'Worker Management',   color:AMBER, y:2.6,  icons:['hardhat','crew'] },
+  { id:2, label:'LAYER 3', name:'Job Dispatch & Maps', color:WHITE, y:5.2,  icons:['pin','map'] },
+  { id:3, label:'LAYER 4', name:'Time Cards & Hours',  color:BLUE,  y:7.8,  icons:['clock','bars'] },
+  { id:4, label:'LAYER 5', name:'Boss Dashboard',      color:GREEN, y:10.4, icons:['screen','chart'] },
+];
+
+// ── PLATFORM SLABS ─────────────────────────────────────────
+const platformGroup = new THREE.Group();
+scene.add(platformGroup);
+
+const slabW = [8, 7, 6, 5, 4];
+
+function makeSlab(layer, idx) {
+  const w = slabW[idx];
+  const group = new THREE.Group();
+  group.position.y = layer.y;
+
+  // Main slab
+  const geo = new THREE.BoxGeometry(w, 0.25, w * 0.6);
+  const mat = new THREE.MeshStandardMaterial({
+    color: PLAT,
+    emissive: layer.color,
+    emissiveIntensity: 0.04,
+    roughness: 0.7,
+    metalness: 0.4,
+    transparent: true,
+    opacity: 0.82,
+  });
+  const slab = new THREE.Mesh(geo, mat);
+  group.add(slab);
+
+  // Glowing edges
+  const edges = new THREE.EdgesGeometry(geo);
+  const edgeMat = new THREE.LineBasicMaterial({
+    color: layer.color,
+    transparent: true,
+    opacity: 0.9,
+  });
+  const edgeMesh = new THREE.LineSegments(edges, edgeMat);
+  group.add(edgeMesh);
+
+  // Top face glow plane
+  const topGeo = new THREE.PlaneGeometry(w - 0.1, w * 0.6 - 0.1);
+  const topMat = new THREE.MeshBasicMaterial({
+    color: layer.color,
+    transparent: true,
+    opacity: 0.04,
+    side: THREE.DoubleSide,
+  });
+  const topPlane = new THREE.Mesh(topGeo, topMat);
+  topPlane.rotation.x = -Math.PI / 2;
+  topPlane.position.y = 0.13;
+  group.add(topPlane);
+
+  // Pillars (bottom layer only)
+  if (idx === 0) {
+    const pillarGeo = new THREE.BoxGeometry(0.18, 1.5, 0.18);
+    const pillarMat = new THREE.MeshStandardMaterial({
+      color: PLAT, emissive: GOLD, emissiveIntensity: 0.15,
+      roughness: 0.6, metalness: 0.5
+    });
+    const pillarEdges = new THREE.EdgesGeometry(pillarGeo);
+    const pillarEdgeMat = new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.7 });
+    const positions = [
+      [-w/2+0.3, -0.875, -w*0.3+0.3],
+      [w/2-0.3,  -0.875, -w*0.3+0.3],
+      [-w/2+0.3, -0.875,  w*0.3-0.3],
+      [w/2-0.3,  -0.875,  w*0.3-0.3],
+    ];
+    positions.forEach(p => {
+      const m = new THREE.Mesh(pillarGeo, pillarMat);
+      m.position.set(...p);
+      group.add(m);
+      const el = new THREE.LineSegments(pillarEdges, pillarEdgeMat);
+      el.position.set(...p);
+      group.add(el);
+    });
+  }
+
+  return group;
+}
+
+const slabGroups = LAYERS.map((l,i) => {
+  const g = makeSlab(l, i);
+  platformGroup.add(g);
+  return g;
+});
+
+// ── CIRCUIT TRACE LINES ON SLABS ──────────────────────────
+function makeTraceLines(layer, idx) {
+  const w = slabW[idx];
+  const h = w * 0.6;
+  const y = layer.y + 0.14;
+  const col = layer.color;
+
+  const pts = [];
+  // horizontal traces
+  for(let i=0; i<3; i++) {
+    const z = -h/2 + (h/(3)) * i + h/6;
+    pts.push(new THREE.Vector3(-w/2+0.5, y, z));
+    pts.push(new THREE.Vector3( w/2-0.5, y, z));
+  }
+  // vertical traces
+  for(let i=0; i<2; i++) {
+    const x = -w/2 + (w/3) + (w/3)*i;
+    pts.push(new THREE.Vector3(x, y, -h/2+0.5));
+    pts.push(new THREE.Vector3(x, y,  h/2-0.5));
+  }
+
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({
+    color: col, transparent: true, opacity: 0.25
+  });
+  return new THREE.LineSegments(geo, mat);
+}
+
+LAYERS.forEach((l,i) => {
+  const traces = makeTraceLines(l,i);
+  platformGroup.add(traces);
+});
+
+// ── OIL DERRICK (Layer 1) ──────────────────────────────────
+function makeOilDerrick(y) {
+  const g = new THREE.Group();
+  g.position.set(-1.5, y + 0.13, 0);
+
+  // Tower legs
+  const legGeo = new THREE.CylinderGeometry(0.04, 0.12, 1.4, 4);
+  const legMat = new THREE.MeshStandardMaterial({
+    color:0x111520, emissive:GOLD, emissiveIntensity:0.6,
+    roughness:0.3, metalness:0.8
+  });
+  [-0.2,0.2].forEach(xo => {
+    [-0.12,0.12].forEach(zo => {
+      const leg = new THREE.Mesh(legGeo, legMat);
+      leg.position.set(xo, 0.7, zo);
+      g.add(leg);
+    });
+  });
+
+  // Cross braces
+  for(let i=0;i<3;i++){
+    const bGeo = new THREE.CylinderGeometry(0.02,0.02,0.48,4);
+    const b = new THREE.Mesh(bGeo, legMat);
+    b.position.set(0, 0.35+i*0.35, 0);
+    b.rotation.z = Math.PI/2;
+    g.add(b);
+  }
+
+  // Peak
+  const peakGeo = new THREE.ConeGeometry(0.06,0.25,4);
+  const peak = new THREE.Mesh(peakGeo, legMat);
+  peak.position.set(0, 1.52, 0);
+  g.add(peak);
+
+  // Edge glow
+  const wireGeo = new THREE.EdgesGeometry(new THREE.CylinderGeometry(0.06,0.18,1.4,4));
+  const wireMat = new THREE.LineBasicMaterial({color:GOLD, transparent:true, opacity:0.5});
+  const wire = new THREE.LineSegments(wireGeo, wireMat);
+  wire.position.y = 0.7;
+  g.add(wire);
+
+  return g;
+}
+
+platformGroup.add(makeOilDerrick(LAYERS[0].y));
+
+// ── PUMP JACK (Layer 1) ────────────────────────────────────
+function makePumpJack(y) {
+  const g = new THREE.Group();
+  g.position.set(1.8, y + 0.13, -0.3);
+  g.scale.setScalar(0.7);
+
+  const mat = new THREE.MeshStandardMaterial({
+    color:0x111520, emissive:AMBER, emissiveIntensity:0.5,
+    roughness:0.4, metalness:0.7
+  });
+
+  // Base
+  const baseGeo = new THREE.BoxGeometry(0.5,0.15,0.3);
+  g.add(Object.assign(new THREE.Mesh(baseGeo,mat)));
+
+  // Post
+  const postGeo = new THREE.CylinderGeometry(0.05,0.05,0.8,16);
+  const post = new THREE.Mesh(postGeo,mat);
+  post.position.y = 0.47;
+  g.add(post);
+
+  // Beam (animates)
+  const beamGeo = new THREE.BoxGeometry(0.8,0.08,0.08);
+  const beam = new THREE.Mesh(beamGeo,mat);
+  beam.position.set(0, 0.9, 0);
+  beam.userData.isBeam = true;
+  g.add(beam);
+
+  // Horse head
+  const headGeo = new THREE.BoxGeometry(0.18,0.22,0.1);
+  const head = new THREE.Mesh(headGeo,mat);
+  head.position.set(0.4, 0.9, 0);
+  head.userData.isHead = true;
+  g.add(head);
+
+  return g;
+}
+
+const pumpJack = makePumpJack(LAYERS[0].y);
+platformGroup.add(pumpJack);
+
+// ── MAP PIN (Layer 3) ──────────────────────────────────────
+function makeMapPin(y, col) {
+  const g = new THREE.Group();
+  g.position.set(0, y+0.13, 0);
+
+  const mat = new THREE.MeshPhysicalMaterial({
+    color:0x111520, emissive:col, emissiveIntensity:0.9,
+    roughness:0.15, metalness:0.7,
+    clearcoat:1.0, clearcoatRoughness:0.1,
+    reflectivity:0.9,
+  });
+
+  const sphereGeo = new THREE.SphereGeometry(0.22, 32, 32);
+  const sphere = new THREE.Mesh(sphereGeo, mat);
+  sphere.position.y = 0.55;
+  g.add(sphere);
+
+  const coneGeo = new THREE.ConeGeometry(0.1, 0.35, 16);
+  const cone = new THREE.Mesh(coneGeo, mat);
+  cone.position.y = 0.25;
+  cone.rotation.z = Math.PI;
+  g.add(cone);
+
+  // Pulse ring
+  const ringGeo = new THREE.RingGeometry(0.3, 0.38, 48);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color:col, transparent:true, opacity:0.6,
+    side:THREE.DoubleSide
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI/2;
+  ring.position.y = 0.02;
+  ring.userData.isPulseRing = true;
+  g.add(ring);
+
+  return g;
+}
+
+platformGroup.add(makeMapPin(LAYERS[2].y, WHITE));
+
+// ── CLOCK ICON (Layer 4) ───────────────────────────────────
+function makeClock(y) {
+  const g = new THREE.Group();
+  g.position.set(0.5, y+0.13, 0.2);
+  g.scale.setScalar(0.8);
+
+  const mat = new THREE.MeshPhysicalMaterial({
+    color:0x111520, emissive:BLUE, emissiveIntensity:0.7,
+    roughness:0.2, metalness:0.75,
+    clearcoat:0.8, clearcoatRoughness:0.15,
+  });
+
+  const faceGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.08, 48);
+  g.add(new THREE.Mesh(faceGeo,mat));
+
+  const rimGeo = new THREE.TorusGeometry(0.38, 0.04, 16, 64);
+  const rim = new THREE.Mesh(rimGeo, mat);
+  rim.rotation.x = Math.PI/2;
+  rim.position.y = 0.04;
+  g.add(rim);
+
+  // Hour hand
+  const hGeo = new THREE.BoxGeometry(0.04, 0.22, 0.04);
+  const hand = new THREE.Mesh(hGeo, mat);
+  hand.position.set(0, 0.09, 0.05);
+  hand.userData.isHand = true;
+  g.add(hand);
+
+  return g;
+}
+
+platformGroup.add(makeClock(LAYERS[3].y));
+
+// ── BAR CHART (Layer 4) ────────────────────────────────────
+function makeBarChart(y) {
+  const g = new THREE.Group();
+  g.position.set(-1.2, y+0.13, -0.2);
+
+  const heights = [0.4, 0.7, 0.55, 0.85, 0.5];
+  const colors  = [GOLD, AMBER, GOLD, GREEN, AMBER];
+
+  heights.forEach((h,i) => {
+    const barGeo = new THREE.BoxGeometry(0.18, h, 0.18);
+    const mat = new THREE.MeshStandardMaterial({
+      color:0x111520, emissive:colors[i], emissiveIntensity:0.8,
+      roughness:0.3, metalness:0.5
+    });
+    const bar = new THREE.Mesh(barGeo, mat);
+    bar.position.set(-0.45 + i*0.23, h/2, 0);
+    bar.userData.isBar = true;
+    bar.userData.baseH = h;
+    g.add(bar);
+
+    const edgeG = new THREE.EdgesGeometry(barGeo);
+    const el = new THREE.LineSegments(edgeG, new THREE.LineBasicMaterial({
+      color:colors[i], transparent:true, opacity:0.7
+    }));
+    el.position.copy(bar.position);
+    g.add(el);
+  });
+
+  return g;
+}
+
+const barChart = makeBarChart(LAYERS[3].y);
+platformGroup.add(barChart);
+
+// ── DASHBOARD SCREEN (Layer 5) ─────────────────────────────
+function makeDashScreen(y) {
+  const g = new THREE.Group();
+  g.position.set(0.3, y+0.13, 0);
+
+  const mat = new THREE.MeshStandardMaterial({
+    color:0x060D1F, emissive:GREEN, emissiveIntensity:0.12,
+    roughness:0.4, metalness:0.5
+  });
+
+  // Screen frame
+  const frameGeo = new THREE.BoxGeometry(1.6, 0.04, 1.1);
+  g.add(new THREE.Mesh(frameGeo, mat));
+
+  // Screen glow face
+  const screenGeo = new THREE.PlaneGeometry(1.4, 0.9);
+  const screenMat = new THREE.MeshBasicMaterial({
+    color:GREEN, transparent:true, opacity:0.08,
+    side:THREE.DoubleSide
+  });
+  const screen = new THREE.Mesh(screenGeo, screenMat);
+  screen.rotation.x = -Math.PI/2;
+  screen.position.y = 0.03;
+  g.add(screen);
+
+  // Screen edges
+  const screenEdge = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.6, 0.04, 1.1));
+  g.add(new THREE.LineSegments(screenEdge, new THREE.LineBasicMaterial({
+    color:GREEN, transparent:true, opacity:0.9
+  })));
+
+  // Data line rows
+  for(let i=0;i<4;i++) {
+    const rowGeo = new THREE.BoxGeometry(0.9 - i*0.1, 0.02, 0.03);
+    const rowMat = new THREE.MeshBasicMaterial({
+      color:GREEN, transparent:true, opacity:0.5
+    });
+    const row = new THREE.Mesh(rowGeo, rowMat);
+    row.rotation.x = -Math.PI/2;
+    row.position.set(-0.25, 0.04, -0.3 + i*0.18);
+    g.add(row);
+  }
+
+  return g;
+}
+
+platformGroup.add(makeDashScreen(LAYERS[4].y));
+
+// ── VERTICAL CONNECTOR PILLARS ─────────────────────────────
+function makeConnectors() {
+  const g = new THREE.Group();
+  const corners = [[-3.5,-2],[3.5,-2],[-3.5,2],[3.5,2]];
+
+  corners.forEach(([x,z]) => {
+    const totalH = 10.4;
+    const geo = new THREE.CylinderGeometry(0.04,0.04,totalH,6);
+    const mat = new THREE.MeshStandardMaterial({
+      color:0x0A1025, emissive:GOLD, emissiveIntensity:0.2,
+      roughness:0.5, metalness:0.6, transparent:true, opacity:0.5
+    });
+    const rod = new THREE.Mesh(geo, mat);
+    rod.position.set(x, totalH/2, z);
+    g.add(rod);
+
+    // Glow edge
+    const eg = new THREE.EdgesGeometry(geo);
+    const el = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({
+      color:GOLD, transparent:true, opacity:0.3
+    }));
+    el.position.copy(rod.position);
+    g.add(el);
+  });
+
+  return g;
+}
+
+platformGroup.add(makeConnectors());
+
+// ── PARTICLES FLOWING BETWEEN LAYERS ──────────────────────
+const PARTICLE_COUNT = 280;
+const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
+const particleData = [];
+
+// Distribute particles across 4 connector paths
+const paths = [
+  [new THREE.Vector3(-3.5, 0, -2), new THREE.Vector3(-3.5, 10.4, -2)],
+  [new THREE.Vector3( 3.5, 0, -2), new THREE.Vector3( 3.5, 10.4, -2)],
+  [new THREE.Vector3(-3.5, 0,  2), new THREE.Vector3(-3.5, 10.4,  2)],
+  [new THREE.Vector3( 3.5, 0,  2), new THREE.Vector3( 3.5, 10.4,  2)],
+];
+
+for(let i=0; i<PARTICLE_COUNT; i++) {
+  const pathIdx = i % 4;
+  const t = Math.random();
+  const speed = 0.004 + Math.random() * 0.008;
+  particleData.push({ pathIdx, t, speed });
+  const p = paths[pathIdx][0].clone().lerp(paths[pathIdx][1], t);
+  particlePositions[i*3]   = p.x;
+  particlePositions[i*3+1] = p.y;
+  particlePositions[i*3+2] = p.z;
+}
+
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+const particleMat = new THREE.PointsMaterial({
+  color: GOLD,
+  size: 0.06,
+  sizeAttenuation: true,
+  transparent: true,
+  opacity: 0.85,
+});
+const particles = new THREE.Points(particleGeo, particleMat);
+scene.add(particles);
+
+// ── AMBIENT PARTICLES (space dust) ────────────────────────
+const dustCount = 600;
+const dustPos = new Float32Array(dustCount * 3);
+for(let i=0;i<dustCount;i++){
+  dustPos[i*3]   = (Math.random()-0.5)*40;
+  dustPos[i*3+1] = Math.random()*18;
+  dustPos[i*3+2] = (Math.random()-0.5)*40;
+}
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos,3));
+const dustMat = new THREE.PointsMaterial({
+  color:0x8899CC, size:0.04, sizeAttenuation:true,
+  transparent:true, opacity:0.3
+});
+scene.add(new THREE.Points(dustGeo, dustMat));
+
+// ── LIGHTS ─────────────────────────────────────────────────
+const ambient = new THREE.AmbientLight(0x1A2040, 2);
+scene.add(ambient);
+const dirLight = new THREE.DirectionalLight(0xFFEECC, 1.2);
+dirLight.position.set(8, 14, 6);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0x4466FF, 0.6);
+rimLight.position.set(-8, 4, -8);
+scene.add(rimLight);
+
+// Close-range point lights — reveal surface detail when zoomed in
+const ptGold = new THREE.PointLight(0xF5A623, 2.5, 12);
+ptGold.position.set(2, 2, 2);
+scene.add(ptGold);
+const ptBlue = new THREE.PointLight(0x4488FF, 1.8, 14);
+ptBlue.position.set(-3, 8, -2);
+scene.add(ptBlue);
+const ptGreen = new THREE.PointLight(0x44FF88, 1.5, 10);
+ptGreen.position.set(1, 11, 1);
+scene.add(ptGreen);
+
+// ── FOG ────────────────────────────────────────────────────
+scene.fog = new THREE.FogExp2(0x060810, 0.018);
+
+// ── HTML LABELS ────────────────────────────────────────────
+const labelsDiv = document.getElementById('labels');
+const labelEls = [];
+
+LAYERS.forEach((l, i) => {
+  const el = document.createElement('div');
+  el.className = 'layer-label';
+  const side = i % 2 === 0 ? 'left' : 'right';
+
+  if(side === 'left') {
+    el.innerHTML = `
+      <div>
+        <div class="label-text">${l.label} — ${l.name}</div>
+      </div>
+      <div class="label-line"></div>
+    `;
+    el.style.flexDirection = 'row-reverse';
+  } else {
+    el.innerHTML = `
+      <div class="label-line right"></div>
+      <div>
+        <div class="label-text">${l.label} — ${l.name}</div>
+      </div>
+    `;
+  }
+
+  labelsDiv.appendChild(el);
+  labelEls.push({ el, layer:l, side });
+  setTimeout(() => el.classList.add('visible'), 800 + i*200);
+});
+
+// ── LABEL PROJECTION ───────────────────────────────────────
+const v3 = new THREE.Vector3();
+function updateLabels() {
+  labelEls.forEach(({el, layer, side}) => {
+    v3.set(0, layer.y + 0.3, 0);
+    v3.project(camera);
+    const sx = (v3.x * 0.5 + 0.5) * window.innerWidth;
+    const sy = (-v3.y * 0.5 + 0.5) * window.innerHeight;
+    if(side === 'left') {
+      el.style.left  = Math.max(10, sx - 220) + 'px';
+      el.style.right = 'auto';
+    } else {
+      el.style.left  = Math.min(sx + 20, window.innerWidth - 220) + 'px';
+      el.style.right = 'auto';
+    }
+    el.style.top = sy + 'px';
+  });
+}
+
+// ── CACHE ANIMATED OBJECT REFS (eliminates scene.traverse every frame) ────
+const pulseRings = [], clockHands = [], barMeshes = [];
+let beamMesh = null, headMesh = null;
+
+scene.traverse(c => {
+  if (c.userData.isPulseRing) pulseRings.push(c);
+  if (c.userData.isHand)      clockHands.push(c);
+  if (c.userData.isBar)       barMeshes.push(c);
+  if (c.userData.isBeam)      beamMesh = c;
+  if (c.userData.isHead)      headMesh = c;
+});
+
+// ── CLOCK ──────────────────────────────────────────────────
+const clock = new THREE.Clock();
+let _labelFrame = 0; // throttle label DOM updates
+
+// ── ANIMATE ────────────────────────────────────────────────
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t  = clock.elapsedTime;
+
+  controls.update();
+
+  // Layer bob
+  slabGroups.forEach((g, i) => {
+    g.position.y = LAYERS[i].y + Math.sin(t * 0.7 + i * 1.1) * 0.08;
+  });
+
+  // Pump jack beam — cached refs, no traverse
+  if (beamMesh) beamMesh.rotation.z = Math.sin(t * 1.8) * 0.25;
+  if (headMesh) headMesh.position.y = LAYERS[0].y + 0.13 + 0.9 + Math.sin(t * 1.8) * 0.15;
+
+  // Pulse rings
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
+  for (let i = 0; i < pulseRings.length; i++) {
+    pulseRings[i].scale.setScalar(1 + pulse * 0.6);
+    pulseRings[i].material.opacity = 0.6 - pulse * 0.4;
+  }
+
+  // Clock hand
+  for (let i = 0; i < clockHands.length; i++) {
+    clockHands[i].rotation.y = t * 1.5;
+  }
+
+  // Bar chart pulse
+  for (let i = 0; i < barMeshes.length; i++) {
+    barMeshes[i].scale.y = 0.85 + 0.15 * Math.sin(t * 1.2 + barMeshes[i].position.x * 3);
+  }
+
+  // Flowing particles
+  const pos = particleGeo.attributes.position.array;
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const p = particleData[i];
+    p.t += p.speed;
+    if (p.t > 1) p.t = 0;
+    const from = paths[p.pathIdx][0];
+    const to   = paths[p.pathIdx][1];
+    pos[i*3]   = from.x + (to.x - from.x) * p.t;
+    pos[i*3+1] = from.y + (to.y - from.y) * p.t;
+    pos[i*3+2] = from.z + (to.z - from.z) * p.t;
+  }
+  particleGeo.attributes.position.needsUpdate = true;
+
+  // Particle opacity pulse
+  particleMat.opacity = 0.6 + 0.25 * Math.sin(t * 3);
+
+  // Focus dot pulse + burst particles
+  _updateFocusEffects(t);
+
+  // Labels — update every 3 frames (20fps is plenty for static text)
+  if (++_labelFrame % 3 === 0) updateLabels();
+
+  composer.render();
+}
+
+animate();
+
+// ── CAMERA VIEW PRESETS ────────────────────────────────────
+const CAM_VIEWS = {
+  iso:   { pos: new THREE.Vector3( 14,  10,  14), target: new THREE.Vector3(0, 2, 0) },
+  top:   { pos: new THREE.Vector3(  0,  28,   0), target: new THREE.Vector3(0, 5, 0) },
+  front: { pos: new THREE.Vector3(  0,   6,  20), target: new THREE.Vector3(0, 5, 0) },
+  side:  { pos: new THREE.Vector3( 22,   6,   0), target: new THREE.Vector3(0, 5, 0) },
+};
+
+let _camTween = null;
+let _activeCamView = 'iso';
+
+function setCamView(key) {
+  if (_camTween) cancelAnimationFrame(_camTween);
+
+  const view = CAM_VIEWS[key];
+  if (!view) return;
+
+  // Update active button
+  document.querySelectorAll('.cam-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('cv-' + key).classList.add('active');
+  _activeCamView = key;
+
+  // Pause auto-rotate during tween
+  controls.autoRotate = false;
+
+  const startPos    = camera.position.clone();
+  const startTarget = controls.target.clone();
+  const endPos      = view.pos.clone();
+  const endTarget   = view.target.clone();
+  const duration    = 900; // ms
+  const startTime   = performance.now();
+
+  function tween(now) {
+    const raw = Math.min((now - startTime) / duration, 1);
+    // Ease in-out cubic
+    const t = raw < 0.5 ? 4*raw*raw*raw : 1 - Math.pow(-2*raw+2,3)/2;
+
+    camera.position.lerpVectors(startPos, endPos, t);
+    controls.target.lerpVectors(startTarget, endTarget, t);
+    controls.update();
+
+    if (raw < 1) {
+      _camTween = requestAnimationFrame(tween);
+    } else {
+      // Resume auto-rotate only for iso view
+      controls.autoRotate = (key === 'iso');
+    }
+  }
+
+  _camTween = requestAnimationFrame(tween);
+}
+
+// ── FOCUS MODE ────────────────────────────────────────────────────────────
+let _focusActive   = false;
+let _focusAutoZoom = true;
+let _focusDotGroup = null;   // current dot in scene
+let _focusParticles = null;  // burst particles
+let _focusParticleLife = 0;  // countdown timer
+const _raycaster = new THREE.Raycaster();
+const _mouse     = new THREE.Vector2();
+
+// Fallback plane for when ray misses all geometry
+const _focusPlane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+
+// Move custom cursor
+canvas.addEventListener('mousemove', (e) => {
+  const cur = document.getElementById('focus-cursor');
+  cur.style.left = e.clientX + 'px';
+  cur.style.top  = e.clientY + 'px';
+});
+
+function toggleFocusMode() {
+  _focusActive ? exitFocusMode() : enterFocusMode();
+}
+
+function enterFocusMode() {
+  _focusActive = true;
+  document.body.classList.add('focus-mode');
+  document.getElementById('cv-focus').classList.add('focus-active');
+  controls.autoRotate = false;
+}
+
+function exitFocusMode() {
+  _focusActive = false;
+  document.body.classList.remove('focus-mode');
+  document.getElementById('cv-focus').classList.remove('focus-active');
+  // Remove dot
+  if (_focusDotGroup) { scene.remove(_focusDotGroup); _focusDotGroup = null; }
+  if (_focusParticles) { scene.remove(_focusParticles); _focusParticles = null; }
+  // Restore orbit target to center
+  _lerpTarget(new THREE.Vector3(0,5,0), 800);
+}
+
+function toggleAutoZoom() {
+  _focusAutoZoom = !_focusAutoZoom;
+  const btn = document.getElementById('btn-autozoom');
+  btn.textContent = '🔍 Auto Zoom: ' + (_focusAutoZoom ? 'ON' : 'OFF');
+  btn.classList.toggle('on', _focusAutoZoom);
+}
+
+// ── Build focus dot — ring + X mark ──────────────────────────────────────
+function buildFocusDot(pos) {
+  const g = new THREE.Group();
+  g.position.copy(pos);
+
+  const col = new THREE.Color(0x00C8FF);
+
+  // Outer ring
+  const ringGeo = new THREE.RingGeometry(0.18, 0.24, 48);
+  const ringMat = new THREE.MeshBasicMaterial({ color:col, side:THREE.DoubleSide, transparent:true, opacity:0.9 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI/2;
+  g.add(ring);
+
+  // Inner dot
+  const dotGeo = new THREE.CircleGeometry(0.07, 24);
+  const dotMat = new THREE.MeshBasicMaterial({ color:0xFFFFFF, side:THREE.DoubleSide, transparent:true, opacity:0.95 });
+  const dot = new THREE.Mesh(dotGeo, dotMat);
+  dot.rotation.x = -Math.PI/2;
+  dot.position.y = 0.001;
+  g.add(dot);
+
+  // X mark — two crossed lines
+  const xMat = new THREE.LineBasicMaterial({ color:col, transparent:true, opacity:0.95 });
+  const s = 0.13;
+  const xPts1 = [new THREE.Vector3(-s,0.002,-s), new THREE.Vector3(s,0.002,s)];
+  const xPts2 = [new THREE.Vector3( s,0.002,-s), new THREE.Vector3(-s,0.002,s)];
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(xPts1), xMat));
+  g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(xPts2), xMat));
+
+  // Pulse ring (animated)
+  const pulseGeo = new THREE.RingGeometry(0.24, 0.28, 48);
+  const pulseMat = new THREE.MeshBasicMaterial({ color:col, side:THREE.DoubleSide, transparent:true, opacity:0.5 });
+  const pulse = new THREE.Mesh(pulseGeo, pulseMat);
+  pulse.rotation.x = -Math.PI/2;
+  pulse.userData.isFocusPulse = true;
+  g.add(pulse);
+
+  return g;
+}
+
+// ── Burst particle pop ────────────────────────────────────────────────────
+function buildFocusBurst(pos) {
+  const COUNT = 32;
+  const positions = new Float32Array(COUNT * 3);
+  const velocities = [];
+
+  for (let i = 0; i < COUNT; i++) {
+    const angle = (i / COUNT) * Math.PI * 2;
+    const r = 0.05 + Math.random() * 0.08;
+    positions[i*3]   = pos.x;
+    positions[i*3+1] = pos.y + 0.01;
+    positions[i*3+2] = pos.z;
+    velocities.push({
+      vx: Math.cos(angle) * (0.04 + Math.random()*0.06),
+      vy: 0.01 + Math.random() * 0.04,
+      vz: Math.sin(angle) * (0.04 + Math.random()*0.06),
+    });
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({
+    color:0x00C8FF, size:0.06, sizeAttenuation:true,
+    transparent:true, opacity:1.0,
+  });
+  const pts = new THREE.Points(geo, mat);
+  pts.userData.velocities = velocities;
+  pts.userData.life = 1.0;
+  return pts;
+}
+
+// ── Click handler ─────────────────────────────────────────────────────────
+canvas.addEventListener('click', (e) => {
+  if (!_focusActive) return;
+
+  // Normalised device coords
+  const rect = canvas.getBoundingClientRect();
+  _mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  _mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+
+  _raycaster.setFromCamera(_mouse, camera);
+
+  // Try to hit scene geometry
+  const hits = _raycaster.intersectObjects(scene.children, true);
+  let focusPos = null;
+
+  for (const hit of hits) {
+    // Skip the old focus dot and particles
+    if (_focusDotGroup && hit.object.parent === _focusDotGroup) continue;
+    if (_focusParticles && hit.object === _focusParticles) continue;
+    focusPos = hit.point.clone();
+    break;
+  }
+
+  // Fallback: intersect horizontal plane at mid-stack height
+  if (!focusPos) {
+    const plane = new THREE.Plane(new THREE.Vector3(0,1,0), -5);
+    const target = new THREE.Vector3();
+    _raycaster.ray.intersectPlane(plane, target);
+    if (target) focusPos = target.clone();
+  }
+
+  if (!focusPos) return;
+
+  // Remove previous dot + particles
+  if (_focusDotGroup)  { scene.remove(_focusDotGroup);  _focusDotGroup = null; }
+  if (_focusParticles) { scene.remove(_focusParticles); _focusParticles = null; }
+
+  // Plant new dot
+  _focusDotGroup = buildFocusDot(focusPos);
+  scene.add(_focusDotGroup);
+
+  // Burst particles
+  _focusParticles = buildFocusBurst(focusPos);
+  _focusParticles.userData.life = 1.0;
+  scene.add(_focusParticles);
+
+  // Move orbit target to focus point
+  const zoomDist = _focusAutoZoom ? 6 : null;
+  _lerpTarget(focusPos, 700, zoomDist);
+});
+
+// ── Smooth orbit target + optional zoom ──────────────────────────────────
+function _lerpTarget(newTarget, duration, zoomTo) {
+  if (_camTween) cancelAnimationFrame(_camTween);
+  const startTarget = controls.target.clone();
+  const startPos    = camera.position.clone();
+  const endTarget   = newTarget.clone();
+
+  // If auto-zoom: move camera to zoomTo distance from new target
+  let endPos = startPos.clone();
+  if (zoomTo !== null && zoomTo !== undefined) {
+    const dir = startPos.clone().sub(startTarget).normalize();
+    endPos = endTarget.clone().add(dir.multiplyScalar(zoomTo));
+  }
+
+  const startTime = performance.now();
+  function tween(now) {
+    const raw = Math.min((now - startTime) / duration, 1);
+    const t = raw < 0.5 ? 4*raw*raw*raw : 1 - Math.pow(-2*raw+2,3)/2;
+    controls.target.lerpVectors(startTarget, endTarget, t);
+    if (zoomTo !== null && zoomTo !== undefined) {
+      camera.position.lerpVectors(startPos, endPos, t);
+    }
+    controls.update();
+    if (raw < 1) {
+      _camTween = requestAnimationFrame(tween);
+    } else {
+      controls.autoRotate = true;
+    }
+  }
+  _camTween = requestAnimationFrame(tween);
+}
+
+// ── Animate focus dot pulse + burst particles (called from main loop) ────
+function _updateFocusEffects(t) {
+  // Pulse ring scale
+  if (_focusDotGroup) {
+    _focusDotGroup.children.forEach(c => {
+      if (c.userData.isFocusPulse) {
+        const p = 0.5 + 0.5 * Math.sin(t * 3.5);
+        c.scale.setScalar(1 + p * 0.5);
+        c.material.opacity = 0.5 - p * 0.3;
+      }
+    });
+    // Gentle float
+    _focusDotGroup.position.y += Math.sin(t * 2) * 0.0008;
+  }
+
+  // Burst particle physics
+  if (_focusParticles) {
+    const life = _focusParticles.userData.life;
+    if (life > 0) {
+      _focusParticles.userData.life -= 0.025;
+      _focusParticles.material.opacity = Math.max(0, life);
+      const pos = _focusParticles.geometry.attributes.position.array;
+      const vel = _focusParticles.userData.velocities;
+      for (let i = 0; i < vel.length; i++) {
+        pos[i*3]   += vel[i].vx * (life * 0.6);
+        pos[i*3+1] += vel[i].vy * (life * 0.6);
+        pos[i*3+2] += vel[i].vz * (life * 0.6);
+        vel[i].vy  -= 0.001; // gravity
+      }
+      _focusParticles.geometry.attributes.position.needsUpdate = true;
+    } else {
+      scene.remove(_focusParticles);
+      _focusParticles = null;
+    }
+  }
+}
+
+// ── RESIZE ─────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  composer.setSize(w,h);
+  bloom.resolution.set(w*0.5, h*0.5);
+  fxaa.material.uniforms['resolution'].value.set(1/(w * renderer.getPixelRatio()), 1/(h * renderer.getPixelRatio()));
+});
+</script>
+</body>
+</html>

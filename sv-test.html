@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Street View Test</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#060810; }
+  #pano { width:100%; height:100%; }
+</style>
+</head>
+<body>
+<div id="pano"></div>
+<script>
+function init() {
+  new google.maps.StreetViewPanorama(document.getElementById('pano'), {
+    position: { lat: 32.3226, lng: -102.5500 },
+    pov: { heading: 0, pitch: 0 },
+    zoom: 0
+  });
+}
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA_sqNdMATzv9KhfTZz4p8nEFcT7SBzbuk&callback=init"></script>
+</body>
+</html>
