@@ -4,811 +4,360 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OilManager — Boss Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
-<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css">
-<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
-<script src="plss-service.js"></script>
-<script src="glo-service.js"></script>
-<!-- Google Maps loaded on-demand by toggleStreetView() -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+@font-face{
+  font-family:'Maximum Voltage';
+  src:url('Fonts/maximum_voltage/Maximum Voltage.ttf') format('truetype');
+}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --gold:#F5A623;--amber:#E8860A;
-  --dark:#060810;--dark2:#0D1020;--dark3:#141828;
-  --card:#101422;--border:#1E2438;--border2:#2A3050;
-  --text:#E8EAF0;--muted:#6B7280;
-  --green:#4CAF50;--red:#F44336;--blue:#4488FF;
+  --gold:#F5A623;--amber:#c97d10;
+  --dark:#060810;--dark2:#0c1120;--dark3:#111827;
+  --card:#0d1525;--border:rgba(245,166,35,0.12);--border2:rgba(245,166,35,0.22);
+  --text:#eef0f5;--muted:rgba(180,190,210,0.55);
+  --green:#22c55e;--red:#ef4444;--blue:#4a8cff;--orange:#f97316;
 }
-body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
-/* ── TOP NAV ── */
+/* ── TOPBAR ── */
 .topbar{
   background:var(--dark2);border-bottom:1px solid var(--border);
-  padding:0 1.5rem;height:60px;
+  padding:0 1.5rem;height:58px;
   display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:50;flex-shrink:0;
+  position:sticky;top:0;z-index:100;flex-shrink:0;
 }
-.topbar-logo{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px;color:#fff}
+.topbar-logo{font-family:'Maximum Voltage',sans-serif;font-size:1.4rem;letter-spacing:3px;color:#fff}
 .topbar-logo span{color:var(--gold)}
-.topbar-right{display:flex;align-items:center;gap:1rem}
-.topbar-user{font-size:0.82rem;color:var(--muted)}
-.topbar-user strong{color:var(--text)}
+.topbar-center{display:flex;align-items:center;gap:0.4rem}
+.topbar-tab{
+  padding:0.4rem 1rem;border-radius:6px;font-size:0.8rem;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:all 0.2s;border:none;background:transparent;
+  font-family:'Inter',sans-serif;letter-spacing:0.5px;
+}
+.topbar-tab:hover{color:var(--text);background:rgba(255,255,255,0.05)}
+.topbar-tab.active{color:var(--gold);background:rgba(245,166,35,0.1)}
+.topbar-right{display:flex;align-items:center;gap:0.75rem}
+.user-chip{
+  display:flex;align-items:center;gap:0.5rem;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:8px;padding:0.35rem 0.75rem;
+  font-size:0.78rem;color:var(--muted);
+}
+.user-chip strong{color:var(--text)}
+.user-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--amber),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.7rem;font-weight:800;color:#000;
+}
 .btn-logout{
-  background:transparent;border:1px solid var(--border2);
-  color:var(--muted);padding:0.35rem 0.8rem;border-radius:6px;
-  font-size:0.78rem;cursor:pointer;font-family:'Inter',sans-serif;
-  transition:border-color 0.2s,color 0.2s;
+  background:transparent;border:1px solid rgba(239,68,68,0.25);
+  color:rgba(239,68,68,0.6);padding:0.35rem 0.75rem;border-radius:6px;
+  font-size:0.75rem;cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all 0.2s;
 }
 .btn-logout:hover{border-color:var(--red);color:var(--red)}
 
 /* ── LAYOUT ── */
-.layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 60px)}
+.layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 58px)}
 
 /* ── SIDEBAR ── */
 .sidebar{
-  width:220px;flex-shrink:0;
+  width:210px;flex-shrink:0;
   background:var(--dark2);border-right:1px solid var(--border);
-  padding:1.5rem 0;overflow-y:auto;
+  padding:1.2rem 0;overflow-y:auto;
+  display:flex;flex-direction:column;
 }
-.nav-section{margin-bottom:1.5rem}
-.nav-label{
-  font-size:0.68rem;font-weight:700;letter-spacing:2px;
-  text-transform:uppercase;color:var(--muted);
-  padding:0 1.2rem;margin-bottom:0.5rem;
+.nav-group{margin-bottom:1.5rem}
+.nav-group-label{
+  font-size:0.62rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--muted);padding:0 1rem;margin-bottom:0.4rem;
 }
 .nav-item{
-  display:flex;align-items:center;gap:0.7rem;
-  padding:0.65rem 1.2rem;cursor:pointer;
-  font-size:0.875rem;font-weight:500;color:var(--muted);
+  display:flex;align-items:center;gap:0.65rem;
+  padding:0.6rem 1rem;cursor:pointer;
+  font-size:0.82rem;font-weight:500;color:var(--muted);
   transition:all 0.15s;border-left:2px solid transparent;
+  user-select:none;
 }
 .nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
-.nav-item.active{
-  color:var(--gold);background:rgba(245,166,35,0.08);
-  border-left-color:var(--gold);
-}
-.nav-icon{font-size:1rem;width:20px;text-align:center}
+.nav-item.active{color:var(--gold);background:rgba(245,166,35,0.07);border-left-color:var(--gold)}
+.nav-icon{font-size:0.95rem;width:18px;text-align:center;flex-shrink:0}
 .nav-badge{
-  margin-left:auto;background:var(--gold);color:var(--dark);
-  font-size:0.65rem;font-weight:800;
-  padding:0.1rem 0.4rem;border-radius:8px;
+  margin-left:auto;background:var(--gold);color:#000;
+  font-size:0.6rem;font-weight:800;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;
 }
-
-/* ── MAIN ── */
-.main{flex:1;overflow-y:auto;padding:1.5rem}
-
-/* ── STAT CARDS ── */
-.stats-row{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:1rem;margin-bottom:1.5rem;
+.nav-badge.red{background:var(--red);color:#fff}
+.sidebar-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
+.sidebar-plan{
+  font-size:0.7rem;color:var(--muted);text-align:center;
+  background:rgba(245,166,35,0.06);border:1px solid var(--border);
+  border-radius:8px;padding:0.6rem;
 }
+.sidebar-plan strong{color:var(--gold);display:block;margin-bottom:0.2rem}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;overflow-y:auto;background:var(--dark)}
+.panel{display:none;padding:1.5rem;animation:fadeIn 0.2s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PANEL HEADER ── */
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;
+}
+.panel-title{font-family:'Maximum Voltage',sans-serif;font-size:1.5rem;letter-spacing:2px;color:#fff}
+.panel-sub{font-size:0.8rem;color:var(--muted);margin-top:0.2rem}
+
+/* ── STAT CARDS ROW ── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
 .stat-card{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:12px;padding:1.2rem 1.4rem;
-  display:flex;flex-direction:column;gap:0.4rem;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:1.1rem 1.25rem;position:relative;overflow:hidden;
 }
-.stat-card-label{font-size:0.75rem;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.stat-card-val{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:1px}
-.stat-card-sub{font-size:0.75rem;color:var(--muted)}
-.stat-card.gold .stat-card-val{color:var(--gold)}
-.stat-card.green .stat-card-val{color:var(--green)}
-.stat-card.blue .stat-card-val{color:var(--blue)}
-.stat-card.red .stat-card-val{color:var(--red)}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.stat-label{font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem}
+.stat-value{font-family:'Maximum Voltage',sans-serif;font-size:1.8rem;letter-spacing:1px;color:var(--gold)}
+.stat-sub{font-size:0.72rem;color:var(--muted);margin-top:0.2rem}
+.stat-card.green .stat-value{color:var(--green)}
+.stat-card.green::before{background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.stat-card.blue  .stat-value{color:var(--blue)}
+.stat-card.blue::before{background:linear-gradient(90deg,transparent,var(--blue),transparent)}
+.stat-card.red   .stat-value{color:var(--red)}
+.stat-card.red::before{background:linear-gradient(90deg,transparent,var(--red),transparent)}
 
-/* ── TWO COL ── */
-.two-col{display:grid;grid-template-columns:1fr 360px;gap:1rem;margin-bottom:1rem}
-.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+/* ── GRID 2-COL ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 
-/* Google Places search inside map */
-#g-search-wrap{
-  position:absolute;top:12px;right:12px;z-index:25;width:260px;
-}
-#g-search-input{
-  width:100%;padding:9px 12px 9px 32px;
-  background:rgba(6,8,16,0.88);border:1px solid var(--border2);
-  border-radius:8px;color:var(--text);font-size:0.8rem;
-  font-family:'Inter',sans-serif;outline:none;
-  transition:border-color 0.2s;
-}
-#g-search-input:focus{border-color:var(--gold)}
-#g-search-input::placeholder{color:var(--muted)}
-#g-search-icon{
-  position:absolute;left:10px;top:50%;transform:translateY(-50%);
-  color:var(--muted);font-size:0.85rem;pointer-events:none;
-}
-/* Override Google autocomplete dropdown styling */
-.pac-container{
-  background:#101422!important;border:1px solid var(--border2)!important;
-  border-radius:8px!important;margin-top:4px!important;
-  box-shadow:0 8px 24px rgba(0,0,0,0.6)!important;
-  font-family:'Inter',sans-serif!important;
-}
-.pac-item{
-  padding:8px 12px!important;border-top:1px solid var(--border)!important;
-  color:var(--text)!important;font-size:0.8rem!important;cursor:pointer!important;
-}
-.pac-item:first-child{border-top:none!important}
-.pac-item:hover,.pac-item-selected{background:rgba(245,166,35,0.1)!important}
-.pac-item-query{color:var(--gold)!important;font-weight:600!important}
-.pac-matched{color:var(--gold)!important}
-.pac-icon{display:none!important}
-
-/* ── PANEL ── */
-.panel{
+/* ── DATA CARD ── */
+.data-card{
   background:var(--card);border:1px solid var(--border);
   border-radius:12px;overflow:hidden;
 }
-.panel-head{
-  padding:1rem 1.2rem;border-bottom:1px solid var(--border);
+.data-card-head{
   display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 1.25rem;border-bottom:1px solid var(--border);
 }
-.panel-title{font-size:0.9rem;font-weight:700;color:var(--text)}
-.panel-action{
-  font-size:0.78rem;color:var(--gold);cursor:pointer;
-  background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);
-  padding:0.3rem 0.7rem;border-radius:6px;
-  transition:background 0.2s;font-family:'Inter',sans-serif;
-}
-.panel-action:hover{background:rgba(245,166,35,0.2)}
+.data-card-title{font-size:0.85rem;font-weight:700;color:var(--text);letter-spacing:0.5px}
+.data-card-body{padding:0}
 
-/* ── MAP ── */
-.map-area{height:440px;position:relative;overflow:hidden;}
-#mapbox-map{position:absolute;inset:0;width:100%;height:100%}
-/* Street View overlay — sits on top of Mapbox, hidden by default */
-#sv-overlay{
-  position:absolute;top:0;left:0;right:0;bottom:0;
-  width:100%;height:100%;z-index:20;
-  background:#060810;
-  opacity:0;pointer-events:none;
-  transition:opacity 0.4s ease;
+/* ── TABLE ── */
+.table{width:100%;border-collapse:collapse}
+.table th{
+  font-size:0.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);padding:0.65rem 1.25rem;text-align:left;
+  border-bottom:1px solid var(--border);
 }
-#sv-overlay.open{opacity:1;pointer-events:auto;}
-#sv-map{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;}
-#sv-placeholder{
-  position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  color:var(--muted);font-size:0.85rem;gap:0.5rem;pointer-events:none;
-  transition:opacity 0.3s;
+.table td{
+  padding:0.75rem 1.25rem;font-size:0.82rem;color:var(--text);
+  border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle;
 }
-#sv-placeholder .sv-icon{font-size:2.5rem;}
-#sv-back-btn{
-  position:absolute;top:12px;left:12px;z-index:22;
-  background:rgba(6,8,16,0.85);border:1px solid var(--gold);
-  color:var(--gold);padding:6px 14px;border-radius:6px;
-  cursor:pointer;font-size:0.78rem;font-family:'Inter',sans-serif;
-  display:none;align-items:center;gap:6px;transition:background 0.2s;
-}
-#sv-back-btn:hover{background:rgba(245,166,35,0.15);}
-#sv-back-btn.visible{display:flex;}
-#sv-coords{
-  position:absolute;bottom:10px;left:12px;z-index:22;
-  background:rgba(6,8,16,0.8);border:1px solid var(--border2);
-  color:var(--gold);font-size:0.7rem;padding:4px 8px;border-radius:4px;
-  display:none;font-family:'Inter',sans-serif;
-}
-#sv-coords.visible{display:block;}
-.btn-sv{
-  background:transparent;border:1px solid var(--border2);
-  color:var(--muted);padding:0.35rem 0.75rem;border-radius:6px;
-  font-size:0.78rem;cursor:pointer;font-family:'Inter',sans-serif;
-  transition:all 0.2s;white-space:nowrap;
-}
-.btn-sv:hover{color:var(--text);border-color:var(--gold);}
-.btn-sv.active{background:rgba(245,166,35,0.15);color:var(--gold);border-color:var(--gold);}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:rgba(255,255,255,0.02)}
 
-/* ── 3D Camera Orbit Controller ── */
-#cam-ctrl{
-  position:absolute;bottom:50px;right:12px;z-index:25;
-  width:110px;height:110px;
-  pointer-events:auto;
-}
-#cam-sphere{
-  position:absolute;inset:0;
-  border-radius:50%;
-  background:radial-gradient(circle at 40% 35%,rgba(30,36,56,0.95) 0%,rgba(13,16,32,0.95) 100%);
-  border:1.5px solid var(--border2);
-  box-shadow:0 4px 20px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.05);
-}
-#cam-center{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:14px;height:14px;border-radius:50%;
-  background:var(--gold);
-  box-shadow:0 0 8px rgba(245,166,35,0.5);
-  cursor:pointer;z-index:3;transition:transform 0.15s;
-}
-#cam-center:hover{transform:translate(-50%,-50%) scale(1.25)}
-.cam-arrow{
-  position:absolute;z-index:2;
-  width:0;height:0;cursor:pointer;opacity:0.5;
-  transition:opacity 0.15s,filter 0.15s;
-  filter:drop-shadow(0 0 0px transparent);
-}
-.cam-arrow:hover,.cam-arrow.active{
-  opacity:1;filter:drop-shadow(0 0 6px rgba(245,166,35,0.6));
-}
-/* Up */
-.cam-arrow.up{
-  top:8px;left:50%;transform:translateX(-50%);
-  border-left:7px solid transparent;border-right:7px solid transparent;
-  border-bottom:10px solid var(--gold);
-}
-/* Down */
-.cam-arrow.down{
-  bottom:8px;left:50%;transform:translateX(-50%);
-  border-left:7px solid transparent;border-right:7px solid transparent;
-  border-top:10px solid var(--gold);
-}
-/* Left */
-.cam-arrow.left{
-  left:8px;top:50%;transform:translateY(-50%);
-  border-top:7px solid transparent;border-bottom:7px solid transparent;
-  border-right:10px solid var(--gold);
-}
-/* Right */
-.cam-arrow.right{
-  right:8px;top:50%;transform:translateY(-50%);
-  border-top:7px solid transparent;border-bottom:7px solid transparent;
-  border-left:10px solid var(--gold);
-}
-/* Diagonals */
-.cam-arrow.up-left{
-  top:16px;left:16px;
-  border-left:7px solid transparent;border-right:7px solid transparent;
-  border-bottom:10px solid var(--gold);
-  transform:rotate(-45deg);
-}
-.cam-arrow.up-right{
-  top:16px;right:16px;
-  border-left:7px solid transparent;border-right:7px solid transparent;
-  border-bottom:10px solid var(--gold);
-  transform:rotate(45deg);
-}
-.cam-arrow.down-left{
-  bottom:16px;left:16px;
-  border-left:7px solid transparent;border-right:7px solid transparent;
-  border-top:10px solid var(--gold);
-  transform:rotate(45deg);
-}
-.cam-arrow.down-right{
-  bottom:16px;right:16px;
-  border-left:7px solid transparent;border-right:7px solid transparent;
-  border-top:10px solid var(--gold);
-  transform:rotate(-45deg);
-}
-/* Pitch label */
-#cam-pitch-label{
-  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
-  font-size:0.6rem;color:var(--muted);font-family:'Inter',sans-serif;
+/* ── STATUS PILLS ── */
+.pill{
+  font-size:0.68rem;font-weight:700;letter-spacing:1px;
+  padding:0.2rem 0.6rem;border-radius:20px;text-transform:uppercase;
   white-space:nowrap;
 }
+.pill-green{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.2)}
+.pill-yellow{background:rgba(245,166,35,0.12);color:var(--gold);border:1px solid rgba(245,166,35,0.2)}
+.pill-red{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.pill-blue{background:rgba(74,140,255,0.1);color:var(--blue);border:1px solid rgba(74,140,255,0.2)}
+.pill-gray{background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid rgba(255,255,255,0.08)}
 
-/* Mapbox control dark theme */
-.mapboxgl-ctrl-group{
-  background:var(--card)!important;
-  border:1px solid var(--border2)!important;
-  box-shadow:0 4px 16px rgba(0,0,0,0.4)!important;
+/* ── BUTTONS ── */
+.btn{
+  padding:0.5rem 1rem;border-radius:7px;font-size:0.78rem;font-weight:600;
+  font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.5px;
+  transition:all 0.2s;border:none;
 }
-.mapboxgl-ctrl-group button{
-  background:var(--card)!important;
-  border-bottom:1px solid var(--border)!important;
-}
-.mapboxgl-ctrl-group button:hover{background:var(--dark3)!important}
-.mapboxgl-ctrl-icon{filter:invert(1) brightness(0.7)}
-.mapboxgl-ctrl-group button:last-child{border-bottom:none!important}
-.mapboxgl-ctrl-scale{
-  background:rgba(6,8,16,0.8)!important;
-  border:1px solid var(--border2)!important;
-  color:var(--muted)!important;font-size:0.65rem!important;
-  font-family:'Inter',sans-serif!important;
-}
-.mapboxgl-ctrl-fullscreen .mapboxgl-ctrl-icon{filter:invert(1) brightness(0.7)}
-.map-legend{
-  position:absolute;bottom:12px;left:12px;z-index:10;
-  display:flex;gap:0.8rem;
-  background:rgba(6,8,16,0.88);
-  padding:6px 10px;border-radius:6px;
-  border:1px solid var(--border);
-  pointer-events:none;
-}
-.legend-item{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--muted)}
-.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-/* Custom Mapbox marker styles */
-.worker-marker{
-  width:28px;height:28px;border-radius:50%;
-  border:2px solid var(--green);
-  background:rgba(6,8,16,0.9);
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.6rem;font-weight:700;color:var(--green);
-  cursor:pointer;position:relative;
-  box-shadow:0 0 10px rgba(76,175,80,0.5);
-  animation:worker-pulse 2.5s ease-in-out infinite;
-}
-.worker-marker.route{border-color:var(--gold);color:var(--gold);box-shadow:0 0 10px rgba(245,166,35,0.5)}
-.worker-marker.idle{border-color:#6B7280;color:#6B7280;box-shadow:none;animation:none}
-@keyframes worker-pulse{
-  0%,100%{box-shadow:0 0 8px rgba(76,175,80,0.5)}
-  50%{box-shadow:0 0 18px rgba(76,175,80,0.9)}
-}
-.job-marker{
-  cursor:pointer;display:flex;flex-direction:column;align-items:center;
-}
-.job-marker-pin{
-  width:14px;height:14px;border-radius:50%;
-  border:2px solid currentColor;
-  position:relative;
-  animation:pin-ripple 2s ease-out infinite;
-}
-.job-marker-pin::before{
-  content:'';position:absolute;inset:-5px;
-  border-radius:50%;border:1.5px solid currentColor;
-  animation:pin-ripple 2s ease-out infinite;
-  opacity:0;
-}
-.job-marker-label{
-  background:rgba(6,8,16,0.88);
-  border:1px solid rgba(255,255,255,0.15);
-  padding:2px 6px;border-radius:4px;
-  font-size:0.62rem;font-weight:600;
-  white-space:nowrap;margin-top:3px;
-  color:#E8EAF0;
-}
-@keyframes pin-ripple{
-  0%{transform:scale(1);opacity:0.8}
-  100%{transform:scale(2.5);opacity:0}
-}
-.mapboxgl-popup-content{
-  background:rgba(10,14,28,0.95)!important;
-  border:1px solid #2A3050!important;
-  border-radius:8px!important;
-  padding:10px 14px!important;
-  color:#E8EAF0!important;
-  font-family:'Inter',sans-serif!important;
-  font-size:0.8rem!important;
-  box-shadow:0 4px 24px rgba(0,0,0,0.5)!important;
-}
-.mapboxgl-popup-tip{border-top-color:rgba(10,14,28,0.95)!important;border-bottom-color:rgba(10,14,28,0.95)!important}
-.popup-name{font-weight:700;color:#fff;margin-bottom:3px}
-.popup-detail{color:#6B7280;font-size:0.75rem}
-.popup-status{margin-top:5px;font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-.mapboxgl-ctrl-logo{display:none!important}
-.mapboxgl-ctrl-attrib{display:none!important}
+.btn-gold{background:linear-gradient(135deg,var(--amber),var(--gold));color:#000}
+.btn-gold:hover{opacity:0.85;transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text)}
+.btn-outline:hover{background:rgba(245,166,35,0.08);border-color:var(--gold)}
+.btn-red{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:var(--red)}
+.btn-red:hover{background:rgba(239,68,68,0.18)}
+.btn-green{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:var(--green)}
+.btn-green:hover{background:rgba(34,197,94,0.18)}
+.btn-sm{padding:0.3rem 0.7rem;font-size:0.72rem}
 
-/* ── GEOCODER DARK THEME ── */
-#geocoder-container{width:100%}
-.mapboxgl-ctrl-geocoder{
-  min-width:100%!important;width:100%!important;
-  background:var(--dark3)!important;
-  border:1px solid var(--border2)!important;
-  border-radius:8px!important;
-  box-shadow:none!important;
-  font-family:'Inter',sans-serif!important;
-}
-.mapboxgl-ctrl-geocoder:focus-within{border-color:var(--gold)!important}
-.mapboxgl-ctrl-geocoder input{
-  color:var(--text)!important;
-  font-size:0.875rem!important;
-  font-family:'Inter',sans-serif!important;
-  background:transparent!important;
-  padding:8px 40px 8px 36px!important;
-  height:38px!important;
-}
-.mapboxgl-ctrl-geocoder input::placeholder{color:var(--muted)!important}
-.mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--icon{fill:var(--muted)!important}
-.mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--icon-search{top:9px!important}
-.mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--button{
-  background:transparent!important;
-  top:6px!important;right:6px!important;
-}
-.mapboxgl-ctrl-geocoder .mapboxgl-ctrl-geocoder--button svg{fill:var(--muted)!important}
-.mapboxgl-ctrl-geocoder .suggestions{
-  background:var(--card)!important;
-  border:1px solid var(--border2)!important;
-  border-radius:10px!important;
-  box-shadow:0 8px 32px rgba(0,0,0,0.5)!important;
-  overflow:hidden!important;
-  margin-top:4px!important;
-}
-.mapboxgl-ctrl-geocoder .suggestions li{border-bottom:1px solid var(--border)!important}
-.mapboxgl-ctrl-geocoder .suggestions li:last-child{border-bottom:none!important}
-.mapboxgl-ctrl-geocoder .suggestions li a{
-  color:var(--text)!important;
-  background:transparent!important;
-  padding:10px 14px!important;
-  font-size:0.85rem!important;
-  font-family:'Inter',sans-serif!important;
-}
-.mapboxgl-ctrl-geocoder .suggestions li.active a,
-.mapboxgl-ctrl-geocoder .suggestions li a:hover{
-  background:rgba(245,166,35,0.08)!important;
-  color:var(--text)!important;
-}
-.mapboxgl-ctrl-geocoder .suggestions .mapboxgl-ctrl-geocoder--suggestion-title{
-  color:var(--text)!important;font-weight:600!important;
-}
-.mapboxgl-ctrl-geocoder .suggestions .mapboxgl-ctrl-geocoder--suggestion-address{
-  color:var(--muted)!important;font-size:0.75rem!important;
-}
-
-/* ── MAP SEARCH ── */
-.map-search-wrap{
-  position:relative;display:flex;align-items:center;
-  background:var(--dark3);border:1px solid var(--border2);
-  border-radius:8px;overflow:visible;
-  transition:border-color 0.2s;
-}
-.map-search-wrap:focus-within{border-color:var(--gold)}
-.map-search-icon{
-  padding:0 0.6rem 0 0.85rem;
-  font-size:0.85rem;color:var(--muted);pointer-events:none;flex-shrink:0;
-}
-.map-search-input{
-  flex:1;background:transparent;border:none;outline:none;
-  color:var(--text);font-size:0.875rem;font-family:'Inter',sans-serif;
-  padding:0.6rem 0;
-}
-.map-search-input::placeholder{color:var(--muted)}
-.map-search-clear{
-  padding:0 0.85rem;color:var(--muted);cursor:pointer;
-  font-size:0.8rem;display:none;flex-shrink:0;
-  transition:color 0.15s;
-}
-.map-search-clear:hover{color:var(--text)}
-.map-search-clear.visible{display:block}
-.map-search-dropdown{
-  position:absolute;top:calc(100% + 6px);left:0;right:0;
-  background:var(--card);border:1px solid var(--border2);
-  border-radius:10px;z-index:100;
-  box-shadow:0 8px 32px rgba(0,0,0,0.5);
-  overflow:hidden;display:none;
-  max-height:280px;overflow-y:auto;
-}
-.map-search-dropdown.open{display:block}
-.search-section-label{
-  font-size:0.65rem;font-weight:700;letter-spacing:2px;
-  text-transform:uppercase;color:var(--muted);
-  padding:0.6rem 1rem 0.3rem;
-  border-bottom:1px solid var(--border);
-}
-.search-item{
-  display:flex;align-items:center;gap:0.7rem;
-  padding:0.65rem 1rem;cursor:pointer;
-  transition:background 0.12s;
-}
-.search-item:hover,.search-item.focused{background:rgba(245,166,35,0.08)}
-.search-item-icon{
-  width:28px;height:28px;border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.85rem;flex-shrink:0;
-}
-.search-item-text{flex:1;min-width:0}
-.search-item-name{
-  font-size:0.85rem;font-weight:600;color:var(--text);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.search-item-name mark{
-  background:transparent;color:var(--gold);font-weight:700;
-}
-.search-item-sub{font-size:0.72rem;color:var(--muted);margin-top:1px}
-.search-item-badge{
-  font-size:0.62rem;font-weight:700;letter-spacing:0.5px;
-  padding:2px 6px;border-radius:6px;flex-shrink:0;
-  text-transform:uppercase;
-}
-.search-no-results{
-  padding:1.2rem 1rem;text-align:center;
-  font-size:0.82rem;color:var(--muted);
-}
-
-/* ── PLSS LAYER TOGGLE ── */
-.plss-toggle-wrap{
-  display:flex;align-items:center;gap:0.5rem;
-  padding:0 0.5rem;
-  border-left:1px solid var(--border2);
-  margin-left:0.3rem;
-}
-.btn-plss{
-  background:transparent;border:1px solid var(--border2);
-  color:var(--muted);font-size:0.72rem;font-weight:600;
-  padding:0.3rem 0.7rem;border-radius:5px;
-  cursor:pointer;font-family:'Inter',sans-serif;
-  transition:all 0.15s;white-space:nowrap;letter-spacing:0.3px;
-  display:flex;align-items:center;gap:4px;
-}
-.btn-plss:hover{color:var(--text);border-color:var(--gold)}
-.btn-plss.active{background:rgba(245,166,35,0.15);color:var(--gold);border-color:var(--gold)}
-.plss-loading-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--gold);display:none;
-  animation:blink-plss 0.8s ease-in-out infinite;
-}
-.plss-loading-dot.visible{display:inline-block}
-@keyframes blink-plss{0%,100%{opacity:1}50%{opacity:0.2}}
-
-/* ── PLSS INFO POPUP ── */
-.plss-info-popup{
-  position:absolute;
-  background:rgba(10,14,28,0.96);
-  border:1px solid var(--gold);
-  border-radius:10px;padding:0.8rem 1rem;
-  z-index:30;pointer-events:none;
-  min-width:200px;max-width:260px;
-  box-shadow:0 4px 24px rgba(0,0,0,0.6), 0 0 12px rgba(245,166,35,0.15);
-  display:none;
-}
-.plss-info-popup.visible{display:block}
-.plss-info-title{
-  font-size:0.85rem;font-weight:700;color:var(--gold);
-  margin-bottom:0.4rem;display:flex;align-items:center;gap:5px;
-}
-.plss-info-row{
-  font-size:0.75rem;color:var(--muted);
-  display:flex;gap:0.4rem;margin-bottom:2px;line-height:1.5;
-}
-.plss-info-row strong{color:var(--text);font-weight:600}
-.plss-info-badge{
-  display:inline-block;margin-top:0.4rem;
-  font-size:0.62rem;font-weight:700;letter-spacing:1px;
-  padding:2px 7px;border-radius:6px;text-transform:uppercase;
-}
-.plss-badge-nm{background:rgba(68,136,255,0.15);color:var(--blue);border:1px solid rgba(68,136,255,0.3)}
-.plss-badge-tx{background:rgba(245,166,35,0.12);color:var(--gold);border:1px solid rgba(245,166,35,0.25)}
-.plss-badge-none{background:rgba(107,114,128,0.12);color:var(--muted);border:1px solid rgba(107,114,128,0.25)}
-
-/* ── GLO LAYER TOGGLE ── */
-.glo-toggle-wrap{
-  display:flex;align-items:center;gap:0.3rem;
-  padding:0 0.5rem;
-  border-left:1px solid var(--border2);
-  margin-left:0.3rem;
-}
-.btn-glo{
-  background:transparent;border:1px solid var(--border2);
-  color:var(--muted);font-size:0.72rem;font-weight:600;
-  padding:0.3rem 0.65rem;border-radius:5px;
-  cursor:pointer;font-family:'Inter',sans-serif;
-  transition:all 0.15s;white-space:nowrap;letter-spacing:0.3px;
-  display:flex;align-items:center;gap:4px;
-}
-.btn-glo:hover{color:var(--text);border-color:#E8450A}
-.btn-glo.active{background:rgba(232,69,10,0.15);color:#FF6B35;border-color:#E8450A}
-.glo-loading-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:#FF6B35;display:none;
-  animation:blink-plss 0.8s ease-in-out infinite;
-}
-.glo-loading-dot.visible{display:inline-block}
-/* GLO info popup — reuses plss-info-popup base, override border */
-.glo-info-popup{
-  position:absolute;
-  background:rgba(10,14,28,0.97);
-  border:1px solid #E8450A;
-  border-radius:10px;padding:0.8rem 1rem;
-  z-index:31;pointer-events:none;
-  min-width:220px;max-width:290px;
-  box-shadow:0 4px 24px rgba(0,0,0,0.65), 0 0 12px rgba(232,69,10,0.18);
-  display:none;
-}
-.glo-info-popup.visible{display:block}
-.glo-info-title{
-  font-size:0.85rem;font-weight:700;color:#FF6B35;
-  margin-bottom:0.4rem;display:flex;align-items:center;gap:5px;
-}
-.glo-info-row{
-  font-size:0.74rem;color:var(--muted);
-  display:flex;gap:0.4rem;margin-bottom:2px;line-height:1.5;
-}
-.glo-info-row strong{color:var(--text);font-weight:600}
-.glo-badge{
-  display:inline-block;margin-top:0.4rem;
-  font-size:0.62rem;font-weight:700;letter-spacing:1px;
-  padding:2px 7px;border-radius:6px;text-transform:uppercase;
-}
-.glo-badge-lease{background:rgba(232,69,10,0.15);color:#FF6B35;border:1px solid rgba(232,69,10,0.3)}
-.glo-badge-unit{background:rgba(68,136,255,0.15);color:var(--blue);border:1px solid rgba(68,136,255,0.3)}
-.glo-badge-psf{background:rgba(76,175,80,0.15);color:var(--green);border:1px solid rgba(76,175,80,0.3)}
-
-/* Focus mode */
-.btn-glo.focus-on{background:rgba(0,200,255,0.18)!important;border-color:#00C8FF!important;color:#00C8FF!important;
-  box-shadow:0 0 12px rgba(0,200,255,0.35)!important;animation:focus-btn-pulse 1.4s ease-in-out infinite}
-@keyframes focus-btn-pulse{0%,100%{box-shadow:0 0 8px rgba(0,200,255,0.25)}50%{box-shadow:0 0 18px rgba(0,200,255,0.6)}}
-.map-area.focus-mode{cursor:none!important}
-.map-area.focus-mode *{cursor:none!important}
-#focus-eye-cursor{
-  position:absolute;pointer-events:none;z-index:40;
-  width:34px;height:34px;transform:translate(-50%,-50%);
-  display:none;
-}
-.map-area.focus-mode #focus-eye-cursor{display:block}
-
-/* Focus dot marker */
-.focus-dot-marker{
-  width:28px;height:28px;
-  position:relative;cursor:default;
-}
-.focus-dot-inner{
-  position:absolute;inset:0;
-  border:2px solid #00C8FF;border-radius:50%;
-  animation:focus-dot-ring 1.6s ease-in-out infinite;
-}
-.focus-dot-x{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  color:#00C8FF;font-size:14px;font-weight:900;line-height:1;
-}
-.focus-dot-pulse{
-  position:absolute;inset:-6px;
-  border:1.5px solid rgba(0,200,255,0.4);border-radius:50%;
-  animation:focus-dot-ring 1.6s ease-in-out infinite 0.4s;
-}
-@keyframes focus-dot-ring{
-  0%{transform:scale(1);opacity:0.9}
-  50%{transform:scale(1.35);opacity:0.3}
-  100%{transform:scale(1);opacity:0.9}
-}
-/* Burst particles */
-.focus-burst-particle{
-  position:absolute;width:5px;height:5px;border-radius:50%;
-  background:#00C8FF;pointer-events:none;
-  animation:focus-burst 0.7s ease-out forwards;
-}
-@keyframes focus-burst{
-  0%{opacity:1;transform:translate(0,0) scale(1)}
-  100%{opacity:0;transform:var(--tx,translate(20px,-20px)) scale(0)}
-}
-
-/* ── MAP STYLE TOGGLE ── */
-.map-style-toggle{
-  display:flex;gap:3px;
-  background:var(--dark3);
-  border:1px solid var(--border2);
-  border-radius:8px;padding:3px;
-}
-.mst-btn{
-  background:transparent;border:none;
-  color:var(--muted);font-size:0.72rem;font-weight:600;
-  padding:0.3rem 0.6rem;border-radius:5px;
-  cursor:pointer;font-family:'Inter',sans-serif;
-  transition:all 0.15s;white-space:nowrap;letter-spacing:0.3px;
-}
-.mst-btn:hover{color:var(--text);background:rgba(255,255,255,0.05)}
-.mst-btn.active{background:var(--gold);color:var(--dark)}
-
-/* ── WORKER LIST ── */
-.worker-list{padding:0.5rem 0}
-.worker-item{
-  display:flex;align-items:center;gap:0.8rem;
-  padding:0.75rem 1.2rem;
-  border-bottom:1px solid var(--border);
-  transition:background 0.15s;cursor:pointer;
-}
-.worker-item:last-child{border-bottom:none}
-.worker-item:hover{background:rgba(255,255,255,0.02)}
-.worker-avatar{
-  width:34px;height:34px;border-radius:50%;
-  background:var(--dark3);border:2px solid var(--border2);
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.75rem;font-weight:700;color:var(--gold);
-  flex-shrink:0;text-transform:uppercase;
-}
-.worker-info{flex:1;min-width:0}
-.worker-name{font-size:0.85rem;font-weight:600;color:var(--text)}
-.worker-job{font-size:0.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.worker-status{
-  font-size:0.68rem;font-weight:700;letter-spacing:0.5px;
-  padding:3px 8px;border-radius:10px;text-transform:uppercase;flex-shrink:0;
-}
-.status-active{background:rgba(76,175,80,0.15);color:var(--green);border:1px solid rgba(76,175,80,0.3)}
-.status-route{background:rgba(244,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3)}
-.status-idle{background:rgba(107,114,128,0.15);color:var(--muted);border:1px solid rgba(107,114,128,0.3)}
-
-/* ── JOB LIST ── */
-.job-list{padding:0.5rem 0}
-.job-item{
-  padding:0.8rem 1.2rem;border-bottom:1px solid var(--border);
-  cursor:pointer;transition:background 0.15s;
-}
-.job-item:last-child{border-bottom:none}
-.job-item:hover{background:rgba(255,255,255,0.02)}
-.job-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem}
-.job-title{font-size:0.875rem;font-weight:600;color:var(--text)}
-.job-priority{
-  font-size:0.65rem;font-weight:700;letter-spacing:1px;
-  padding:2px 7px;border-radius:8px;text-transform:uppercase;
-}
-.priority-urgent{background:rgba(244,67,54,0.15);color:var(--red);border:1px solid rgba(244,67,54,0.3)}
-.priority-normal{background:rgba(68,136,255,0.12);color:var(--blue);border:1px solid rgba(68,136,255,0.25)}
-.job-row2{display:flex;align-items:center;gap:1rem}
-.job-meta{font-size:0.75rem;color:var(--muted)}
-.job-crew{display:flex;gap:3px}
-.crew-dot{
-  width:20px;height:20px;border-radius:50%;
-  background:var(--dark3);border:1px solid var(--border2);
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.55rem;font-weight:700;color:var(--gold);
-}
-
-/* ── NEW JOB MODAL ── */
-.modal-bg{
+/* ── MODAL OVERLAY ── */
+.modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.7);
-  z-index:200;display:none;align-items:center;justify-content:center;
-  backdrop-filter:blur(4px);
+  backdrop-filter:blur(6px);z-index:1000;
+  display:none;align-items:center;justify-content:center;padding:1.5rem;
 }
-.modal-bg.open{display:flex}
+.modal-overlay.open{display:flex}
 .modal{
-  background:var(--card);border:1px solid var(--border2);
-  border-radius:16px;padding:2rem;width:100%;max-width:440px;
+  background:var(--dark2);border:1px solid var(--border2);
+  border-radius:16px;width:100%;max-width:520px;
   max-height:90vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,0.6);
 }
-.modal-title{font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:1.5rem}
-.modal label{display:block;font-size:0.75rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;margin-top:1rem}
-.modal label:first-of-type{margin-top:0}
-.modal input,.modal textarea,.modal select{
-  width:100%;padding:0.7rem 0.9rem;
-  background:var(--dark3);border:1px solid var(--border2);
-  border-radius:8px;color:var(--text);font-size:0.9rem;
-  font-family:'Inter',sans-serif;outline:none;
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);
+}
+.modal-title{font-size:1rem;font-weight:700;color:#fff}
+.modal-close{
+  width:28px;height:28px;border-radius:6px;border:none;
+  background:rgba(255,255,255,0.06);color:var(--muted);
+  cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+}
+.modal-close:hover{background:rgba(239,68,68,0.15);color:var(--red)}
+.modal-body{padding:1.5rem}
+.modal-footer{
+  display:flex;gap:0.75rem;justify-content:flex-end;
+  padding:1rem 1.5rem;border-top:1px solid var(--border);
+}
+
+/* ── FORM ELEMENTS ── */
+.field{margin-bottom:1rem}
+.field label{
+  display:block;font-size:0.7rem;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;
+}
+.field input,.field select,.field textarea{
+  width:100%;padding:0.65rem 0.9rem;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(245,166,35,0.15);border-radius:8px;
+  color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;
+  outline:none;transition:border-color 0.2s,background 0.2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--gold);background:rgba(245,166,35,0.04);
+}
+.field input::placeholder,.field textarea::placeholder{color:rgba(180,190,210,0.3)}
+.field select option{background:var(--dark2)}
+.field textarea{resize:vertical;min-height:80px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem}
+
+/* ── WORKER CARD ── */
+.worker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.worker-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:1.1rem;display:flex;flex-direction:column;gap:0.5rem;
   transition:border-color 0.2s;
 }
-.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--gold)}
-.modal textarea{resize:vertical;min-height:80px}
-.modal select option{background:var(--dark3)}
-.modal-btns{display:flex;gap:0.8rem;margin-top:1.5rem}
-.btn-cancel{
-  flex:1;padding:0.7rem;background:transparent;
-  border:1px solid var(--border2);border-radius:8px;
-  color:var(--muted);font-size:0.875rem;cursor:pointer;
-  font-family:'Inter',sans-serif;transition:border-color 0.2s;
+.worker-card:hover{border-color:var(--border2)}
+.worker-card-head{display:flex;align-items:center;gap:0.75rem}
+.worker-avatar{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#1a3a6a,#2563eb);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.78rem;font-weight:700;color:#fff;
 }
-.btn-cancel:hover{border-color:var(--text)}
-.btn-create{
-  flex:2;padding:0.7rem;background:var(--gold);
-  border:none;border-radius:8px;
-  color:var(--dark);font-size:0.875rem;font-weight:700;
-  cursor:pointer;font-family:'Inter',sans-serif;transition:background 0.2s;
-}
-.btn-create:hover{background:var(--amber)}
+.worker-name{font-size:0.9rem;font-weight:700;color:var(--text)}
+.worker-role{font-size:0.72rem;color:var(--muted)}
+.worker-meta{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem}
+.worker-actions{display:flex;gap:0.5rem;margin-top:0.5rem}
 
-/* ── TIME CARDS ── */
-.tc-list{padding:0.5rem 0}
-.tc-item{
-  display:flex;align-items:center;gap:0.8rem;
-  padding:0.7rem 1.2rem;border-bottom:1px solid var(--border);
+/* ── JOB CARD ── */
+.job-list{display:flex;flex-direction:column;gap:0.75rem}
+.job-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;
+  transition:border-color 0.2s;
 }
-.tc-item:last-child{border-bottom:none}
-.tc-name{flex:1;font-size:0.85rem;font-weight:600;color:var(--text)}
-.tc-hours{font-size:0.85rem;color:var(--gold);font-weight:700;margin-right:0.5rem}
-.tc-date{font-size:0.75rem;color:var(--muted);margin-right:auto}
-.tc-approve{
-  background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);
-  color:var(--green);padding:4px 10px;border-radius:6px;
-  font-size:0.72rem;font-weight:700;cursor:pointer;
-  font-family:'Inter',sans-serif;transition:background 0.2s;
-}
-.tc-approve:hover{background:rgba(76,175,80,0.25)}
-.tc-approved{
-  background:rgba(107,114,128,0.1);border:1px solid var(--border);
-  color:var(--muted);padding:4px 10px;border-radius:6px;
-  font-size:0.72rem;font-weight:600;
-}
+.job-card:hover{border-color:var(--border2)}
+.job-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.job-info{flex:1;min-width:0}
+.job-name{font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:0.2rem}
+.job-meta{font-size:0.75rem;color:var(--muted)}
+.job-actions{display:flex;gap:0.5rem;flex-shrink:0}
 
-/* ── PAGE TITLE ── */
-.page-title{
-  font-family:'Bebas Neue',sans-serif;font-size:1.8rem;
-  letter-spacing:1px;color:#fff;margin-bottom:1.2rem;
+/* ── TIME CARD ROW ── */
+.tc-row{display:flex;align-items:center;gap:1rem;padding:0.85rem 1.25rem;border-bottom:1px solid var(--border)}
+.tc-row:last-child{border-bottom:none}
+.tc-worker{flex:1;font-size:0.85rem;font-weight:600;color:var(--text)}
+.tc-detail{font-size:0.75rem;color:var(--muted);margin-top:0.15rem}
+.tc-hours{font-size:1rem;font-weight:700;color:var(--gold);min-width:50px;text-align:right}
+.tc-actions{display:flex;gap:0.5rem}
+
+/* ── ACTIVITY FEED ── */
+.activity-list{padding:0}
+.activity-item{
+  display:flex;align-items:flex-start;gap:0.85rem;
+  padding:0.85rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.04);
 }
-.page-title span{color:var(--gold)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;
+}
+.activity-text{font-size:0.8rem;color:var(--muted);line-height:1.5}
+.activity-text strong{color:var(--text)}
+.activity-time{font-size:0.7rem;color:rgba(180,190,210,0.35);margin-top:2px}
+
+/* ── EMPTY STATE ── */
+.empty{
+  text-align:center;padding:3rem 1.5rem;color:var(--muted);
+}
+.empty-icon{font-size:2.5rem;margin-bottom:0.75rem;opacity:0.4}
+.empty-title{font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:0.4rem}
+.empty-sub{font-size:0.8rem;line-height:1.6}
+
+/* ── SEARCH ── */
+.search-bar{
+  display:flex;align-items:center;gap:0.5rem;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:8px;
+  padding:0.5rem 0.85rem;
+}
+.search-bar input{
+  background:none;border:none;color:var(--text);
+  font-family:'Inter',sans-serif;font-size:0.85rem;
+  outline:none;flex:1;min-width:0;
+}
+.search-bar input::placeholder{color:var(--muted)}
+
+/* ── SMS QUICK SEND ── */
+.sms-quick{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;
+}
+.sms-textarea{
+  width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(245,166,35,0.15);
+  border-radius:8px;padding:0.75rem;color:var(--text);
+  font-family:'Inter',sans-serif;font-size:0.85rem;resize:none;outline:none;
+  min-height:80px;transition:border-color 0.2s;
+}
+.sms-textarea:focus{border-color:var(--gold)}
+
+/* ── NOTIFICATIONS DOT ── */
+.notif-dot{
+  width:7px;height:7px;background:var(--red);border-radius:50%;
+  position:absolute;top:2px;right:2px;
+}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
+<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-logo">Oil<span>Manager</span></div>
+  <div class="topbar-center">
+    <button class="topbar-tab active" onclick="showPanel('overview')">Overview</button>
+    <button class="topbar-tab" onclick="showPanel('workers')">Workers</button>
+    <button class="topbar-tab" onclick="showPanel('jobs')">Jobs</button>
+    <button class="topbar-tab" onclick="showPanel('timecards')">Time Cards</button>
+    <button class="topbar-tab" onclick="showPanel('sms')">SMS</button>
+    <button class="topbar-tab" onclick="showPanel('settings')">Settings</button>
+  </div>
   <div class="topbar-right">
-    <div class="topbar-user">Signed in as <strong>Carlos Reyes</strong> · Supervisor</div>
-    <button class="btn-logout" onclick="window.location.href='login.html'">Log Out</button>
+    <div class="user-chip">
+      <div class="user-avatar" id="user-initials">–</div>
+      <strong id="user-name">Loading…</strong>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Log Out</button>
   </div>
 </div>
 
@@ -816,1941 +365,821 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="nav-section">
-      <div class="nav-label">Operations</div>
-      <div class="nav-item active"><span class="nav-icon">🗺</span> Dashboard</div>
-      <div class="nav-item"><span class="nav-icon">📍</span> Jobs <span class="nav-badge">3</span></div>
-      <div class="nav-item"><span class="nav-icon">👷</span> Workers</div>
-      <div class="nav-item"><span class="nav-icon">⏱</span> Time Cards <span class="nav-badge">4</span></div>
+    <div class="nav-group">
+      <div class="nav-group-label">Operations</div>
+      <div class="nav-item active" onclick="showPanel('overview')"><span class="nav-icon">📊</span> Overview</div>
+      <div class="nav-item" onclick="showPanel('workers')"><span class="nav-icon">👷</span> Workers <span class="nav-badge" id="badge-workers">0</span></div>
+      <div class="nav-item" onclick="showPanel('jobs')"><span class="nav-icon">📍</span> Jobs <span class="nav-badge" id="badge-jobs">0</span></div>
+      <div class="nav-item" onclick="showPanel('timecards')"><span class="nav-icon">⏱</span> Time Cards <span class="nav-badge red" id="badge-tc">0</span></div>
     </div>
-    <div class="nav-section">
-      <div class="nav-label">Field</div>
+    <div class="nav-group">
+      <div class="nav-group-label">Communication</div>
+      <div class="nav-item" onclick="showPanel('sms')"><span class="nav-icon">💬</span> SMS Dispatch</div>
       <div class="nav-item" onclick="window.location.href='route-recorder.html'"><span class="nav-icon">🗺</span> Lease Roads</div>
-      <div class="nav-item"><span class="nav-icon">🚛</span> Equipment</div>
-      <div class="nav-item"><span class="nav-icon">📋</span> Field Reports</div>
     </div>
-    <div class="nav-section">
-      <div class="nav-label">Reports</div>
-      <div class="nav-item"><span class="nav-icon">📊</span> Payroll Export</div>
-      <div class="nav-item"><span class="nav-icon">⚙</span> Settings</div>
+    <div class="nav-group">
+      <div class="nav-group-label">Admin</div>
+      <div class="nav-item" onclick="showPanel('payroll')"><span class="nav-icon">💵</span> Payroll Export</div>
+      <div class="nav-item" onclick="showPanel('settings')"><span class="nav-icon">⚙</span> Settings</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-plan">
+        <strong>Starter Plan</strong>
+        <span id="sidebar-company">OilManager</span>
+      </div>
     </div>
   </div>
 
   <!-- MAIN -->
   <div class="main">
-    <div class="page-title">Operations <span>Dashboard</span></div>
 
-    <!-- STAT CARDS -->
-    <div class="stats-row">
-      <div class="stat-card green">
-        <div class="stat-card-label">Clocked In</div>
-        <div class="stat-card-val">6</div>
-        <div class="stat-card-sub">of 9 workers active</div>
+    <!-- ══ OVERVIEW ══ -->
+    <div class="panel active" id="panel-overview">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Dashboard</div>
+          <div class="panel-sub" id="overview-greeting">Good morning, Boss</div>
+        </div>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-outline" onclick="showPanel('workers');openModal('modal-add-worker')">+ Add Worker</button>
+          <button class="btn btn-gold" onclick="showPanel('jobs');openModal('modal-add-job')">+ New Job</button>
+        </div>
       </div>
-      <div class="stat-card gold">
-        <div class="stat-card-label">Open Jobs</div>
-        <div class="stat-card-val">3</div>
-        <div class="stat-card-sub">2 in progress</div>
+
+      <!-- Stat row -->
+      <div class="stat-row">
+        <div class="stat-card green">
+          <div class="stat-label">Active Workers</div>
+          <div class="stat-value" id="stat-workers">0</div>
+          <div class="stat-sub">on your roster</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open Jobs</div>
+          <div class="stat-value" id="stat-jobs">0</div>
+          <div class="stat-sub">in progress</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Pending Approvals</div>
+          <div class="stat-value" id="stat-tc">0</div>
+          <div class="stat-sub">time cards</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">SMS Sent Today</div>
+          <div class="stat-value" id="stat-sms">0</div>
+          <div class="stat-sub">messages</div>
+        </div>
       </div>
-      <div class="stat-card blue">
-        <div class="stat-card-label">Today's Hours</div>
-        <div class="stat-card-val">47.5</div>
-        <div class="stat-card-sub">across all workers</div>
+
+      <div class="grid-2">
+        <!-- Recent Jobs -->
+        <div class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-title">Active Jobs</div>
+            <button class="btn btn-outline btn-sm" onclick="showPanel('jobs')">View All</button>
+          </div>
+          <div class="data-card-body" id="overview-jobs-list">
+            <div class="empty"><div class="empty-icon">📍</div><div class="empty-title">No jobs yet</div><div class="empty-sub">Create your first job to get started.</div></div>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-title">Recent Activity</div>
+          </div>
+          <div class="data-card-body">
+            <div class="activity-list" id="activity-feed">
+              <div class="empty" style="padding:2rem"><div class="empty-icon">⚡</div><div class="empty-title">No activity yet</div></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="stat-card red">
-        <div class="stat-card-label">Pending Approvals</div>
-        <div class="stat-card-val">4</div>
-        <div class="stat-card-sub">time cards waiting</div>
+
+      <!-- Pending Time Cards Preview -->
+      <div class="data-card">
+        <div class="data-card-head">
+          <div class="data-card-title">Pending Time Cards</div>
+          <button class="btn btn-outline btn-sm" onclick="showPanel('timecards')">View All</button>
+        </div>
+        <div class="data-card-body" id="overview-tc-list">
+          <div class="empty"><div class="empty-icon">⏱</div><div class="empty-title">No pending time cards</div></div>
+        </div>
       </div>
     </div>
 
-    <!-- MAP (FULL WIDTH) -->
-    <div style="margin-bottom:1rem">
-
-      <!-- MAP -->
-      <div class="panel">
-        <div class="panel-head" style="flex-direction:column;align-items:stretch;gap:0.7rem">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div class="panel-title">Live Field Map — Andrews County</div>
-            <button class="panel-action" onclick="openModal()">+ New Job</button>
-          </div>
-          <!-- ROW: INTERNAL SEARCH + GEOCODER -->
-          <div style="display:flex;gap:0.6rem;align-items:flex-start">
-            <!-- Internal search: jobs/workers/leases -->
-            <div class="map-search-wrap" id="map-search-wrap" style="flex:1">
-              <span class="map-search-icon">👷</span>
-              <input
-                type="text"
-                id="map-search-input"
-                class="map-search-input"
-                placeholder="Search jobs, workers, leases..."
-                autocomplete="off"
-                oninput="handleSearch(this.value)"
-                onkeydown="handleSearchKey(event)"
-              >
-              <span class="map-search-clear" id="map-search-clear" onclick="clearSearch()">✕</span>
-              <div class="map-search-dropdown" id="map-search-dropdown"></div>
-            </div>
-            <!-- Mapbox geocoder: real world addresses -->
-            <div id="geocoder-container" style="flex:1"></div>
-          </div>
-          <div style="display:flex;gap:0.5rem;align-items:center">
-            <div class="map-style-toggle">
-              <button class="mst-btn active" onclick="setMapStyle('night',this)" title="Night">🌙 Night</button>
-              <button class="mst-btn" onclick="setMapStyle('satellite',this)" title="Satellite">🛰 Satellite</button>
-              <button class="mst-btn" onclick="setMapStyle('streets',this)" title="Streets">🗺 Streets</button>
-              <button class="mst-btn" onclick="setMapStyle('terrain',this)" title="Terrain">🏔 Terrain</button>
-              <button class="mst-btn" onclick="setMapStyle('dark',this)" title="Dark">⬛ Dark</button>
-            </div>
-            <!-- PLSS LAND GRID TOGGLE -->
-            <div class="plss-toggle-wrap">
-              <button class="btn-plss" id="btn-plss" onclick="togglePLSS()" title="PLSS / Land Grid — Section & Township lines">
-                🗂 Land Grid
-                <span class="plss-loading-dot" id="plss-dot"></span>
-              </button>
-            </div>
-            <!-- GLO LEASES TOGGLE -->
-            <div class="glo-toggle-wrap">
-              <button class="btn-glo" id="btn-glo" onclick="toggleGLO()" title="Texas GLO — Active O&G Leases, Units, PSF Lands">
-                🛢 GLO Leases
-                <span class="glo-loading-dot" id="glo-dot"></span>
-              </button>
-            </div>
-            <!-- LOCAL GAS UNITS -->
-            <div class="glo-toggle-wrap">
-              <button class="btn-glo" id="btn-local-units" onclick="toggleLocalUnits()" title="Local O&G Units — downloaded GeoJSON">
-                ⛽ Gas Units
-                <span class="glo-loading-dot" id="local-units-dot"></span>
-              </button>
-            </div>
-            <!-- STREET VIEW -->
-            <div class="glo-toggle-wrap">
-              <button class="btn-sv" id="btn-sv" onclick="toggleStreetView()" title="Google Street View — click map to look around">
-                🌐 Street View
-              </button>
-            </div>
-            <!-- FOCUS MODE -->
-            <div class="glo-toggle-wrap">
-              <button class="btn-glo" id="btn-focus" onclick="toggleFocusMode()" title="Focus Mode — click a point to orbit around it">
-                👁 Focus
-              </button>
-            </div>
-          </div>
+    <!-- ══ WORKERS ══ -->
+    <div class="panel" id="panel-workers">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Workers</div>
+          <div class="panel-sub">Manage your field crew roster</div>
         </div>
-        <div class="map-area" id="map-area">
-          <div id="mapbox-map"></div>
-          <!-- 3D CAMERA CONTROLLER -->
-          <div id="cam-ctrl">
-            <div id="cam-sphere">
-              <div class="cam-arrow up" data-dir="up"></div>
-              <div class="cam-arrow down" data-dir="down"></div>
-              <div class="cam-arrow left" data-dir="left"></div>
-              <div class="cam-arrow right" data-dir="right"></div>
-              <div class="cam-arrow up-left" data-dir="up-left"></div>
-              <div class="cam-arrow up-right" data-dir="up-right"></div>
-              <div class="cam-arrow down-left" data-dir="down-left"></div>
-              <div class="cam-arrow down-right" data-dir="down-right"></div>
-              <div id="cam-center" title="Reset camera"></div>
-            </div>
-            <div id="cam-pitch-label">55°</div>
-          </div>
-          <!-- GOOGLE PLACES SEARCH -->
-          <div id="g-search-wrap">
-            <span id="g-search-icon">🔍</span>
-            <input type="text" id="g-search-input" placeholder="Street View address...">
-          </div>
-          <!-- STREET VIEW OVERLAY -->
-          <div id="sv-overlay">
-            <div id="sv-map"></div>
-            <div id="sv-placeholder">
-              <div class="sv-icon">📍</div>
-              <div>Click anywhere on the map to drop into Street View</div>
-            </div>
-            <button id="sv-back-btn" onclick="toggleStreetView()">← Back to Map</button>
-            <div id="sv-coords"></div>
-          </div>
-          <!-- Eye cursor for focus mode -->
-          <div id="focus-eye-cursor">
-            <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="17" cy="17" r="15" stroke="#00C8FF" stroke-width="1" opacity="0.35"/>
-              <ellipse cx="17" cy="17" rx="10" ry="6.5" stroke="#00C8FF" stroke-width="1.5"/>
-              <circle cx="17" cy="17" r="3.5" fill="#00C8FF" opacity="0.95"/>
-              <circle cx="17" cy="17" r="1.4" fill="white"/>
-              <line x1="17" y1="2"  x2="17" y2="7"  stroke="#00C8FF" stroke-width="1.2"/>
-              <line x1="17" y1="27" x2="17" y2="32" stroke="#00C8FF" stroke-width="1.2"/>
-              <line x1="2"  y1="17" x2="7"  y2="17" stroke="#00C8FF" stroke-width="1.2"/>
-              <line x1="27" y1="17" x2="32" y2="17" stroke="#00C8FF" stroke-width="1.2"/>
-            </svg>
-          </div>
-          <!-- PLSS INFO POPUP -->
-          <div class="plss-info-popup" id="plss-info-popup"></div>
-          <!-- GLO INFO POPUP -->
-          <div class="glo-info-popup" id="glo-info-popup"></div>
-          <!-- FOCUS BANNER -->
-          <div id="focus-banner" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);
-            background:rgba(0,10,20,0.9);border:1px solid rgba(0,200,255,0.5);border-radius:8px;
-            padding:6px 16px;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
-            color:#00C8FF;z-index:30;pointer-events:none;white-space:nowrap;
-            box-shadow:0 0 16px rgba(0,200,255,0.2)">
-            👁 Focus Mode — Click anywhere on the map to lock orbit
-          </div>
-          <!-- FOCUS CONTROLS -->
-          <div id="focus-controls" style="display:none;position:absolute;bottom:48px;left:12px;
-            display:none;flex-direction:column;gap:5px;z-index:30">
-            <button onclick="toggleFocusAutoZoom()" id="btn-focus-zoom"
-              style="background:rgba(0,10,20,0.88);border:1px solid rgba(0,200,255,0.4);
-              border-radius:6px;color:#00C8FF;font-size:10px;font-weight:700;letter-spacing:1px;
-              padding:5px 10px;cursor:pointer;text-transform:uppercase;white-space:nowrap;font-family:'Inter',sans-serif">
-              🔍 Auto Zoom: ON
-            </button>
-            <button onclick="exitFocusMode()"
-              style="background:rgba(0,10,20,0.88);border:1px solid rgba(0,200,255,0.3);
-              border-radius:6px;color:rgba(0,200,255,0.7);font-size:10px;font-weight:700;letter-spacing:1px;
-              padding:5px 10px;cursor:pointer;text-transform:uppercase;font-family:'Inter',sans-serif">
-              ✕ Exit Focus
-            </button>
-          </div>
-          <div class="map-legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#F44336"></div> Urgent Job</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#F5A623"></div> Active Job</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#4488FF"></div> Pending Job</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#4CAF50"></div> Worker</div>
-            <div class="legend-item" id="legend-glo" style="display:none">
-              <div class="legend-dot" style="background:#FF6B35"></div> GLO Lease
-            </div>
-            <div class="legend-item" id="legend-psf" style="display:none">
-              <div class="legend-dot" style="background:#4CAF50;border:1px solid #4CAF50"></div> PSF Land
-            </div>
-          </div>
-        </div>
+        <button class="btn btn-gold" onclick="openModal('modal-add-worker')">+ Add Worker</button>
       </div>
 
+      <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap">
+        <div class="search-bar" style="flex:1;min-width:200px">
+          <span style="color:var(--muted);font-size:0.85rem">🔍</span>
+          <input type="text" placeholder="Search workers…" oninput="filterWorkers(this.value)" id="worker-search">
+        </div>
+        <button class="btn btn-outline" onclick="openModal('modal-add-worker')">+ Add Worker</button>
+      </div>
+
+      <div class="worker-grid" id="workers-grid">
+        <div class="empty" style="grid-column:1/-1"><div class="empty-icon">👷</div><div class="empty-title">No workers yet</div><div class="empty-sub">Add your first crew member to get started.</div></div>
+      </div>
     </div>
 
-    <!-- JOBS + TIMECARDS + CREW -->
-    <div class="three-col">
-
-      <!-- ACTIVE JOBS -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title">Active Jobs</div>
-          <button class="panel-action" onclick="openModal()">+ New Job</button>
+    <!-- ══ JOBS ══ -->
+    <div class="panel" id="panel-jobs">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Jobs</div>
+          <div class="panel-sub">Assign, track and manage field jobs</div>
         </div>
-        <div class="job-list">
-          <div class="job-item">
-            <div class="job-row1">
-              <div class="job-title">Pump Unit 14 — Wellbore Inspection</div>
-              <div class="job-priority priority-urgent">Urgent</div>
-            </div>
-            <div class="job-row2">
-              <div class="job-meta">📍 Lea County · 2 workers</div>
-              <div class="job-crew">
-                <div class="crew-dot">JR</div>
-                <div class="crew-dot">EL</div>
-              </div>
-            </div>
-          </div>
-          <div class="job-item">
-            <div class="job-row1">
-              <div class="job-title">Lease Road 22 — Equipment Check</div>
-              <div class="job-priority priority-normal">Normal</div>
-            </div>
-            <div class="job-row2">
-              <div class="job-meta">📍 Andrews County · 1 worker</div>
-              <div class="job-crew">
-                <div class="crew-dot">MT</div>
-              </div>
-            </div>
-          </div>
-          <div class="job-item">
-            <div class="job-row1">
-              <div class="job-title">Tank Battery 7 — Level Reading</div>
-              <div class="job-priority priority-normal">Normal</div>
-            </div>
-            <div class="job-row2">
-              <div class="job-meta">📍 Andrews County · Unassigned</div>
-              <div class="job-crew">
-                <div class="crew-dot" style="color:var(--muted)">?</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <button class="btn btn-gold" onclick="openModal('modal-add-job')">+ New Job</button>
       </div>
 
-      <!-- TIME CARDS -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title">Pending Time Cards</div>
+      <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center">
+        <div class="search-bar" style="flex:1;min-width:200px">
+          <span style="color:var(--muted);font-size:0.85rem">🔍</span>
+          <input type="text" placeholder="Search jobs…" oninput="filterJobs(this.value)">
         </div>
-        <div class="tc-list" id="tc-list">
-          <div class="tc-item">
-            <div class="tc-name">Juan Reyes</div>
-            <div class="tc-date">Mon–Sun</div>
-            <div class="tc-hours">52.5 hrs</div>
-            <button class="tc-approve" onclick="approveTC(this)">Approve</button>
-          </div>
-          <div class="tc-item">
-            <div class="tc-name">Miguel Torres</div>
-            <div class="tc-date">Mon–Sun</div>
-            <div class="tc-hours">44.0 hrs</div>
-            <button class="tc-approve" onclick="approveTC(this)">Approve</button>
-          </div>
-          <div class="tc-item">
-            <div class="tc-name">David Garcia</div>
-            <div class="tc-date">Mon–Sun</div>
-            <div class="tc-hours">38.5 hrs</div>
-            <button class="tc-approve" onclick="approveTC(this)">Approve</button>
-          </div>
-          <div class="tc-item">
-            <div class="tc-name">Eddie Lopez</div>
-            <div class="tc-date">Mon–Sun</div>
-            <div class="tc-hours">47.0 hrs</div>
-            <button class="tc-approve" onclick="approveTC(this)">Approve</button>
-          </div>
-        </div>
+        <select id="job-filter-status" onchange="filterJobs()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.5rem 0.75rem;font-family:'Inter',sans-serif;font-size:0.8rem;outline:none">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="complete">Complete</option>
+        </select>
       </div>
 
-      <!-- CREW STATUS -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title">Crew Status</div>
-        </div>
-        <div class="worker-list">
-          <div class="worker-item">
-            <div class="worker-avatar">JR</div>
-            <div class="worker-info">
-              <div class="worker-name">Juan Reyes</div>
-              <div class="worker-job">Pump Unit 14 — Lea County</div>
-            </div>
-            <div class="worker-status status-active">On Site</div>
-          </div>
-          <div class="worker-item">
-            <div class="worker-avatar">MT</div>
-            <div class="worker-info">
-              <div class="worker-name">Miguel Torres</div>
-              <div class="worker-job">Lease Road 22 — Maintenance</div>
-            </div>
-            <div class="worker-status status-active">Clocked In</div>
-          </div>
-          <div class="worker-item">
-            <div class="worker-avatar">DG</div>
-            <div class="worker-info">
-              <div class="worker-name">David Garcia</div>
-              <div class="worker-job">En route to Tank Battery 7</div>
-            </div>
-            <div class="worker-status status-route">En Route</div>
-          </div>
-          <div class="worker-item">
-            <div class="worker-avatar">RC</div>
-            <div class="worker-info">
-              <div class="worker-name">Ramon Chavez</div>
-              <div class="worker-job">No active assignment</div>
-            </div>
-            <div class="worker-status status-idle">Idle</div>
-          </div>
-          <div class="worker-item">
-            <div class="worker-avatar">EL</div>
-            <div class="worker-info">
-              <div class="worker-name">Eddie Lopez</div>
-              <div class="worker-job">Pump Unit 14 — Support</div>
-            </div>
-            <div class="worker-status status-active">On Site</div>
-          </div>
-          <div class="worker-item">
-            <div class="worker-avatar">RS</div>
-            <div class="worker-info">
-              <div class="worker-name">Rudy Salinas</div>
-              <div class="worker-job">Off clock</div>
-            </div>
-            <div class="worker-status status-idle">Off Clock</div>
-          </div>
-        </div>
+      <div class="job-list" id="jobs-list">
+        <div class="empty"><div class="empty-icon">📍</div><div class="empty-title">No jobs yet</div><div class="empty-sub">Create your first job assignment.</div></div>
       </div>
-
     </div>
-  </div>
-</div>
 
-<!-- NEW JOB MODAL -->
-<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+    <!-- ══ TIME CARDS ══ -->
+    <div class="panel" id="panel-timecards">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Time Cards</div>
+          <div class="panel-sub">Review and approve worker hours</div>
+        </div>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-green" onclick="approveAll()">✓ Approve All</button>
+          <button class="btn btn-outline" onclick="exportPayroll()">Export CSV</button>
+        </div>
+      </div>
+
+      <div class="data-card">
+        <div class="data-card-head">
+          <div class="data-card-title">Pending Approval</div>
+          <span class="pill pill-red" id="tc-pending-count">0 pending</span>
+        </div>
+        <div class="data-card-body" id="tc-list">
+          <div class="empty"><div class="empty-icon">✅</div><div class="empty-title">All clear</div><div class="empty-sub">No time cards pending approval.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SMS ══ -->
+    <div class="panel" id="panel-sms">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">SMS Dispatch</div>
+          <div class="panel-sub">Send messages directly to your field crew</div>
+        </div>
+        <a href="sms-dispatch.html" class="btn btn-gold">Open Full Dispatch →</a>
+      </div>
+
+      <div class="grid-2">
+        <div class="sms-quick">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text);margin-bottom:0.75rem;letter-spacing:0.5px">Quick Message</div>
+          <textarea class="sms-textarea" id="quick-sms-msg" placeholder="Type a message for your crew…"></textarea>
+          <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+            <button class="btn btn-gold" style="flex:1" onclick="quickSendAll()">📡 Broadcast to All</button>
+            <button class="btn btn-outline" onclick="window.location.href='sms-dispatch.html'">Full Panel</button>
+          </div>
+          <div id="quick-sms-status" style="font-size:0.75rem;margin-top:0.5rem;min-height:1rem"></div>
+        </div>
+
+        <div class="data-card">
+          <div class="data-card-head"><div class="data-card-title">Recent Dispatches</div></div>
+          <div class="data-card-body" id="sms-log-preview">
+            <div class="empty" style="padding:1.5rem"><div class="empty-icon">💬</div><div class="empty-title">No messages sent yet</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAYROLL ══ -->
+    <div class="panel" id="panel-payroll">
+      <div class="panel-header">
+        <div><div class="panel-title">Payroll Export</div><div class="panel-sub">Export approved hours to CSV for payroll</div></div>
+        <button class="btn btn-gold" onclick="exportPayroll()">Download CSV</button>
+      </div>
+      <div class="data-card">
+        <div class="data-card-head"><div class="data-card-title">Approved Time Cards</div></div>
+        <div class="data-card-body">
+          <table class="table" id="payroll-table">
+            <thead><tr><th>Worker</th><th>Job</th><th>Date</th><th>Hours</th><th>Status</th></tr></thead>
+            <tbody id="payroll-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No approved time cards yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SETTINGS ══ -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-header">
+        <div><div class="panel-title">Settings</div><div class="panel-sub">Manage your account and company info</div></div>
+      </div>
+      <div style="max-width:600px;display:flex;flex-direction:column;gap:1rem">
+        <div class="data-card">
+          <div class="data-card-head"><div class="data-card-title">Company Information</div></div>
+          <div class="data-card-body" style="padding:1.25rem">
+            <div class="field-row">
+              <div class="field"><label>First Name</label><input type="text" id="s-first"></div>
+              <div class="field"><label>Last Name</label><input type="text" id="s-last"></div>
+            </div>
+            <div class="field"><label>Company Name</label><input type="text" id="s-company"></div>
+            <div class="field"><label>Job Title</label><input type="text" id="s-title"></div>
+            <div class="field-row">
+              <div class="field"><label>Work Phone</label><input type="tel" id="s-phone"></div>
+              <div class="field"><label>Operating Area</label><input type="text" id="s-area"></div>
+            </div>
+            <button class="btn btn-gold" onclick="saveSettings()">Save Changes</button>
+            <div id="settings-status" style="font-size:0.78rem;margin-top:0.5rem;color:var(--green)"></div>
+          </div>
+        </div>
+        <div class="data-card">
+          <div class="data-card-head"><div class="data-card-title">Danger Zone</div></div>
+          <div class="data-card-body" style="padding:1.25rem;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;color:var(--text)">Delete Account</div>
+              <div style="font-size:0.75rem;color:var(--muted)">This will permanently delete your account and all data.</div>
+            </div>
+            <button class="btn btn-red" onclick="confirmDelete()">Delete Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .main -->
+</div><!-- end .layout -->
+
+<!-- ══ MODAL: ADD WORKER ══ -->
+<div class="modal-overlay" id="modal-add-worker">
   <div class="modal">
-    <div class="modal-title">Create New Job</div>
-    <label>Job Title</label>
-    <input type="text" placeholder="e.g. Pump Unit 14 — Inspection">
-    <label>Location / Lease Name</label>
-    <input type="text" placeholder="e.g. Lea County, Lease Road 22">
-    <label>Priority</label>
-    <select>
-      <option>Normal</option>
-      <option>Urgent</option>
-    </select>
-    <label>Assign Workers</label>
-    <select multiple style="height:90px">
-      <option>Juan Reyes</option>
-      <option>Miguel Torres</option>
-      <option>David Garcia</option>
-      <option>Ramon Chavez</option>
-      <option>Eddie Lopez</option>
-      <option>Rudy Salinas</option>
-    </select>
-    <label>Notes</label>
-    <textarea placeholder="Job details, safety notes, equipment needed..."></textarea>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-create" onclick="createJob()">Create & Dispatch</button>
+    <div class="modal-head">
+      <div class="modal-title">Add Worker</div>
+      <button class="modal-close" onclick="closeModal('modal-add-worker')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>First Name</label><input type="text" id="w-first" placeholder="Carlos"></div>
+        <div class="field"><label>Last Name</label><input type="text" id="w-last" placeholder="Reyes"></div>
+      </div>
+      <div class="field"><label>Role / Position</label>
+        <select id="w-role">
+          <option value="">Select role</option>
+          <option>Operator</option><option>Driller</option><option>Roughneck</option>
+          <option>Supervisor</option><option>Truck Driver</option><option>Mechanic</option>
+          <option>Roustabout</option><option>Floorhand</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Phone Number</label><input type="tel" id="w-phone" placeholder="+1 (432) 000-0000"></div>
+        <div class="field"><label>Worker Code</label><input type="text" id="w-code" placeholder="Auto-generated" readonly style="opacity:0.5"></div>
+      </div>
+      <div class="field"><label>Current Jobsite</label><input type="text" id="w-site" placeholder="Section 14 — Pad A"></div>
+      <div class="field"><label>Hourly Rate ($)</label><input type="number" id="w-rate" placeholder="18.00" step="0.50"></div>
+      <div class="field"><label>Start Date</label><input type="date" id="w-start"></div>
+      <div class="field"><label>Notes</label><textarea id="w-notes" placeholder="Equipment certifications, special skills, emergency contact…"></textarea></div>
+      <div class="msg error" id="worker-modal-error" style="margin-top:0.5rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-worker')">Cancel</button>
+      <button class="btn btn-gold" onclick="addWorker()">Add Worker</button>
     </div>
   </div>
 </div>
 
-<script>
-// ── GOOGLE MAPS READY FLAG ───────────────────────────────
-let _googleReady = false;
-function onGoogleReady() { _googleReady = true; console.log('Google Maps API loaded'); }
-
-// ── MAPBOX ────────────────────────────────────────────────
-mapboxgl.accessToken = 'MAPBOX_TOKEN_HERE';
-
-const map = new mapboxgl.Map({
-  container: 'mapbox-map',
-  style: 'mapbox://styles/mapbox/navigation-night-v1',
-  center: [-102.55, 32.32],
-  zoom: 10.5,
-  pitch: 55,
-  bearing: -12,
-  antialias: true,
-  maxPitch: 85,
-});
-
-// Navigation controls — zoom, rotate, compass, pitch
-map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
-
-// Full screen button
-map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
-
-// ── Fix: enable single-finger pitch & rotate (no right-click/ctrl needed) ──
-map.dragRotate.enable();
-map.touchPitch.enable();
-
-// ── 3D Camera Orbit Controller ──────────────────────────────────────
-(function() {
-  const PITCH_STEP = 3;
-  const BEARING_STEP = 4;
-  let _camInterval = null;
-  let _activeArrow = null;
-
-  const dirMap = {
-    'up':         { pitch: PITCH_STEP,  bearing: 0 },
-    'down':       { pitch: -PITCH_STEP, bearing: 0 },
-    'left':       { pitch: 0,           bearing: -BEARING_STEP },
-    'right':      { pitch: 0,           bearing: BEARING_STEP },
-    'up-left':    { pitch: PITCH_STEP,  bearing: -BEARING_STEP },
-    'up-right':   { pitch: PITCH_STEP,  bearing: BEARING_STEP },
-    'down-left':  { pitch: -PITCH_STEP, bearing: -BEARING_STEP },
-    'down-right': { pitch: -PITCH_STEP, bearing: BEARING_STEP },
-  };
-
-  function updatePitchLabel() {
-    const el = document.getElementById('cam-pitch-label');
-    if (el) el.textContent = Math.round(map.getPitch()) + '°';
-  }
-
-  function startMove(dir) {
-    stopMove();
-    const d = dirMap[dir];
-    if (!d) return;
-    _activeArrow = document.querySelector(`.cam-arrow.${dir}`);
-    if (_activeArrow) _activeArrow.classList.add('active');
-
-    function tick() {
-      let p = map.getPitch() + d.pitch;
-      let b = map.getBearing() + d.bearing;
-      p = Math.max(0, Math.min(85, p));
-      map.easeTo({ pitch: p, bearing: b, duration: 80, easing: t => t });
-      updatePitchLabel();
-    }
-    tick();
-    _camInterval = setInterval(tick, 80);
-  }
-
-  function stopMove() {
-    if (_camInterval) { clearInterval(_camInterval); _camInterval = null; }
-    if (_activeArrow) { _activeArrow.classList.remove('active'); _activeArrow = null; }
-  }
-
-  // Wire arrows — pointer events for both mouse and touch
-  document.querySelectorAll('.cam-arrow').forEach(el => {
-    const dir = el.dataset.dir;
-    el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); startMove(dir); });
-  });
-  document.addEventListener('pointerup', stopMove);
-  document.addEventListener('pointercancel', stopMove);
-
-  // Center button — reset to default camera
-  document.getElementById('cam-center').addEventListener('click', (e) => {
-    e.stopPropagation();
-    map.easeTo({ pitch: 55, bearing: -12, duration: 600 });
-    setTimeout(updatePitchLabel, 650);
-  });
-
-  // Keep pitch label updated on any map move
-  map.on('pitchend', updatePitchLabel);
-  map.on('moveend', updatePitchLabel);
-
-  // Fix compass click — Mapbox resets pitch to 0 and bearing to 0,
-  // but doesn't let you go back. Override the compass button behavior.
-  setTimeout(() => {
-    const compassBtn = document.querySelector('.mapboxgl-ctrl-compass');
-    if (compassBtn) {
-      // Remove default handler, add our toggle
-      const newBtn = compassBtn.cloneNode(true);
-      compassBtn.parentNode.replaceChild(newBtn, compassBtn);
-      let _birdEye = false;
-      newBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!_birdEye) {
-          // Go to bird's eye
-          map.easeTo({ pitch: 0, bearing: 0, duration: 600 });
-          _birdEye = true;
-        } else {
-          // Return to 3D view
-          map.easeTo({ pitch: 55, bearing: -12, duration: 600 });
-          _birdEye = false;
-        }
-        setTimeout(updatePitchLabel, 650);
-      });
-    }
-  }, 500);
-})();
-
-// Scale bar
-map.addControl(new mapboxgl.ScaleControl({ maxWidth:120, unit:'imperial' }), 'bottom-right');
-
-// Workers data
-const WORKERS = [
-  { id:'JR', name:'Juan Reyes',    job:'Pump Unit 14',    coords:[-102.52, 32.34], status:'active' },
-  { id:'MT', name:'Miguel Torres', job:'Lease Road 22',   coords:[-102.58, 32.29], status:'active' },
-  { id:'DG', name:'David Garcia',  job:'En Route → Tk7',  coords:[-102.48, 32.31], status:'route'  },
-  { id:'RC', name:'Ramon Chavez',  job:'No assignment',   coords:[-102.61, 32.36], status:'idle'   },
-  { id:'EL', name:'Eddie Lopez',   job:'Pump Unit 14',    coords:[-102.51, 32.33], status:'active' },
-];
-
-// Jobs data
-const JOBS = [
-  { title:'Pump Unit 14',   sub:'Wellbore Inspection',  coords:[-102.52, 32.345], color:'#F44336', priority:'URGENT'  },
-  { title:'Lease Road 22',  sub:'Equipment Check',      coords:[-102.58, 32.285], color:'#F5A623', priority:'ACTIVE'  },
-  { title:'Tank Battery 7', sub:'Level Reading',        coords:[-102.47, 32.305], color:'#4488FF', priority:'PENDING' },
-];
-
-// Lease road polylines (custom private roads)
-const LEASE_ROADS = [
-  { name:'Lease Rd 22', color:'#F5A623', coords:[[-102.595,32.295],[-102.572,32.289],[-102.555,32.283]] },
-  { name:'Lease Rd 7',  color:'#4488FF', coords:[[-102.485,32.310],[-102.470,32.305],[-102.455,32.298]] },
-  { name:'Access Rd A', color:'#4CAF50', coords:[[-102.530,32.350],[-102.520,32.340],[-102.515,32.335]] },
-];
-
-map.on('load', () => {
-
-  // ── Load Google Maps for Places search ──
-  _loadGoogleMaps();
-
-  // ── Geocoder (real-time location search) ──
-  const geocoder = new MapboxGeocoder({
-    accessToken: mapboxgl.accessToken,
-    mapboxgl: mapboxgl,
-    placeholder: 'Search any location, address, city...',
-    proximity: { longitude:-102.55, latitude:32.32 }, // bias toward Andrews TX
-    bbox: [-104.5, 30.5, -99.5, 34.5],               // limit to West Texas region
-    countries: 'us',
-    marker: { color:'#F5A623' },
-    flyTo: { zoom:14, pitch:55, speed:1.4 },
-  });
-  document.getElementById('geocoder-container').appendChild(geocoder.onAdd(map));
-
-  // ── 3D Terrain elevation (Mapbox DEM) ──
-  map.addSource('mapbox-dem', {
-    type: 'raster-dem',
-    url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-    tileSize: 512,
-    maxzoom: 14
-  });
-  map.setTerrain({ source:'mapbox-dem', exaggeration: 2.0 });
-
-  // ── Sky layer — atmospheric haze ──
-  map.addLayer({
-    id: 'sky',
-    type: 'sky',
-    paint: {
-      'sky-type': 'atmosphere',
-      'sky-atmosphere-sun': [0.0, 90.0],
-      'sky-atmosphere-sun-intensity': 5,
-      'sky-atmosphere-color': 'rgba(10,14,40,1)',
-      'sky-atmosphere-halo-color': 'rgba(245,166,35,0.3)',
-    }
-  });
-
-  // ── Fog for depth ──
-  map.setFog({
-    color: 'rgba(6,8,16,0.8)',
-    'high-color': 'rgba(20,24,40,0.9)',
-    'horizon-blend': 0.08,
-    'space-color': 'rgba(4,6,14,1)',
-    'star-intensity': 0.6
-  });
-
-  // ── Lease road overlays ──
-  LEASE_ROADS.forEach((road, i) => {
-    const id = 'lease-road-' + i;
-    map.addSource(id, {
-      type:'geojson',
-      data:{ type:'Feature', geometry:{ type:'LineString', coordinates: road.coords } }
-    });
-    // Glow layer (wide, soft)
-    map.addLayer({
-      id: id + '-glow',
-      type:'line', source: id,
-      paint:{ 'line-color': road.color, 'line-width': 8, 'line-opacity': 0.15 }
-    });
-    // Main line
-    map.addLayer({
-      id: id + '-line',
-      type:'line', source: id,
-      paint:{
-        'line-color': road.color,
-        'line-width': 2.5,
-        'line-opacity': 0.85,
-        'line-dasharray': [4, 2]
-      }
-    });
-  });
-
-  // ── Geofence circles around job pins ──
-  JOBS.forEach((job, i) => {
-    const id = 'geofence-' + i;
-    map.addSource(id, {
-      type:'geojson',
-      data:{
-        type:'Feature',
-        geometry:{ type:'Point', coordinates: job.coords },
-        properties:{}
-      }
-    });
-    map.addLayer({
-      id: id + '-fill',
-      type:'circle', source: id,
-      paint:{
-        'circle-radius': 40,
-        'circle-color': job.color,
-        'circle-opacity': 0.06,
-        'circle-stroke-color': job.color,
-        'circle-stroke-width': 1.2,
-        'circle-stroke-opacity': 0.4
-      }
-    });
-  });
-
-  // ── Dispatch lines (worker → job) ──
-  const dispatchLines = [
-    { from:[-102.52,32.34], to:[-102.52,32.345] }, // JR → Pump14
-    { from:[-102.58,32.29], to:[-102.58,32.285] }, // MT → Rd22
-    { from:[-102.48,32.31], to:[-102.47,32.305] }, // DG → Tk7
-  ];
-  dispatchLines.forEach((l,i) => {
-    const id = 'dispatch-' + i;
-    map.addSource(id, {
-      type:'geojson',
-      data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[l.from, l.to] } }
-    });
-    map.addLayer({
-      id: id,
-      type:'line', source: id,
-      paint:{
-        'line-color':'#F5A623',
-        'line-width':1.5,
-        'line-opacity':0.5,
-        'line-dasharray':[3,3]
-      }
-    });
-  });
-
-  // ── Job pins ──
-  JOBS.forEach(job => {
-    const el = document.createElement('div');
-    el.className = 'job-marker';
-    el.innerHTML = `
-      <div class="job-marker-pin" style="background:${job.color};border-color:${job.color};box-shadow:0 0 12px ${job.color}88"></div>
-      <div class="job-marker-label" style="border-color:${job.color}44;color:${job.color}">${job.title}</div>
-    `;
-    const popup = new mapboxgl.Popup({ offset:20, closeButton:false })
-      .setHTML(`
-        <div class="popup-name">${job.title}</div>
-        <div class="popup-detail">${job.sub}</div>
-        <div class="popup-status" style="color:${job.color}">${job.priority}</div>
-      `);
-    new mapboxgl.Marker({ element:el, anchor:'bottom' })
-      .setLngLat(job.coords)
-      .setPopup(popup)
-      .addTo(map);
-  });
-
-  // ── Worker markers ──
-  WORKERS.forEach(w => {
-    const el = document.createElement('div');
-    el.className = 'worker-marker ' + (w.status === 'route' ? 'route' : w.status === 'idle' ? 'idle' : '');
-    el.textContent = w.id;
-    const popup = new mapboxgl.Popup({ offset:18, closeButton:false })
-      .setHTML(`
-        <div class="popup-name">${w.name}</div>
-        <div class="popup-detail">${w.job}</div>
-        <div class="popup-status" style="color:${w.status==='active'?'#4CAF50':w.status==='route'?'#F5A623':'#6B7280'}">${w.status.toUpperCase()}</div>
-      `);
-    new mapboxgl.Marker({ element:el })
-      .setLngLat(w.coords)
-      .setPopup(popup)
-      .addTo(map);
-    el.addEventListener('click', () => popup.isOpen() ? popup.remove() : popup.addTo(map).setLngLat(w.coords));
-  });
-
-  // ── PLSS / Land Grid sources (empty until toggled on) ──
-  map.addSource('plss-townships', {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: [] }
-  });
-  map.addSource('plss-sections', {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: [] }
-  });
-  map.addSource('tiger-counties', {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: [] }
-  });
-
-  // Township fill (very subtle)
-  map.addLayer({
-    id: 'plss-township-fill',
-    type: 'fill', source: 'plss-townships',
-    paint: { 'fill-color': '#F5A623', 'fill-opacity': 0.03 },
-    layout: { visibility: 'none' }
-  });
-
-  // Township outline — thick gold
-  map.addLayer({
-    id: 'plss-township-line',
-    type: 'line', source: 'plss-townships',
-    paint: { 'line-color': '#F5A623', 'line-width': 1.8, 'line-opacity': 0.75 },
-    layout: { visibility: 'none' }
-  });
-
-  // Township labels
-  map.addLayer({
-    id: 'plss-township-label',
-    type: 'symbol', source: 'plss-townships',
-    layout: {
-      visibility: 'none',
-      'text-field': ['get', 'TWNSHPLAB'],
-      'text-size': 11,
-      'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
-      'text-anchor': 'center',
-      'text-max-width': 8,
-    },
-    paint: {
-      'text-color': '#F5A623',
-      'text-halo-color': 'rgba(6,8,16,0.85)',
-      'text-halo-width': 1.5,
-      'text-opacity': 0.9,
-    }
-  });
-
-  // Section outline — thin amber, only shows at high zoom
-  map.addLayer({
-    id: 'plss-section-line',
-    type: 'line', source: 'plss-sections',
-    paint: { 'line-color': '#E8860A', 'line-width': 1.0, 'line-opacity': 0.6 },
-    layout: { visibility: 'none' }
-  });
-
-  // Section labels — only show zoomed in
-  map.addLayer({
-    id: 'plss-section-label',
-    type: 'symbol', source: 'plss-sections',
-    minzoom: 11,
-    layout: {
-      visibility: 'none',
-      'text-field': ['concat', 'Sec ', ['get', 'FRSTDIVNO']],
-      'text-size': 9,
-      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Regular'],
-      'text-anchor': 'center',
-    },
-    paint: {
-      'text-color': '#E8860A',
-      'text-halo-color': 'rgba(6,8,16,0.8)',
-      'text-halo-width': 1.2,
-      'text-opacity': 0.85,
-    }
-  });
-
-  // Census TIGER county subdivision — dashed line for TX context
-  map.addLayer({
-    id: 'tiger-county-line',
-    type: 'line', source: 'tiger-counties',
-    paint: {
-      'line-color': '#F5A623',
-      'line-width': 1.5,
-      'line-opacity': 0.5,
-      'line-dasharray': [6, 3],
-    },
-    layout: { visibility: 'none' }
-  });
-
-  // TIGER county label
-  map.addLayer({
-    id: 'tiger-county-label',
-    type: 'symbol', source: 'tiger-counties',
-    minzoom: 8,
-    layout: {
-      visibility: 'none',
-      'text-field': ['concat', ['get', 'NAME'], ' Co.'],
-      'text-size': 10,
-      'text-font': ['DIN Offc Pro Italic', 'Arial Unicode MS Regular'],
-      'text-anchor': 'center',
-    },
-    paint: {
-      'text-color': '#F5A623',
-      'text-halo-color': 'rgba(6,8,16,0.8)',
-      'text-halo-width': 1.2,
-      'text-opacity': 0.75,
-    }
-  });
-
-  // ── PLSS map click handler ──
-  map.on('click', 'plss-township-fill', (e) => {
-    if (!_plssActive) return;
-    const feat = e.features[0];
-    showPLSSPopup(e.point, feat, 'township');
-  });
-  map.on('click', 'plss-section-line', (e) => {
-    if (!_plssActive) return;
-    // resolve by point query for best section data
-    _resolvePLSSPoint(e.lngLat.lng, e.lngLat.lat, e.point);
-  });
-  map.on('click', 'tiger-county-line', (e) => {
-    if (!_plssActive) return;
-    const feat = e.features[0];
-    showTIGERPopup(e.point, feat);
-  });
-
-  // Change cursor over PLSS layers
-  ['plss-township-fill','plss-section-line','tiger-county-line'].forEach(id => {
-    map.on('mouseenter', id, () => { if (_plssActive) map.getCanvas().style.cursor = 'crosshair'; });
-    map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
-  });
-
-  // ── GLO sources (empty until toggled on) ──────────────────────────────────
-  ['glo-leases','glo-units','glo-psf'].forEach(id => {
-    map.addSource(id, { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-  });
-
-  // O&G Lease polygons — burnt orange fill + line
-  map.addLayer({
-    id:'glo-lease-fill', type:'fill', source:'glo-leases',
-    paint:{ 'fill-color':'#E8450A', 'fill-opacity':0.08 },
-    layout:{ visibility:'none' }
-  });
-  map.addLayer({
-    id:'glo-lease-line', type:'line', source:'glo-leases',
-    paint:{ 'line-color':'#FF6B35', 'line-width':1.6, 'line-opacity':0.85 },
-    layout:{ visibility:'none' }
-  });
-  map.addLayer({
-    id:'glo-lease-label', type:'symbol', source:'glo-leases',
-    minzoom:11,
-    layout:{
-      visibility:'none',
-      'text-field':['get','LEASE_NUMBER'],
-      'text-size':9,
-      'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold'],
-      'text-anchor':'center',
-    },
-    paint:{
-      'text-color':'#FF6B35',
-      'text-halo-color':'rgba(6,8,16,0.9)',
-      'text-halo-width':1.4,
-    }
-  });
-
-  // O&G Unit polygons — blue dashed
-  map.addLayer({
-    id:'glo-unit-fill', type:'fill', source:'glo-units',
-    paint:{ 'fill-color':'#4488FF', 'fill-opacity':0.06 },
-    layout:{ visibility:'none' }
-  });
-  map.addLayer({
-    id:'glo-unit-line', type:'line', source:'glo-units',
-    paint:{ 'line-color':'#4488FF', 'line-width':1.4, 'line-opacity':0.7, 'line-dasharray':[4,3] },
-    layout:{ visibility:'none' }
-  });
-  map.addLayer({
-    id:'glo-unit-label', type:'symbol', source:'glo-units',
-    minzoom:10,
-    layout:{
-      visibility:'none',
-      'text-field':['get','UNIT_NAME'],
-      'text-size':9,
-      'text-font':['DIN Offc Pro Medium','Arial Unicode MS Regular'],
-      'text-anchor':'center',
-    },
-    paint:{
-      'text-color':'#4488FF',
-      'text-halo-color':'rgba(6,8,16,0.9)',
-      'text-halo-width':1.4,
-    }
-  });
-
-  // PSF land polygons — green tint
-  map.addLayer({
-    id:'glo-psf-fill', type:'fill', source:'glo-psf',
-    paint:{ 'fill-color':'#4CAF50', 'fill-opacity':0.07 },
-    layout:{ visibility:'none' }
-  });
-  map.addLayer({
-    id:'glo-psf-line', type:'line', source:'glo-psf',
-    paint:{ 'line-color':'#4CAF50', 'line-width':1.2, 'line-opacity':0.65, 'line-dasharray':[2,4] },
-    layout:{ visibility:'none' }
-  });
-
-  // GLO click handlers
-  map.on('click', 'glo-lease-fill', (e) => {
-    if (!_gloActive) return;
-    showGLOPopup(e.point, e.features[0].properties, 'lease');
-  });
-  map.on('click', 'glo-unit-fill', (e) => {
-    if (!_gloActive) return;
-    showGLOPopup(e.point, e.features[0].properties, 'unit');
-  });
-  map.on('click', 'glo-psf-fill', (e) => {
-    if (!_gloActive) return;
-    showGLOPopup(e.point, e.features[0].properties, 'psf');
-  });
-
-  // Cursor change over GLO layers
-  ['glo-lease-fill','glo-unit-fill','glo-psf-fill'].forEach(id => {
-    map.on('mouseenter', id, () => { if (_gloActive) map.getCanvas().style.cursor = 'crosshair'; });
-    map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
-  });
-
-  // ── Simulate live worker movement ──
-  let tick = 0;
-  setInterval(() => {
-    tick++;
-    // Slightly drift worker coords to simulate live GPS
-    WORKERS.forEach(w => {
-      if(w.status === 'idle') return;
-      w.coords[0] += (Math.random()-0.5)*0.0008;
-      w.coords[1] += (Math.random()-0.5)*0.0005;
-    });
-  }, 4000);
-
-
-});
-
-// ── MAP SEARCH ───────────────────────────────────────────
-const SEARCH_DATA = [
-  // Jobs
-  { type:'job',    name:'Pump Unit 14',    sub:'Wellbore Inspection · Lea County',    coords:[-102.52,32.345], color:'#F44336', badge:'URGENT',  icon:'📍' },
-  { type:'job',    name:'Lease Road 22',   sub:'Equipment Check · Andrews County',    coords:[-102.58,32.285], color:'#F5A623', badge:'ACTIVE',  icon:'📍' },
-  { type:'job',    name:'Tank Battery 7',  sub:'Level Reading · Andrews County',      coords:[-102.47,32.305], color:'#4488FF', badge:'PENDING', icon:'📍' },
-  // Workers
-  { type:'worker', name:'Juan Reyes',      sub:'On Site — Pump Unit 14',              coords:[-102.52,32.34],  color:'#4CAF50', badge:'ON SITE', icon:'👷' },
-  { type:'worker', name:'Miguel Torres',   sub:'Clocked In — Lease Road 22',          coords:[-102.58,32.29],  color:'#4CAF50', badge:'ACTIVE',  icon:'👷' },
-  { type:'worker', name:'David Garcia',    sub:'En Route — Tank Battery 7',           coords:[-102.48,32.31],  color:'#F5A623', badge:'EN ROUTE',icon:'👷' },
-  { type:'worker', name:'Ramon Chavez',    sub:'Idle — No Assignment',                coords:[-102.61,32.36],  color:'#6B7280', badge:'IDLE',    icon:'👷' },
-  { type:'worker', name:'Eddie Lopez',     sub:'On Site — Pump Unit 14',              coords:[-102.51,32.33],  color:'#4CAF50', badge:'ON SITE', icon:'👷' },
-  { type:'worker', name:'Rudy Salinas',    sub:'Off Clock',                           coords:[-102.55,32.31],  color:'#6B7280', badge:'OFF',     icon:'👷' },
-  // Lease roads
-  { type:'lease',  name:'Lease Road 22',   sub:'Andrews County — Active Route',       coords:[-102.572,32.289],color:'#F5A623', badge:'LEASE',   icon:'🛣' },
-  { type:'lease',  name:'Lease Road 7',    sub:'Andrews County — Access Road',        coords:[-102.470,32.305],color:'#4488FF', badge:'LEASE',   icon:'🛣' },
-  { type:'lease',  name:'Access Road A',   sub:'Andrews County — North Field',        coords:[-102.515,32.335],color:'#4CAF50', badge:'LEASE',   icon:'🛣' },
-  // Locations
-  { type:'place',  name:'Andrews, TX',     sub:'Andrews County Seat',                 coords:[-102.543,32.318],color:'#8899CC', badge:'CITY',    icon:'🏙' },
-  { type:'place',  name:'Odessa, TX',      sub:'Ector County — 40mi East',            coords:[-102.367,31.845],color:'#8899CC', badge:'CITY',    icon:'🏙' },
-  { type:'place',  name:'Midland, TX',     sub:'Midland County — 50mi East',          coords:[-102.078,31.997],color:'#8899CC', badge:'CITY',    icon:'🏙' },
-  { type:'place',  name:'Permian Basin',   sub:'West Texas Oil Region',               coords:[-102.3,31.9],    color:'#8899CC', badge:'REGION',  icon:'🗺' },
-];
-
-const BADGE_COLORS = {
-  URGENT:'rgba(244,67,54,0.15);color:#F44336;border:1px solid rgba(244,67,54,0.3)',
-  ACTIVE:'rgba(76,175,80,0.12);color:#4CAF50;border:1px solid rgba(76,175,80,0.25)',
-  PENDING:'rgba(68,136,255,0.12);color:#4488FF;border:1px solid rgba(68,136,255,0.25)',
-  'ON SITE':'rgba(76,175,80,0.12);color:#4CAF50;border:1px solid rgba(76,175,80,0.25)',
-  'EN ROUTE':'rgba(245,166,35,0.15);color:#F5A623;border:1px solid rgba(245,166,35,0.3)',
-  IDLE:'rgba(107,114,128,0.12);color:#6B7280;border:1px solid rgba(107,114,128,0.25)',
-  OFF:'rgba(107,114,128,0.12);color:#6B7280;border:1px solid rgba(107,114,128,0.25)',
-  LEASE:'rgba(245,166,35,0.12);color:#F5A623;border:1px solid rgba(245,166,35,0.25)',
-  CITY:'rgba(136,153,204,0.12);color:#8899CC;border:1px solid rgba(136,153,204,0.25)',
-  REGION:'rgba(136,153,204,0.12);color:#8899CC;border:1px solid rgba(136,153,204,0.25)',
-};
-
-let focusedIdx = -1;
-let filteredResults = [];
-
-function highlight(text, query) {
-  if(!query) return text;
-  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-  return text.replace(re, '<mark>$1</mark>');
-}
-
-function handleSearch(val) {
-  const clear = document.getElementById('map-search-clear');
-  const dd    = document.getElementById('map-search-dropdown');
-  focusedIdx  = -1;
-
-  clear.classList.toggle('visible', val.length > 0);
-
-  if(!val.trim()) { dd.classList.remove('open'); dd.innerHTML=''; return; }
-
-  const q = val.trim().toLowerCase();
-  filteredResults = SEARCH_DATA.filter(d =>
-    d.name.toLowerCase().includes(q) || d.sub.toLowerCase().includes(q)
-  );
-
-  if(!filteredResults.length) {
-    dd.innerHTML = `<div class="search-no-results">No results for "<strong style="color:var(--text)">${val}</strong>"</div>`;
-    dd.classList.add('open');
-    return;
-  }
-
-  // Group by type
-  const groups = { job:'Jobs', worker:'Workers', lease:'Lease Roads', place:'Locations' };
-  let html = '';
-  Object.entries(groups).forEach(([type, label]) => {
-    const items = filteredResults.filter(r => r.type === type);
-    if(!items.length) return;
-    html += `<div class="search-section-label">${label}</div>`;
-    items.forEach((item, i) => {
-      const globalIdx = filteredResults.indexOf(item);
-      const bc = BADGE_COLORS[item.badge] || 'rgba(107,114,128,0.12);color:#6B7280;border:1px solid rgba(107,114,128,0.25)';
-      html += `
-        <div class="search-item" data-idx="${globalIdx}" onmousedown="selectResult(${globalIdx})">
-          <div class="search-item-icon" style="background:${item.color}22">${item.icon}</div>
-          <div class="search-item-text">
-            <div class="search-item-name">${highlight(item.name, val.trim())}</div>
-            <div class="search-item-sub">${item.sub}</div>
-          </div>
-          <span class="search-item-badge" style="background:${bc.split(';')[0]};${bc.split(';').slice(1).join(';')}">${item.badge}</span>
-        </div>`;
-    });
-  });
-
-  dd.innerHTML = html;
-  dd.classList.add('open');
-}
-
-function selectResult(idx) {
-  const item = filteredResults[idx];
-  if(!item) return;
-
-  // Fly to location
-  map.flyTo({
-    center: item.coords,
-    zoom: item.type === 'place' ? (item.name.includes('Basin') ? 8 : 11) : 14,
-    pitch: 55,
-    speed: 1.4,
-    essential: true
-  });
-
-  // Flash marker popup if job or worker
-  document.getElementById('map-search-input').value = item.name;
-  document.getElementById('map-search-dropdown').classList.remove('open');
-  document.getElementById('map-search-clear').classList.add('visible');
-}
-
-function clearSearch() {
-  document.getElementById('map-search-input').value = '';
-  document.getElementById('map-search-dropdown').classList.remove('open');
-  document.getElementById('map-search-clear').classList.remove('visible');
-  filteredResults = [];
-  focusedIdx = -1;
-}
-
-function handleSearchKey(e) {
-  const dd    = document.getElementById('map-search-dropdown');
-  const items = dd.querySelectorAll('.search-item');
-  if(!items.length) return;
-
-  if(e.key === 'ArrowDown') {
-    e.preventDefault();
-    focusedIdx = Math.min(focusedIdx+1, items.length-1);
-  } else if(e.key === 'ArrowUp') {
-    e.preventDefault();
-    focusedIdx = Math.max(focusedIdx-1, 0);
-  } else if(e.key === 'Enter' && focusedIdx >= 0) {
-    e.preventDefault();
-    selectResult(parseInt(items[focusedIdx].dataset.idx));
-    return;
-  } else if(e.key === 'Escape') {
-    clearSearch(); return;
-  }
-
-  items.forEach((el,i) => el.classList.toggle('focused', i===focusedIdx));
-  if(focusedIdx >= 0) items[focusedIdx].scrollIntoView({ block:'nearest' });
-}
-
-// Close dropdown on outside click
-document.addEventListener('click', e => {
-  if(!document.getElementById('map-search-wrap').contains(e.target)) {
-    document.getElementById('map-search-dropdown').classList.remove('open');
-  }
-});
-
-// ── MAP STYLE SWITCHER ────────────────────────────────────
-const MAP_STYLES = {
-  night:     'mapbox://styles/mapbox/navigation-night-v1',
-  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
-  streets:   'mapbox://styles/mapbox/streets-v12',
-  terrain:   'mapbox://styles/mapbox/outdoors-v12',
-  dark:      'mapbox://styles/mapbox/dark-v11',
-};
-
-function setMapStyle(key, btn) {
-  // Update active button
-  document.querySelectorAll('.mst-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  // Swap style — Mapbox preserves camera position
-  map.setStyle(MAP_STYLES[key]);
-
-  // Re-add terrain + fog + sources after style swap
-  map.once('style.load', () => {
-    // Restore 3D terrain
-    if(!map.getSource('mapbox-dem')) {
-      map.addSource('mapbox-dem', { type:'raster-dem', url:'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize:512, maxzoom:14 });
-    }
-    map.setTerrain({ source:'mapbox-dem', exaggeration:2.0 });
-    map.setFog({ color:'rgba(6,8,16,0.8)', 'high-color':'rgba(20,24,40,0.9)', 'horizon-blend':0.08, 'space-color':'rgba(4,6,14,1)', 'star-intensity':0.6 });
-    try { map.addLayer({ id:'sky', type:'sky', paint:{ 'sky-type':'atmosphere', 'sky-atmosphere-sun':[0.0,90.0], 'sky-atmosphere-sun-intensity':5, 'sky-atmosphere-color':'rgba(10,14,40,1)', 'sky-atmosphere-halo-color':'rgba(245,166,35,0.3)' } }); } catch(e){}
-
-    // Lease roads
-    LEASE_ROADS.forEach((road, i) => {
-      const id = 'lease-road-' + i;
-      if(!map.getSource(id)) {
-        map.addSource(id, { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates: road.coords } } });
-      }
-      if(!map.getLayer(id+'-glow')) map.addLayer({ id:id+'-glow', type:'line', source:id, paint:{ 'line-color':road.color, 'line-width':8, 'line-opacity':0.15 } });
-      if(!map.getLayer(id+'-line')) map.addLayer({ id:id+'-line', type:'line', source:id, paint:{ 'line-color':road.color, 'line-width':2.5, 'line-opacity':0.85, 'line-dasharray':[4,2] } });
-    });
-    // Geofences
-    JOBS.forEach((job,i) => {
-      const id = 'geofence-'+i;
-      if(!map.getSource(id)) map.addSource(id, { type:'geojson', data:{ type:'Feature', geometry:{ type:'Point', coordinates:job.coords }, properties:{} } });
-      if(!map.getLayer(id+'-fill')) map.addLayer({ id:id+'-fill', type:'circle', source:id, paint:{ 'circle-radius':40, 'circle-color':job.color, 'circle-opacity':0.06, 'circle-stroke-color':job.color, 'circle-stroke-width':1.2, 'circle-stroke-opacity':0.4 } });
-    });
-    // Dispatch lines
-    const dispatchLines=[{from:[-102.52,32.34],to:[-102.52,32.345]},{from:[-102.58,32.29],to:[-102.58,32.285]},{from:[-102.48,32.31],to:[-102.47,32.305]}];
-    dispatchLines.forEach((l,i) => {
-      const id='dispatch-'+i;
-      if(!map.getSource(id)) map.addSource(id,{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:[l.from,l.to]}}});
-      if(!map.getLayer(id)) map.addLayer({id,type:'line',source:id,paint:{'line-color':'#F5A623','line-width':1.5,'line-opacity':0.5,'line-dasharray':[3,3]}});
-    });
-  });
-}
-
-// ── PLSS / LAND GRID CONTROLLER ──────────────────────────────────────────
-let _plssActive   = false;
-let _plssDebounce = null;
-const PLSS_LAYERS = [
-  'plss-township-fill','plss-township-line','plss-township-label',
-  'plss-section-line','plss-section-label',
-  'tiger-county-line','tiger-county-label',
-];
-
-function togglePLSS() {
-  _plssActive = !_plssActive;
-  const btn = document.getElementById('btn-plss');
-  btn.classList.toggle('active', _plssActive);
-
-  if (_plssActive) {
-    _loadPLSSForViewport();
-    // Refresh on map move (debounced)
-    map.on('moveend', _onMapMovePLSS);
-    map.on('zoomend', _onMapMovePLSS);
-  } else {
-    map.off('moveend', _onMapMovePLSS);
-    map.off('zoomend', _onMapMovePLSS);
-    PLSS_LAYERS.forEach(id => {
-      try { map.setLayoutProperty(id, 'visibility', 'none'); } catch(_){}
-    });
-    hidePLSSPopup();
-  }
-}
-
-function _onMapMovePLSS() {
-  clearTimeout(_plssDebounce);
-  _plssDebounce = setTimeout(_loadPLSSForViewport, 600); // 600ms debounce
-}
-
-async function _loadPLSSForViewport() {
-  if (!_plssActive) return;
-
-  const dot = document.getElementById('plss-dot');
-  dot.classList.add('visible');
-
-  const bounds = map.getBounds();
-  const bbox = [
-    bounds.getWest(), bounds.getSouth(),
-    bounds.getEast(), bounds.getNorth()
-  ];
-  const zoom = map.getZoom();
-
-  try {
-    // Determine what data to fetch based on location
-    const hasPLSS   = PLSSService.bboxHasPLSSCoverage(bbox);
-    const hasTexas  = PLSSService.bboxIsTexas(bbox);
-
-    // Always fetch TIGER county grid for TX context (lightweight)
-    if (hasTexas) {
-      try {
-        const tigerData = await PLSSService.fetchTexasCountyGrid(bbox);
-        if (tigerData.features && tigerData.features.length > 0) {
-          map.getSource('tiger-counties').setData(tigerData);
-          map.setLayoutProperty('tiger-county-line',  'visibility', 'visible');
-          map.setLayoutProperty('tiger-county-label', 'visibility', 'visible');
-        }
-      } catch (e) {
-        console.warn('[PLSS] TIGER fetch failed:', e.message);
-      }
-    }
-
-    // Fetch BLM PLSS townships if area has coverage
-    if (hasPLSS) {
-      try {
-        const twnData = await PLSSService.fetchTownships(bbox);
-        if (twnData.features && twnData.features.length > 0) {
-          map.getSource('plss-townships').setData(twnData);
-          map.setLayoutProperty('plss-township-fill',  'visibility', 'visible');
-          map.setLayoutProperty('plss-township-line',  'visibility', 'visible');
-          map.setLayoutProperty('plss-township-label', 'visibility', 'visible');
-        }
-      } catch (e) {
-        console.warn('[PLSS] Township fetch failed:', e.message);
-      }
-
-      // Only fetch sections at zoom 10+ (too many features at lower zoom)
-      if (zoom >= 10) {
-        try {
-          const secData = await PLSSService.fetchSections(bbox);
-          if (secData.features && secData.features.length > 0) {
-            map.getSource('plss-sections').setData(secData);
-            map.setLayoutProperty('plss-section-line',  'visibility', 'visible');
-            map.setLayoutProperty('plss-section-label', 'visibility', 'visible');
-          }
-        } catch (e) {
-          console.warn('[PLSS] Section fetch failed:', e.message);
-        }
-      }
-    }
-
-  } catch (e) {
-    console.warn('[PLSS] Load error:', e.message);
-  } finally {
-    dot.classList.remove('visible');
-  }
-}
-
-// ── Show PLSS popup from feature click ──────────────────────────────────
-function showPLSSPopup(point, feature, type) {
-  const popup  = document.getElementById('plss-info-popup');
-  const label  = PLSSService.formatPLSSLabel(feature);
-  const mapEl  = document.getElementById('mapbox-map');
-  const rect   = mapEl.getBoundingClientRect();
-
-  // Position popup near click point, keep in bounds
-  let px = point.x + 12;
-  let py = point.y - 10;
-  if (px + 270 > rect.width)  px = point.x - 275;
-  if (py + 160 > rect.height) py = point.y - 165;
-
-  popup.style.left = px + 'px';
-  popup.style.top  = py + 'px';
-
-  const badgeCls = (label.state === 'NM') ? 'plss-badge-nm' : 'plss-badge-tx';
-
-  popup.innerHTML = `
-    <div class="plss-info-title">🗂 ${label.title}</div>
-    <div class="plss-info-row"><strong>Type:</strong> ${label.type}</div>
-    ${label.detail ? `<div class="plss-info-row"><strong>Detail:</strong> ${label.detail}</div>` : ''}
-    ${label.plssid ? `<div class="plss-info-row"><strong>PLSS ID:</strong> <span style="font-family:monospace;font-size:0.7rem">${label.plssid}</span></div>` : ''}
-    ${label.state ? `<div class="plss-info-row"><strong>State:</strong> ${label.state}</div>` : ''}
-    <span class="plss-info-badge ${badgeCls}">BLM PLSS ${label.state || ''}</span>
-  `;
-  popup.classList.add('visible');
-  setTimeout(hidePLSSPopup, 6000);
-}
-
-function showTIGERPopup(point, feature) {
-  const popup = document.getElementById('plss-info-popup');
-  const p     = feature.properties;
-  const mapEl = document.getElementById('mapbox-map');
-  const rect  = mapEl.getBoundingClientRect();
-
-  let px = point.x + 12;
-  let py = point.y - 10;
-  if (px + 270 > rect.width)  px = point.x - 275;
-  if (py + 140 > rect.height) py = point.y - 145;
-
-  popup.style.left = px + 'px';
-  popup.style.top  = py + 'px';
-
-  popup.innerHTML = `
-    <div class="plss-info-title">🏛 ${p.NAME} County</div>
-    <div class="plss-info-row"><strong>GEOID:</strong> ${p.GEOID || '—'}</div>
-    <div class="plss-info-row"><strong>State FIPS:</strong> Texas (48)</div>
-    <div class="plss-info-row" style="margin-top:4px;color:var(--gold);font-size:0.7rem">
-      ⚠️ TX uses Abstract/Block survey — no PLSS T/R/S
+<!-- ══ MODAL: ADD JOB ══ -->
+<div class="modal-overlay" id="modal-add-job">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Create New Job</div>
+      <button class="modal-close" onclick="closeModal('modal-add-job')">✕</button>
     </div>
-    <span class="plss-info-badge plss-badge-tx">Census TIGER · TX</span>
-  `;
-  popup.classList.add('visible');
-  setTimeout(hidePLSSPopup, 6000);
-}
-
-function hidePLSSPopup() {
-  document.getElementById('plss-info-popup').classList.remove('visible');
-}
-
-// ── Resolve PLSS by clicking anywhere on the map ─────────────────────────
-async function _resolvePLSSPoint(lng, lat, point) {
-  const popup = document.getElementById('plss-info-popup');
-  const mapEl = document.getElementById('mapbox-map');
-  const rect  = mapEl.getBoundingClientRect();
-
-  let px = point.x + 12;
-  let py = point.y - 10;
-  if (px + 270 > rect.width)  px = point.x - 275;
-  if (py + 180 > rect.height) py = point.y - 185;
-
-  popup.style.left = px + 'px';
-  popup.style.top  = py + 'px';
-  popup.innerHTML = '<div class="plss-info-title">🗂 Resolving land context...</div>';
-  popup.classList.add('visible');
-
-  try {
-    const result = await PLSSService.resolveLandContext(lng, lat);
-
-    if (result.plss) {
-      const label = PLSSService.formatPLSSLabel({ properties: result.plss });
-      const badgeCls = (result.plss.STATEABBR === 'NM') ? 'plss-badge-nm' : 'plss-badge-tx';
-      popup.innerHTML = `
-        <div class="plss-info-title">🗂 ${label.title}</div>
-        <div class="plss-info-row"><strong>Type:</strong> ${label.type}</div>
-        ${label.detail ? `<div class="plss-info-row"><strong>Detail:</strong> ${label.detail}</div>` : ''}
-        ${label.plssid ? `<div class="plss-info-row"><strong>PLSS ID:</strong> <span style="font-family:monospace;font-size:0.7rem">${label.plssid}</span></div>` : ''}
-        ${result.plss.STATEABBR ? `<div class="plss-info-row"><strong>State:</strong> ${result.plss.STATEABBR}</div>` : ''}
-        <div class="plss-info-row" style="font-size:0.68rem;color:var(--muted);margin-top:3px">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
-        <span class="plss-info-badge ${badgeCls}">BLM PLSS</span>
-      `;
-    } else if (result.tiger) {
-      popup.innerHTML = `
-        <div class="plss-info-title">🏛 ${result.tiger.NAME} County, TX</div>
-        <div class="plss-info-row"><strong>GEOID:</strong> ${result.tiger.GEOID || '—'}</div>
-        <div class="plss-info-row" style="margin-top:4px;color:var(--gold);font-size:0.7rem">
-          ⚠️ Texas uses Abstract/Block survey system — BLM PLSS T/R/S not available for TX
+    <div class="modal-body">
+      <div class="field"><label>Job Name / Description</label><input type="text" id="j-name" placeholder="Drill Pad A — Section 14 Setup"></div>
+      <div class="field-row">
+        <div class="field"><label>Job Type</label>
+          <select id="j-type">
+            <option value="">Select type</option>
+            <option>Drilling</option><option>Workover</option><option>Pipeline</option>
+            <option>Tank Farm</option><option>Lease Road</option><option>Equipment Repair</option>
+            <option>Inspection</option><option>Other</option>
+          </select>
         </div>
-        <div class="plss-info-row" style="font-size:0.68rem;color:var(--muted);margin-top:3px">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
-        <span class="plss-info-badge plss-badge-tx">Census TIGER · TX</span>
-      `;
-    } else {
-      popup.innerHTML = `
-        <div class="plss-info-title">🗂 No land data found</div>
-        <div class="plss-info-row" style="color:var(--muted)">No PLSS or county data returned for this point.</div>
-        <div class="plss-info-row" style="font-size:0.68rem;color:var(--muted);margin-top:3px">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
-        <span class="plss-info-badge plss-badge-none">No Coverage</span>
-      `;
-    }
-  } catch (e) {
-    popup.innerHTML = `
-      <div class="plss-info-title" style="color:var(--red)">⚠️ Lookup failed</div>
-      <div class="plss-info-row" style="color:var(--muted)">${e.message}</div>
-    `;
-  }
+        <div class="field"><label>Priority</label>
+          <select id="j-priority">
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Location / Lease</label><input type="text" id="j-location" placeholder="Andrews County — Section 14, Block B"></div>
+      <div class="field-row">
+        <div class="field"><label>Start Date</label><input type="date" id="j-start"></div>
+        <div class="field"><label>Est. End Date</label><input type="date" id="j-end"></div>
+      </div>
+      <div class="field"><label>Assigned Workers</label>
+        <div id="j-workers-list" style="display:flex;flex-wrap:wrap;gap:0.4rem;min-height:36px;background:rgba(255,255,255,0.04);border:1px solid rgba(245,166,35,0.15);border-radius:8px;padding:0.5rem">
+          <span style="color:var(--muted);font-size:0.8rem;align-self:center">Loading workers…</span>
+        </div>
+      </div>
+      <div class="field"><label>Notes / Instructions</label><textarea id="j-notes" placeholder="Safety requirements, equipment needed, special instructions…"></textarea></div>
+      <div class="msg error" id="job-modal-error" style="margin-top:0.5rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-job')">Cancel</button>
+      <button class="btn btn-gold" onclick="addJob()">Create Job</button>
+    </div>
+  </div>
+</div>
 
-  setTimeout(hidePLSSPopup, 8000);
-}
+<!-- ══ MODAL: CLOCK IN (manual) ══ -->
+<div class="modal-overlay" id="modal-clock-in">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div class="modal-title">Manual Clock In</div>
+      <button class="modal-close" onclick="closeModal('modal-clock-in')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Worker</label>
+        <select id="ci-worker"><option value="">Select worker</option></select>
+      </div>
+      <div class="field"><label>Job</label>
+        <select id="ci-job"><option value="">Select job</option></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Clock In Time</label><input type="time" id="ci-in"></div>
+        <div class="field"><label>Clock Out Time</label><input type="time" id="ci-out"></div>
+      </div>
+      <div class="field"><label>Date</label><input type="date" id="ci-date"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-clock-in')">Cancel</button>
+      <button class="btn btn-gold" onclick="submitTimeCard()">Submit</button>
+    </div>
+  </div>
+</div>
 
-// ── Wire general map click → PLSS resolve when layer active ─────────────
-map.on('click', (e) => {
-  if (!_plssActive) return;
-  // Only resolve if not clicking an existing job/worker marker
-  const features = map.queryRenderedFeatures(e.point, {
-    layers: ['plss-township-fill', 'plss-section-line', 'tiger-county-line']
-  });
-  if (features.length === 0) {
-    // Open ocean / no rendered PLSS — still try point query
-    _resolvePLSSPoint(e.lngLat.lng, e.lngLat.lat, e.point);
-  }
-});
+<script type="module">
+import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref, set, push, get, update, remove, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-// ── Also re-apply PLSS layers after map style swap ───────────────────────
-const _origSetStyle = setMapStyle;
-// patch setMapStyle to re-register PLSS sources after style.load
-const _patchedSetMapStyle = function(key, btn) {
-  _origSetStyle(key, btn);
-  if (!_plssActive) return;
-  map.once('style.load', () => {
-    // Sources are wiped on style change — re-register
-    ['plss-townships','plss-sections','tiger-counties'].forEach(id => {
-      if (!map.getSource(id)) {
-        map.addSource(id, { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-      }
-    });
-    // Re-add layers
-    _reAddPLSSLayers();
-    // Re-fetch
-    _loadPLSSForViewport();
-  });
+const firebaseConfig = {
+  apiKey:            "AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
+  authDomain:        "oilmanager-118b7.firebaseapp.com",
+  databaseURL:       "https://oilmanager-118b7-default-rtdb.firebaseio.com",
+  projectId:         "oilmanager-118b7",
+  storageBucket:     "oilmanager-118b7.firebasestorage.app",
+  messagingSenderId: "1062793158063",
+  appId:             "1:1062793158063:web:49023cc020e5e11e6d235a"
 };
 
-function _reAddPLSSLayers() {
-  const layerDefs = [
-    { id:'plss-township-fill',  type:'fill',   source:'plss-townships', paint:{'fill-color':'#F5A623','fill-opacity':0.03} },
-    { id:'plss-township-line',  type:'line',   source:'plss-townships', paint:{'line-color':'#F5A623','line-width':1.8,'line-opacity':0.75} },
-    { id:'plss-township-label', type:'symbol', source:'plss-townships', layout:{'text-field':['get','TWNSHPLAB'],'text-size':11,'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold']}, paint:{'text-color':'#F5A623','text-halo-color':'rgba(6,8,16,0.85)','text-halo-width':1.5} },
-    { id:'plss-section-line',   type:'line',   source:'plss-sections',  paint:{'line-color':'#E8860A','line-width':1.0,'line-opacity':0.6} },
-    { id:'plss-section-label',  type:'symbol', source:'plss-sections',  minzoom:11, layout:{'text-field':['concat','Sec ',['get','FRSTDIVNO']],'text-size':9,'text-font':['DIN Offc Pro Medium','Arial Unicode MS Regular']}, paint:{'text-color':'#E8860A','text-halo-color':'rgba(6,8,16,0.8)','text-halo-width':1.2} },
-    { id:'tiger-county-line',   type:'line',   source:'tiger-counties', paint:{'line-color':'#F5A623','line-width':1.5,'line-opacity':0.5,'line-dasharray':[6,3]} },
-    { id:'tiger-county-label',  type:'symbol', source:'tiger-counties', minzoom:8,  layout:{'text-field':['concat',['get','NAME'],' Co.'],'text-size':10,'text-font':['DIN Offc Pro Italic','Arial Unicode MS Regular']}, paint:{'text-color':'#F5A623','text-halo-color':'rgba(6,8,16,0.8)','text-halo-width':1.2} },
-  ];
-  layerDefs.forEach(def => {
-    if (!map.getLayer(def.id)) {
-      try { map.addLayer(def); } catch(_){}
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+let UID      = null;
+let workers  = {};
+let jobs     = {};
+let timecards= {};
+
+// ── AUTH GUARD ────────────────────────────────────────────────
+onAuthStateChanged(auth, user => {
+  if(!user){ window.location.href = 'login.html'; return; }
+  UID = user.uid;
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-initials').textContent = name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('overview-greeting').textContent = greet + ', ' + name.split(' ')[0];
+
+  // Load boss profile
+  get(ref(db, 'bosses/' + UID)).then(snap => {
+    if(snap.exists()){
+      const p = snap.val();
+      document.getElementById('sidebar-company').textContent = p.company || 'OilManager';
+      document.getElementById('s-first').value   = p.firstName  || '';
+      document.getElementById('s-last').value    = p.lastName   || '';
+      document.getElementById('s-company').value = p.company    || '';
+      document.getElementById('s-title').value   = p.jobTitle   || '';
+      document.getElementById('s-phone').value   = p.phone      || '';
+      document.getElementById('s-area').value    = p.area       || '';
     }
   });
+
+  // Live listeners
+  onValue(ref(db, 'bosses/' + UID + '/workers'), snap => {
+    workers = snap.val() || {};
+    renderWorkers();
+    refreshStats();
+    populateWorkerSelects();
+  });
+  onValue(ref(db, 'bosses/' + UID + '/jobs'), snap => {
+    jobs = snap.val() || {};
+    renderJobs();
+    refreshStats();
+    populateJobSelects();
+    renderOverviewJobs();
+  });
+  onValue(ref(db, 'bosses/' + UID + '/timecards'), snap => {
+    timecards = snap.val() || {};
+    renderTimecards();
+    refreshStats();
+    renderOverviewTC();
+  });
+});
+
+// ── LOGOUT ───────────────────────────────────────────────────
+window.doLogout = () => signOut(auth).then(() => window.location.href = 'login.html');
+
+// ── PANEL SWITCH ─────────────────────────────────────────────
+window.showPanel = function(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.topbar-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.topbar-tab').forEach(t => {
+    if(t.getAttribute('onclick')?.includes(name)) t.classList.add('active');
+  });
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if(n.getAttribute('onclick')?.includes(name)) n.classList.add('active');
+  });
+  if(name === 'sms') loadSMSLog();
+};
+
+// ── MODAL ────────────────────────────────────────────────────
+window.openModal = function(id) {
+  if(!id) return;
+  document.getElementById(id).classList.add('open');
+  if(id === 'modal-add-job') populateJobWorkerCheckboxes();
+  if(id === 'modal-clock-in'){ populateWorkerSelects(); populateJobSelects(); document.getElementById('ci-date').value = new Date().toISOString().split('T')[0]; }
+};
+window.closeModal = function(id) { document.getElementById(id).classList.remove('open'); };
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target === el) el.classList.remove('open'); });
+});
+
+// ── ADD WORKER ───────────────────────────────────────────────
+window.addWorker = async function() {
+  const first = document.getElementById('w-first').value.trim();
+  const last  = document.getElementById('w-last').value.trim();
+  const role  = document.getElementById('w-role').value;
+  const phone = document.getElementById('w-phone').value.trim();
+  const site  = document.getElementById('w-site').value.trim();
+  const rate  = document.getElementById('w-rate').value;
+  const start = document.getElementById('w-start').value;
+  const notes = document.getElementById('w-notes').value.trim();
+  const errEl = document.getElementById('worker-modal-error');
+  errEl.style.display = 'none';
+
+  if(!first||!last||!role){ errEl.textContent='First name, last name and role are required.'; errEl.style.display='block'; return; }
+
+  const id   = 'w_' + Date.now();
+  const code = (first[0]+last[0]+'-'+Math.floor(1000+Math.random()*9000)).toUpperCase();
+  await set(ref(db, 'bosses/'+UID+'/workers/'+id), {
+    id, firstName:first, lastName:last, name:first+' '+last,
+    role, phone, jobsite:site, hourlyRate:rate||'', startDate:start,
+    notes, code, status:'active', createdAt:new Date().toISOString()
+  });
+  addActivity('👷 Worker <strong>'+first+' '+last+'</strong> added to roster', 'var(--green)');
+  ['w-first','w-last','w-phone','w-site','w-rate','w-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('w-role').value = '';
+  document.getElementById('w-start').value = '';
+  closeModal('modal-add-worker');
+};
+
+// ── ADD JOB ──────────────────────────────────────────────────
+window.addJob = async function() {
+  const name     = document.getElementById('j-name').value.trim();
+  const type     = document.getElementById('j-type').value;
+  const priority = document.getElementById('j-priority').value;
+  const location = document.getElementById('j-location').value.trim();
+  const start    = document.getElementById('j-start').value;
+  const end      = document.getElementById('j-end').value;
+  const notes    = document.getElementById('j-notes').value.trim();
+  const errEl    = document.getElementById('job-modal-error');
+  errEl.style.display = 'none';
+
+  if(!name||!location){ errEl.textContent='Job name and location are required.'; errEl.style.display='block'; return; }
+
+  // Collect assigned workers
+  const assigned = [];
+  document.querySelectorAll('#j-workers-list input[type=checkbox]:checked').forEach(cb => assigned.push(cb.value));
+
+  const id = 'j_' + Date.now();
+  await set(ref(db, 'bosses/'+UID+'/jobs/'+id), {
+    id, name, type, priority, location, startDate:start, endDate:end,
+    notes, assignedWorkers:assigned, status:'active', createdAt:new Date().toISOString()
+  });
+  addActivity('📍 Job <strong>'+name+'</strong> created', 'var(--blue)');
+  ['j-name','j-location','j-start','j-end','j-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('j-type').value = '';
+  document.getElementById('j-priority').value = 'normal';
+  closeModal('modal-add-job');
+};
+
+// ── SUBMIT TIME CARD ─────────────────────────────────────────
+window.submitTimeCard = async function() {
+  const wid   = document.getElementById('ci-worker').value;
+  const jid   = document.getElementById('ci-job').value;
+  const inn   = document.getElementById('ci-in').value;
+  const out   = document.getElementById('ci-out').value;
+  const date  = document.getElementById('ci-date').value;
+  if(!wid||!jid||!inn||!out||!date){ alert('Please fill in all fields.'); return; }
+
+  const [ih,im] = inn.split(':').map(Number);
+  const [oh,om] = out.split(':').map(Number);
+  const hours = ((oh*60+om)-(ih*60+im))/60;
+  if(hours <= 0){ alert('Clock out must be after clock in.'); return; }
+
+  const id = 'tc_' + Date.now();
+  const worker = workers[wid];
+  const job    = jobs[jid];
+  await set(ref(db, 'bosses/'+UID+'/timecards/'+id), {
+    id, workerId:wid, workerName:worker?.name||wid,
+    jobId:jid, jobName:job?.name||jid,
+    clockIn:inn, clockOut:out, date, hours:hours.toFixed(2),
+    status:'pending', createdAt:new Date().toISOString()
+  });
+  addActivity('⏱ Time card submitted for <strong>'+(worker?.name||'worker')+'</strong> — '+hours.toFixed(1)+'h', 'var(--gold)');
+  closeModal('modal-clock-in');
+};
+
+// ── APPROVE TIME CARD ────────────────────────────────────────
+window.approveTC = async function(id) {
+  await update(ref(db, 'bosses/'+UID+'/timecards/'+id), { status:'approved' });
+  addActivity('✅ Time card approved for <strong>'+(timecards[id]?.workerName||'worker')+'</strong>', 'var(--green)');
+};
+window.denyTC = async function(id) {
+  await update(ref(db, 'bosses/'+UID+'/timecards/'+id), { status:'denied' });
+};
+window.approveAll = function() {
+  Object.keys(timecards).filter(id=>timecards[id].status==='pending').forEach(id=>approveTC(id));
+};
+
+// ── DELETE WORKER ────────────────────────────────────────────
+window.deleteWorker = async function(id) {
+  if(!confirm('Remove this worker from your roster?')) return;
+  await remove(ref(db, 'bosses/'+UID+'/workers/'+id));
+};
+
+// ── DELETE JOB ───────────────────────────────────────────────
+window.deleteJob = async function(id) {
+  if(!confirm('Delete this job?')) return;
+  await remove(ref(db, 'bosses/'+UID+'/jobs/'+id));
+};
+window.updateJobStatus = async function(id, status) {
+  await update(ref(db, 'bosses/'+UID+'/jobs/'+id), { status });
+};
+
+// ── RENDER WORKERS ───────────────────────────────────────────
+function renderWorkers(filter='') {
+  const grid  = document.getElementById('workers-grid');
+  const list  = Object.values(workers).filter(w => !filter || w.name.toLowerCase().includes(filter.toLowerCase()));
+  if(!list.length){ grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👷</div><div class="empty-title">No workers'+(filter?' match':'yet')+'</div></div>'; return; }
+  grid.innerHTML = list.map(w => `
+    <div class="worker-card">
+      <div class="worker-card-head">
+        <div class="worker-avatar">${(w.firstName||'?')[0]}${(w.lastName||'')[0]}</div>
+        <div>
+          <div class="worker-name">${w.name}</div>
+          <div class="worker-role">${w.role}</div>
+        </div>
+        <span class="pill pill-green" style="margin-left:auto">Active</span>
+      </div>
+      <div class="worker-meta">
+        ${w.code ? `<span class="pill pill-gray">🔑 ${w.code}</span>` : ''}
+        ${w.phone ? `<span class="pill pill-gray">📞 ${w.phone}</span>` : ''}
+        ${w.hourlyRate ? `<span class="pill pill-yellow">$${w.hourlyRate}/hr</span>` : ''}
+      </div>
+      ${w.jobsite ? `<div style="font-size:0.75rem;color:var(--muted)">📍 ${w.jobsite}</div>` : ''}
+      <div class="worker-actions">
+        <button class="btn btn-outline btn-sm" onclick="openModal('modal-clock-in')">+ Time Card</button>
+        <button class="btn btn-red btn-sm" onclick="deleteWorker('${w.id}')">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+window.filterWorkers = v => renderWorkers(v);
+
+// ── RENDER JOBS ──────────────────────────────────────────────
+function renderJobs(filter='') {
+  const list  = document.getElementById('jobs-list');
+  const items = Object.values(jobs).filter(j => !filter || j.name.toLowerCase().includes(filter.toLowerCase()));
+  if(!items.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📍</div><div class="empty-title">No jobs'+(filter?' match':'yet')+'</div></div>'; return; }
+  const statusColors = {active:'var(--green)',pending:'var(--gold)',complete:'var(--muted)'};
+  const pillMap = {active:'pill-green',pending:'pill-yellow',complete:'pill-gray'};
+  list.innerHTML = items.map(j => `
+    <div class="job-card">
+      <div class="job-dot" style="background:${statusColors[j.status]||'var(--muted)'}"></div>
+      <div class="job-info">
+        <div class="job-name">${j.name}</div>
+        <div class="job-meta">${j.type||'Job'} · ${j.location} ${j.startDate?'· '+j.startDate:''}</div>
+      </div>
+      ${j.priority==='urgent'?'<span class="pill pill-red">🔴 Urgent</span>':j.priority==='high'?'<span class="pill pill-yellow">⚠ High</span>':''}
+      <span class="pill ${pillMap[j.status]||'pill-gray'}">${j.status}</span>
+      <div class="job-actions">
+        <button class="btn btn-green btn-sm" onclick="updateJobStatus('${j.id}','complete')">✓ Done</button>
+        <button class="btn btn-red btn-sm" onclick="deleteJob('${j.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+window.filterJobs = v => renderJobs(typeof v === 'string' ? v : '');
+
+// ── RENDER TIME CARDS ────────────────────────────────────────
+function renderTimecards() {
+  const list    = document.getElementById('tc-list');
+  const pending = Object.values(timecards).filter(t=>t.status==='pending');
+  document.getElementById('tc-pending-count').textContent = pending.length + ' pending';
+  document.getElementById('badge-tc').textContent = pending.length;
+  if(!pending.length){ list.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">All clear — no pending time cards</div></div>'; return; }
+  list.innerHTML = pending.map(t => `
+    <div class="tc-row">
+      <div>
+        <div class="tc-worker">${t.workerName}</div>
+        <div class="tc-detail">${t.jobName} · ${t.date} · ${t.clockIn}–${t.clockOut}</div>
+      </div>
+      <div class="tc-hours">${t.hours}h</div>
+      <div class="tc-actions">
+        <button class="btn btn-green btn-sm" onclick="approveTC('${t.id}')">✓ Approve</button>
+        <button class="btn btn-red btn-sm" onclick="denyTC('${t.id}')">Deny</button>
+      </div>
+    </div>
+  `).join('');
 }
 
-// ── GLO LEASES CONTROLLER ─────────────────────────────────────────────────
-let _gloActive   = false;
-let _gloDebounce = null;
-const GLO_LAYERS = [
-  'glo-lease-fill','glo-lease-line','glo-lease-label',
-  'glo-unit-fill','glo-unit-line','glo-unit-label',
-  'glo-psf-fill','glo-psf-line',
-];
-
-function toggleGLO() {
-  _gloActive = !_gloActive;
-  const btn = document.getElementById('btn-glo');
-  btn.classList.toggle('active', _gloActive);
-
-  const legendGLO = document.getElementById('legend-glo');
-  const legendPSF = document.getElementById('legend-psf');
-  if (_gloActive) {
-    _loadGLOForViewport();
-    map.on('moveend', _onMapMoveGLO);
-    map.on('zoomend', _onMapMoveGLO);
-    if (legendGLO) legendGLO.style.display = 'flex';
-    if (legendPSF) legendPSF.style.display = 'flex';
-  } else {
-    map.off('moveend', _onMapMoveGLO);
-    map.off('zoomend', _onMapMoveGLO);
-    GLO_LAYERS.forEach(id => {
-      try { map.setLayoutProperty(id, 'visibility', 'none'); } catch(_){}
-    });
-    hideGLOPopup();
-    if (legendGLO) legendGLO.style.display = 'none';
-    if (legendPSF) legendPSF.style.display = 'none';
-  }
+// ── RENDER OVERVIEW ──────────────────────────────────────────
+function renderOverviewJobs() {
+  const el = document.getElementById('overview-jobs-list');
+  const active = Object.values(jobs).filter(j=>j.status==='active').slice(0,4);
+  if(!active.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📍</div><div class="empty-title">No active jobs</div></div>'; return; }
+  el.innerHTML = active.map(j=>`
+    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text)">${j.name}</div>
+        <div style="font-size:0.72rem;color:var(--muted)">${j.location}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
-// ── GOOGLE STREET VIEW ────────────────────────────────────────────
-let _svActive = false;
-let _svPanorama = null;
-let _svService = null;
+function renderOverviewTC() {
+  const el = document.getElementById('overview-tc-list');
+  const pending = Object.values(timecards).filter(t=>t.status==='pending').slice(0,3);
+  if(!pending.length){ el.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-title">No pending time cards</div></div>'; return; }
+  el.innerHTML = pending.map(t=>`
+    <div class="tc-row" style="padding:0.7rem 1.25rem">
+      <div style="flex:1">
+        <div class="tc-worker">${t.workerName}</div>
+        <div class="tc-detail">${t.jobName} · ${t.hours}h</div>
+      </div>
+      <button class="btn btn-green btn-sm" onclick="approveTC('${t.id}')">✓ Approve</button>
+    </div>
+  `).join('');
+}
 
-function _loadGoogleMaps() {
-  return new Promise((resolve) => {
-    if (_googleReady) { resolve(); return; }
-    window.onGoogleReady = () => { _googleReady = true; console.log('Google Maps API loaded'); _initPlacesSearch(); resolve(); };
-    const s = document.createElement('script');
-    s.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyA_sqNdMATzv9KhfTZz4p8nEFcT7SBzbuk&callback=onGoogleReady&libraries=streetView,places,geometry';
-    document.head.appendChild(s);
+// ── STATS ────────────────────────────────────────────────────
+function refreshStats() {
+  document.getElementById('stat-workers').textContent = Object.keys(workers).length;
+  document.getElementById('stat-jobs').textContent    = Object.values(jobs).filter(j=>j.status==='active').length;
+  document.getElementById('stat-tc').textContent      = Object.values(timecards).filter(t=>t.status==='pending').length;
+  document.getElementById('badge-workers').textContent= Object.keys(workers).length;
+  document.getElementById('badge-jobs').textContent   = Object.values(jobs).filter(j=>j.status==='active').length;
+}
+
+// ── POPULATE SELECTS ─────────────────────────────────────────
+function populateWorkerSelects() {
+  ['ci-worker'].forEach(id => {
+    const sel = document.getElementById(id); if(!sel) return;
+    const val = sel.value;
+    sel.innerHTML = '<option value="">Select worker</option>' + Object.values(workers).map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+    sel.value = val;
   });
 }
-
-function _initPlacesSearch() {
-  const input = document.getElementById('g-search-input');
-  if (!input || !window.google) return;
-  const autocomplete = new google.maps.places.Autocomplete(input, {
-    types: ['address'],
-    componentRestrictions: { country: 'us' }
-  });
-  autocomplete.addListener('place_changed', () => {
-    const place = autocomplete.getPlace();
-    if (!place.geometry) return;
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
-    // Open Street View at searched address
-    _dropStreetView({ lat, lng });
+function populateJobSelects() {
+  ['ci-job'].forEach(id => {
+    const sel = document.getElementById(id); if(!sel) return;
+    const val = sel.value;
+    sel.innerHTML = '<option value="">Select job</option>' + Object.values(jobs).filter(j=>j.status==='active').map(j=>`<option value="${j.id}">${j.name}</option>`).join('');
+    sel.value = val;
   });
 }
-
-async function toggleStreetView() {
-  _svActive = !_svActive;
-  const btn = document.getElementById('btn-sv');
-  const overlay = document.getElementById('sv-overlay');
-  const backBtn = document.getElementById('sv-back-btn');
-  const placeholder = document.getElementById('sv-placeholder');
-
-  const gSearch = document.getElementById('g-search-wrap');
-  btn.classList.toggle('active', _svActive);
-  overlay.classList.toggle('open', _svActive);
-  backBtn.classList.toggle('visible', _svActive);
-  if (gSearch) gSearch.style.display = _svActive ? 'none' : '';
-
-  if (_svActive) {
-    await _loadGoogleMaps();
-    setTimeout(() => {
-      if (!_svPanorama) _initStreetView();
-      // Drop into current map center automatically
-      const c = map.getCenter();
-      const latLng = new google.maps.LatLng(c.lat, c.lng);
-      _svService.getPanorama({ location: latLng, radius: 500 }, (data, status) => {
-        if (status === google.maps.StreetViewStatus.OK) {
-          _svPanorama.setPosition(data.location.latLng);
-          _svPanorama.setPov({ heading: 0, pitch: 0 });
-          if (placeholder) placeholder.style.display = 'none';
-          setTimeout(() => google.maps.event.trigger(_svPanorama, 'resize'), 100);
-          setTimeout(() => google.maps.event.trigger(_svPanorama, 'resize'), 600);
-        } else {
-          if (placeholder) {
-            placeholder.style.display = 'flex';
-            placeholder.querySelector('div').nextElementSibling.textContent = 'No Street View imagery near this area';
-          }
-        }
-      });
-    }, 450);
-  }
+function populateJobWorkerCheckboxes() {
+  const el = document.getElementById('j-workers-list');
+  if(!Object.keys(workers).length){ el.innerHTML='<span style="color:var(--muted);font-size:0.8rem">Add workers first</span>'; return; }
+  el.innerHTML = Object.values(workers).map(w=>`
+    <label style="display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:0.78rem;color:var(--text)">
+      <input type="checkbox" value="${w.id}" style="accent-color:var(--gold)"> ${w.name}
+    </label>
+  `).join('');
 }
 
-function _initStreetView() {
-  _svService = new google.maps.StreetViewService();
-  _svPanorama = new google.maps.StreetViewPanorama(document.getElementById('sv-map'), {
-    addressControl: false,
-    fullscreenControl: false,
-    motionTracking: false,
-    motionTrackingControl: false,
-    showRoadLabels: true,
-    zoom: 0,
-    pov: { heading: 0, pitch: 0 }
-  });
+// ── ACTIVITY FEED ────────────────────────────────────────────
+function addActivity(text, color='var(--gold)') {
+  const feed = document.getElementById('activity-feed');
+  const now  = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.innerHTML = `<div class="activity-dot" style="background:${color}"></div><div><div class="activity-text">${text}</div><div class="activity-time">${now}</div></div>`;
+  const empty = feed.querySelector('.empty');
+  if(empty) empty.remove();
+  feed.insertBefore(item, feed.firstChild);
+  if(feed.children.length > 10) feed.removeChild(feed.lastChild);
 }
 
-function _dropStreetView(lngLat) {
-  if (!_googleReady) { console.warn('Google Maps still loading...'); return; }
-  if (!_svPanorama) _initStreetView();
-
-  const latLng = new google.maps.LatLng(lngLat.lat, lngLat.lng);
-  const coords = document.getElementById('sv-coords');
-  const placeholder = document.getElementById('sv-placeholder');
-
-  _svService.getPanorama({ location: latLng, radius: 50, source: google.maps.StreetViewSource.OUTDOOR }, (data, status) => {
-    if (status === google.maps.StreetViewStatus.OK) {
-      // Calculate heading from panorama position toward the searched point
-      const panoPos = data.location.latLng;
-      const heading = google.maps.geometry ?
-        google.maps.geometry.spherical.computeHeading(panoPos, latLng) :
-        Math.atan2(lngLat.lng - panoPos.lng(), lngLat.lat - panoPos.lat()) * 180 / Math.PI;
-
-      if (!_svActive) toggleStreetView();
-      setTimeout(() => {
-        _svPanorama.setPosition(panoPos);
-        _svPanorama.setPov({ heading: heading, pitch: 5 });
-        google.maps.event.trigger(_svPanorama, 'resize');
-        setTimeout(() => google.maps.event.trigger(_svPanorama, 'resize'), 500);
-      }, 500);
-      if (placeholder) placeholder.style.display = 'none';
-      if (coords) {
-        coords.textContent = `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`;
-        coords.classList.add('visible');
-      }
-    } else {
-      // Try again with wider radius if too close fails
-      _svService.getPanorama({ location: latLng, radius: 200 }, (data2, status2) => {
-        if (status2 === google.maps.StreetViewStatus.OK) {
-          const panoPos2 = data2.location.latLng;
-          const heading2 = Math.atan2(lngLat.lng - panoPos2.lng(), lngLat.lat - panoPos2.lat()) * 180 / Math.PI;
-          if (!_svActive) toggleStreetView();
-          setTimeout(() => {
-            _svPanorama.setPosition(panoPos2);
-            _svPanorama.setPov({ heading: heading2, pitch: 5 });
-            google.maps.event.trigger(_svPanorama, 'resize');
-            setTimeout(() => google.maps.event.trigger(_svPanorama, 'resize'), 500);
-          }, 500);
-          if (placeholder) placeholder.style.display = 'none';
-          if (coords) {
-            coords.textContent = `${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`;
-            coords.classList.add('visible');
-          }
-        } else {
-          if (placeholder) {
-            placeholder.style.display = 'flex';
-            placeholder.querySelector('div').nextElementSibling.textContent = 'No Street View imagery at this location';
-          }
-          if (coords) coords.classList.remove('visible');
-        }
-      });
-    }
-  });
-}
-
-// ────────────────────────────────────────────────────────────────────
-
-// ── LOCAL GAS UNITS LAYER ──────────────────────────────────────────
-let _localUnitsActive = false;
-let _localUnitsLoaded = false;
-
-async function toggleLocalUnits() {
-  _localUnitsActive = !_localUnitsActive;
-  const btn = document.getElementById('btn-local-units');
-  btn.classList.toggle('active', _localUnitsActive);
-
-  if (_localUnitsActive) {
-    if (!_localUnitsLoaded) {
-      const dot = document.getElementById('local-units-dot');
-      dot.classList.add('visible');
-      try {
-        const res = await fetch('./data/Oil_and_Gas_Units_Active_2267684662688735517.geojson');
-        const data = await res.json();
-        map.addSource('local-gas-units', { type: 'geojson', data });
-        map.addLayer({
-          id: 'local-gas-units-fill',
-          type: 'fill',
-          source: 'local-gas-units',
-          paint: {
-            'fill-color': '#F5A623',
-            'fill-opacity': 0.18
-          }
-        });
-        map.addLayer({
-          id: 'local-gas-units-outline',
-          type: 'line',
-          source: 'local-gas-units',
-          paint: {
-            'line-color': '#F5A623',
-            'line-width': 1.2,
-            'line-opacity': 0.7
-          }
-        });
-        // Click popup
-        map.on('click', 'local-gas-units-fill', (e) => {
-          const p = e.features[0].properties;
-          new mapboxgl.Popup({ closeButton: true, maxWidth: '320px' })
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div style="font-family:Inter,sans-serif;font-size:13px;color:#E8EAF0;background:#0D1020;padding:10px;border-radius:6px">
-                <div style="color:#F5A623;font-weight:700;margin-bottom:6px">⛽ ${p.FIELD_NAME || 'Gas Unit'}</div>
-                <div><span style="color:#6B7280">Lease #</span> ${p.LEASE_NUMBER || '—'}</div>
-                <div><span style="color:#6B7280">Status</span> ${p.LEASE_STATUS || '—'}</div>
-                <div><span style="color:#6B7280">Type</span> ${p.LEASE_TYPE || '—'}</div>
-                <div><span style="color:#6B7280">Net Acres</span> ${p.CURRENT_NET_ACRES || '—'}</div>
-                <div><span style="color:#6B7280">Effective</span> ${p.EFFECTIVE_DATE || '—'}</div>
-              </div>`)
-            .addTo(map);
-        });
-        map.on('mouseenter', 'local-gas-units-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
-        map.on('mouseleave', 'local-gas-units-fill', () => { map.getCanvas().style.cursor = ''; });
-        _localUnitsLoaded = true;
-      } catch(err) {
-        console.error('Failed to load local gas units:', err);
-        btn.classList.remove('active');
-        _localUnitsActive = false;
-      } finally {
-        document.getElementById('local-units-dot').classList.remove('visible');
-      }
-    } else {
-      map.setLayoutProperty('local-gas-units-fill', 'visibility', 'visible');
-      map.setLayoutProperty('local-gas-units-outline', 'visibility', 'visible');
-    }
-  } else {
-    if (_localUnitsLoaded) {
-      map.setLayoutProperty('local-gas-units-fill', 'visibility', 'none');
-      map.setLayoutProperty('local-gas-units-outline', 'visibility', 'none');
-    }
-  }
-}
-// ────────────────────────────────────────────────────────────────────
-
-function _onMapMoveGLO() {
-  clearTimeout(_gloDebounce);
-  _gloDebounce = setTimeout(_loadGLOForViewport, 600);
-}
-
-async function _loadGLOForViewport() {
-  if (!_gloActive) return;
-  const dot = document.getElementById('glo-dot');
-  dot.classList.add('visible');
-
-  const bounds = map.getBounds();
-  const bbox = [
-    bounds.getWest(), bounds.getSouth(),
-    bounds.getEast(), bounds.getNorth()
-  ];
-
-  const show = (id) => {
-    try { map.setLayoutProperty(id, 'visibility', 'visible'); } catch(_){}
-  };
-
+// ── SMS QUICK SEND ───────────────────────────────────────────
+window.quickSendAll = async function() {
+  const msg = document.getElementById('quick-sms-msg').value.trim();
+  const st  = document.getElementById('quick-sms-status');
+  if(!msg){ st.style.color='var(--red)'; st.textContent='Type a message first.'; return; }
+  st.style.color='var(--gold)'; st.textContent='Sending…';
   try {
-    // Fetch all 3 in parallel
-    const [leaseData, unitData, psfData] = await Promise.allSettled([
-      GLOService.fetchLeases(bbox),
-      GLOService.fetchUnits(bbox),
-      GLOService.fetchPSF(bbox),
-    ]);
-
-    if (leaseData.status === 'fulfilled' && leaseData.value?.features) {
-      map.getSource('glo-leases').setData(leaseData.value);
-      show('glo-lease-fill'); show('glo-lease-line'); show('glo-lease-label');
-    }
-    if (unitData.status === 'fulfilled' && unitData.value?.features) {
-      map.getSource('glo-units').setData(unitData.value);
-      show('glo-unit-fill'); show('glo-unit-line'); show('glo-unit-label');
-    }
-    if (psfData.status === 'fulfilled' && psfData.value?.features) {
-      map.getSource('glo-psf').setData(psfData.value);
-      show('glo-psf-fill'); show('glo-psf-line');
-    }
-  } catch(e) {
-    console.warn('GLO load error:', e.message);
-  } finally {
-    dot.classList.remove('visible');
-  }
-}
-
-function showGLOPopup(point, props, type) {
-  const popup = document.getElementById('glo-info-popup');
-  const mapEl = document.getElementById('mapbox-map');
-  const rect  = mapEl.getBoundingClientRect();
-  let px = point.x + 12, py = point.y - 10;
-  if (px + 300 > rect.width)  px = point.x - 305;
-  if (py + 200 > rect.height) py = point.y - 205;
-  popup.style.left = px + 'px';
-  popup.style.top  = py + 'px';
-
-  if (type === 'lease') {
-    const L = GLOService.formatLeaseLabel(props);
-    popup.innerHTML = `
-      <div class="glo-info-title">🛢 ${L.title}</div>
-      <div class="glo-info-row"><strong>Lessee:</strong> ${L.lessee}</div>
-      ${L.lessor ? `<div class="glo-info-row"><strong>Lessor:</strong> ${L.lessor}</div>` : ''}
-      ${L.field && L.field !== 'No Field Name' ? `<div class="glo-info-row"><strong>Field:</strong> ${L.field}</div>` : ''}
-      <div class="glo-info-row"><strong>County:</strong> ${L.county}</div>
-      <div class="glo-info-row"><strong>Acres:</strong> ${L.acres}</div>
-      <div class="glo-info-row"><strong>Royalty:</strong> ${L.royalty}</div>
-      <div class="glo-info-row"><strong>Depth:</strong> ${L.depth}</div>
-      <span class="glo-badge glo-badge-lease">GLO Active Lease</span>
-    `;
-  } else if (type === 'unit') {
-    const U = GLOService.formatUnitLabel(props);
-    popup.innerHTML = `
-      <div class="glo-info-title">🔵 ${U.title}</div>
-      ${U.field ? `<div class="glo-info-row"><strong>Field:</strong> ${U.field}</div>` : ''}
-      <div class="glo-info-row"><strong>County:</strong> ${U.county}</div>
-      <div class="glo-info-row"><strong>Status:</strong> ${U.status}</div>
-      <span class="glo-badge glo-badge-unit">GLO O&amp;G Unit</span>
-    `;
-  } else if (type === 'psf') {
-    const P = GLOService.formatPSFLabel(props);
-    popup.innerHTML = `
-      <div class="glo-info-title">🌿 ${P.title}</div>
-      ${P.survey ? `<div class="glo-info-row"><strong>${P.survey}</strong></div>` : ''}
-      ${P.block  ? `<div class="glo-info-row"><strong>${P.block}</strong></div>`  : ''}
-      <div class="glo-info-row"><strong>Acres:</strong> ${P.acres}</div>
-      <span class="glo-badge glo-badge-psf">Permanent School Fund</span>
-    `;
-  }
-
-  popup.classList.add('visible');
-  setTimeout(hideGLOPopup, 7000);
-}
-
-function hideGLOPopup() {
-  document.getElementById('glo-info-popup').classList.remove('visible');
-}
-
-// Re-add GLO layers after map style swap
-function _reAddGLOLayers() {
-  const defs = [
-    { id:'glo-lease-fill',  type:'fill',   source:'glo-leases', paint:{'fill-color':'#E8450A','fill-opacity':0.08} },
-    { id:'glo-lease-line',  type:'line',   source:'glo-leases', paint:{'line-color':'#FF6B35','line-width':1.6,'line-opacity':0.85} },
-    { id:'glo-lease-label', type:'symbol', source:'glo-leases', minzoom:11, layout:{'text-field':['get','LEASE_NUMBER'],'text-size':9,'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold']}, paint:{'text-color':'#FF6B35','text-halo-color':'rgba(6,8,16,0.9)','text-halo-width':1.4} },
-    { id:'glo-unit-fill',   type:'fill',   source:'glo-units',  paint:{'fill-color':'#4488FF','fill-opacity':0.06} },
-    { id:'glo-unit-line',   type:'line',   source:'glo-units',  paint:{'line-color':'#4488FF','line-width':1.4,'line-opacity':0.7,'line-dasharray':[4,3]} },
-    { id:'glo-unit-label',  type:'symbol', source:'glo-units',  minzoom:10, layout:{'text-field':['get','UNIT_NAME'],'text-size':9,'text-font':['DIN Offc Pro Medium','Arial Unicode MS Regular']}, paint:{'text-color':'#4488FF','text-halo-color':'rgba(6,8,16,0.9)','text-halo-width':1.4} },
-    { id:'glo-psf-fill',    type:'fill',   source:'glo-psf',    paint:{'fill-color':'#4CAF50','fill-opacity':0.07} },
-    { id:'glo-psf-line',    type:'line',   source:'glo-psf',    paint:{'line-color':'#4CAF50','line-width':1.2,'line-opacity':0.65,'line-dasharray':[2,4]} },
-  ];
-  ['glo-leases','glo-units','glo-psf'].forEach(id => {
-    if (!map.getSource(id)) map.addSource(id, { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-  });
-  defs.forEach(def => {
-    if (!map.getLayer(def.id)) { try { map.addLayer(def); } catch(_){} }
-  });
-}
-
-// Patch setMapStyle to survive style swaps for GLO too
-const _baseSetMapStyle = typeof _patchedSetMapStyle === 'function' ? _patchedSetMapStyle : setMapStyle;
-setMapStyle = function(key, btn) {
-  _baseSetMapStyle(key, btn);
-  if (!_gloActive) return;
-  map.once('style.load', () => {
-    _reAddGLOLayers();
-    _loadGLOForViewport();
-  });
+    const res  = await fetch('/api/sms/broadcast', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg}) });
+    const data = await res.json();
+    st.style.color='var(--green)'; st.textContent=`✓ Sent to ${data.sent} worker${data.sent!==1?'s':''}`;
+    document.getElementById('quick-sms-msg').value='';
+    document.getElementById('stat-sms').textContent = (parseInt(document.getElementById('stat-sms').textContent)||0) + (data.sent||0);
+  } catch{ st.style.color='var(--red)'; st.textContent='Server not reachable — run node server.js'; }
 };
 
-// ── FOCUS MODE ────────────────────────────────────────────────────────────
-let _focusActive   = false;
-let _focusAutoZoom = true;
-let _focusMarker   = null;
-let _focusOrbitTimer = null;
-let _focusBearing  = 0;
-
-const _mapArea   = document.getElementById('map-area');
-const _eyeCursor = document.getElementById('focus-eye-cursor');
-const _focusBanner   = document.getElementById('focus-banner');
-const _focusControls = document.getElementById('focus-controls');
-
-// Move eye cursor with mouse
-_mapArea.addEventListener('mousemove', (e) => {
-  if (!_focusActive) return;
-  const rect = _mapArea.getBoundingClientRect();
-  _eyeCursor.style.left = (e.clientX - rect.left) + 'px';
-  _eyeCursor.style.top  = (e.clientY - rect.top)  + 'px';
-});
-
-function toggleFocusMode() {
-  _focusActive ? exitFocusMode() : enterFocusMode();
+async function loadSMSLog() {
+  try {
+    const res  = await fetch('/api/sms/log');
+    const log  = await res.json();
+    const el   = document.getElementById('sms-log-preview');
+    if(!log.length){ el.innerHTML='<div class="empty" style="padding:1.5rem"><div class="empty-icon">💬</div><div class="empty-title">No messages sent yet</div></div>'; return; }
+    el.innerHTML = log.slice(0,5).map(e=>{
+      const sent = e.results.filter(r=>r.status==='sent').length;
+      const dt   = new Date(e.timestamp);
+      return `<div style="padding:0.75rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.04)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.3rem">
+          <span style="font-size:0.7rem;color:var(--muted)">${dt.toLocaleDateString()} ${dt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+          <span class="pill pill-green">${sent} sent</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text)">${e.message}</div>
+      </div>`;
+    }).join('');
+  } catch{ /* server offline */ }
 }
 
-function enterFocusMode() {
-  _focusActive = true;
-  _mapArea.classList.add('focus-mode');
-  document.getElementById('btn-focus').classList.add('focus-on');
-  _focusBanner.style.display   = 'block';
-  _focusControls.style.display = 'flex';
-}
-
-function exitFocusMode() {
-  _focusActive = false;
-  _mapArea.classList.remove('focus-mode');
-  document.getElementById('btn-focus').classList.remove('focus-on');
-  _focusBanner.style.display   = 'none';
-  _focusControls.style.display = 'none';
-  _stopOrbit();
-  if (_focusMarker) { _focusMarker.remove(); _focusMarker = null; }
-}
-
-function toggleFocusAutoZoom() {
-  _focusAutoZoom = !_focusAutoZoom;
-  const btn = document.getElementById('btn-focus-zoom');
-  btn.textContent = '🔍 Auto Zoom: ' + (_focusAutoZoom ? 'ON' : 'OFF');
-  btn.style.color = _focusAutoZoom ? '#00C8FF' : 'rgba(0,200,255,0.45)';
-}
-
-// ── Map click → plant focus dot ───────────────────────────────────────────
-map.on('click', (e) => {
-  if (!_focusActive) return;
-
-  const lngLat = e.lngLat;
-
-  // Remove previous marker
-  if (_focusMarker) { _focusMarker.remove(); _focusMarker = null; }
-  _stopOrbit();
-
-  // Build custom marker element
-  const el = document.createElement('div');
-  el.className = 'focus-dot-marker';
-  el.innerHTML = `
-    <div class="focus-dot-pulse"></div>
-    <div class="focus-dot-inner"></div>
-    <div class="focus-dot-x">✕</div>
-  `;
-
-  // Burst particles
-  _spawnBurstParticles(e.point);
-
-  // Plant marker on map
-  _focusMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat(lngLat)
-    .addTo(map);
-
-  // Fly to point
-  const flyOpts = {
-    center: lngLat,
-    pitch: 55,
-    duration: 1200,
-    essential: true,
+// ── SETTINGS SAVE ────────────────────────────────────────────
+window.saveSettings = async function() {
+  const data = {
+    firstName: document.getElementById('s-first').value.trim(),
+    lastName:  document.getElementById('s-last').value.trim(),
+    company:   document.getElementById('s-company').value.trim(),
+    jobTitle:  document.getElementById('s-title').value.trim(),
+    phone:     document.getElementById('s-phone').value.trim(),
+    area:      document.getElementById('s-area').value.trim(),
   };
-  if (_focusAutoZoom) flyOpts.zoom = Math.max(map.getZoom(), 13);
+  data.fullName = data.firstName + ' ' + data.lastName;
+  await update(ref(db, 'bosses/'+UID), data);
+  document.getElementById('sidebar-company').textContent = data.company || 'OilManager';
+  const st = document.getElementById('settings-status');
+  st.textContent = '✓ Saved'; setTimeout(()=>st.textContent='', 2500);
+};
 
-  map.flyTo(flyOpts);
-
-  // Start orbit after fly completes
-  map.once('moveend', () => {
-    if (_focusActive) _startOrbit(lngLat);
+// ── PAYROLL EXPORT ───────────────────────────────────────────
+window.exportPayroll = function() {
+  const approved = Object.values(timecards).filter(t=>t.status==='approved');
+  if(!approved.length){ alert('No approved time cards to export.'); return; }
+  const rows = [['Worker','Job','Date','Clock In','Clock Out','Hours','Rate','Total']];
+  approved.forEach(t => {
+    const w = workers[t.workerId];
+    const rate = parseFloat(w?.hourlyRate||0);
+    rows.push([t.workerName, t.jobName, t.date, t.clockIn, t.clockOut, t.hours, rate?'$'+rate:'', rate?(rate*parseFloat(t.hours)).toFixed(2):'']);
   });
-});
+  const csv  = rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a    = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'payroll_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+};
 
-// ── Orbit: slowly rotate bearing around the focus point ──────────────────
-function _startOrbit(center) {
-  _stopOrbit();
-  _focusBearing = map.getBearing();
-  _focusOrbitTimer = setInterval(() => {
-    if (!_focusActive) { _stopOrbit(); return; }
-    _focusBearing = (_focusBearing + 0.25) % 360;
-    map.easeTo({ bearing: _focusBearing, center, duration: 100, easing: t => t });
-  }, 100);
-}
-
-function _stopOrbit() {
-  if (_focusOrbitTimer) { clearInterval(_focusOrbitTimer); _focusOrbitTimer = null; }
-}
-
-// ── CSS burst particles ───────────────────────────────────────────────────
-function _spawnBurstParticles(point) {
-  const rect = _mapArea.getBoundingClientRect();
-  const cx = point.x, cy = point.y;
-  const COUNT = 16;
-  for (let i = 0; i < COUNT; i++) {
-    const angle = (i / COUNT) * Math.PI * 2;
-    const dist  = 18 + Math.random() * 22;
-    const tx = Math.cos(angle) * dist;
-    const ty = Math.sin(angle) * dist;
-    const p = document.createElement('div');
-    p.className = 'focus-burst-particle';
-    p.style.left = cx + 'px';
-    p.style.top  = cy + 'px';
-    p.style.setProperty('--tx', `translate(${tx}px,${ty}px)`);
-    p.style.animationDuration = (0.5 + Math.random() * 0.4) + 's';
-    _mapArea.appendChild(p);
-    setTimeout(() => p.remove(), 900);
-  }
-}
-
-// Modal
-function openModal(){document.getElementById('modal-bg').classList.add('open')}
-function closeModal(e){
-  if(!e||e.target===document.getElementById('modal-bg'))
-    document.getElementById('modal-bg').classList.remove('open');
-}
-function createJob(){
-  document.getElementById('modal-bg').classList.remove('open');
-  // Future: POST to backend
-}
-
-// Approve time card
-function approveTC(btn){
-  btn.outerHTML='<span class="tc-approved">✓ Approved</span>';
-}
+window.confirmDelete = () => { if(confirm('Delete your account permanently? This cannot be undone.')) alert('Please contact support to delete your account.'); };
 </script>
 </body>
 </html>

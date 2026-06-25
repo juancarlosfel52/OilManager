@@ -8,6 +8,18 @@
 <title>OilManager — Field Operations Platform</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
+@font-face{
+  font-family:'Maximum Voltage';
+  src:url('Fonts/maximum_voltage/Maximum Voltage.ttf') format('truetype'),
+      url('Fonts/maximum_voltage/Maximum Voltage.otf') format('opentype');
+  font-weight:normal;font-style:normal;
+}
+@font-face{
+  font-family:'Maximum Voltage';
+  src:url('Fonts/maximum_voltage/Maximum Voltage Italic.ttf') format('truetype'),
+      url('Fonts/maximum_voltage/Maximum Voltage Italic.otf') format('opentype');
+  font-weight:normal;font-style:italic;
+}
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --gold:#F5A623;
@@ -98,7 +110,7 @@ nav{
   border-bottom:1px solid var(--border);
 }
 .nav-logo{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:1.8rem;letter-spacing:2px;
   color:var(--white);
 }
@@ -118,6 +130,22 @@ nav{
   text-decoration:none;
 }
 .nav-cta:hover{background:var(--amber);transform:translateY(-1px)}
+.nav-auth{display:flex;align-items:center;gap:0.5rem;margin-right:0.5rem}
+.nav-login{
+  font-size:0.85rem;font-weight:600;
+  color:var(--muted);text-decoration:none;
+  padding:0.5rem 0.9rem;border-radius:6px;
+  transition:color 0.2s;
+}
+.nav-login:hover{color:var(--white)}
+.nav-signup{
+  font-size:0.85rem;font-weight:600;
+  color:var(--white);text-decoration:none;
+  padding:0.5rem 1rem;border-radius:6px;
+  border:1px solid rgba(245,166,35,0.4);
+  transition:background 0.2s,border-color 0.2s;
+}
+.nav-signup:hover{background:rgba(245,166,35,0.1);border-color:var(--gold)}
 
 /* ── HERO ── */
 #hero{
@@ -156,7 +184,7 @@ nav{
   background:linear-gradient(to bottom, transparent, var(--dark));
   pointer-events:none;
 }
-.hero-content{position:relative;z-index:5;max-width:620px;margin:0;transform:translate(-40px,-50px)}
+.hero-content{position:relative;z-index:5;max-width:620px;margin:0;transform:translate(-40px,0px)}
 .hero-badge{
   display:inline-block;
   background:var(--gold);
@@ -167,7 +195,7 @@ nav{
   text-transform:uppercase;margin-bottom:1.5rem;
 }
 #hero h1{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:clamp(3rem,8vw,5.5rem);
   line-height:1;letter-spacing:2px;
   color:var(--white);margin-bottom:1.2rem;
@@ -236,7 +264,7 @@ nav{
 }
 #phone-expand-close{
   position:absolute;top:24px;right:32px;
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:1rem;letter-spacing:3px;
   color:rgba(255,255,255,0.5);
   cursor:pointer;
@@ -279,7 +307,7 @@ nav{
   color:#F5A623;
 }
 .platform-item span{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:1rem;
   letter-spacing:2px;
   color:#fff;
@@ -348,7 +376,7 @@ nav{
   margin-bottom:1rem;
 }
 .oil-stats-header h2{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:clamp(2rem,4.5vw,3.2rem);
   letter-spacing:2px;
   color:var(--white);
@@ -428,7 +456,7 @@ nav{
   margin-bottom:0.6rem;
 }
 .oil-stat-value{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:clamp(2.4rem,4vw,3rem);
   letter-spacing:2px;
   line-height:1;
@@ -469,7 +497,7 @@ section{padding:6rem 5%}
   text-transform:uppercase;margin-bottom:0.8rem;
 }
 .section-title{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:clamp(2rem,5vw,3.5rem);
   letter-spacing:1px;color:var(--white);
   margin-bottom:1rem;
@@ -707,7 +735,7 @@ section{padding:6rem 5%}
 }
 .price-tier{font-size:0.85rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem}
 .price-amount{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:3.5rem;color:var(--white);letter-spacing:1px;
 }
 .price-amount span{font-size:1.2rem;color:var(--muted);font-family:'Inter',sans-serif;font-weight:400}
@@ -741,7 +769,7 @@ section{padding:6rem 5%}
   padding:6rem 5%;text-align:center;
 }
 #cta-banner h2{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:clamp(2rem,5vw,4rem);
   color:var(--white);margin-bottom:1rem;letter-spacing:1px;
 }
@@ -759,7 +787,7 @@ footer{
   flex-wrap:wrap;gap:1rem;
 }
 .footer-logo{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:1.5rem;letter-spacing:2px;color:var(--white);
 }
 .footer-logo span{color:var(--gold)}
@@ -877,7 +905,7 @@ footer p{color:var(--muted);font-size:0.85rem}
 }
 .pillar-icon{ font-size:1.6rem;margin-bottom:0.4rem; }
 .pillar-label{
-  font-family:'Bebas Neue',sans-serif;
+  font-family:'Maximum Voltage',sans-serif;
   font-size:1.15rem;letter-spacing:1.5px;
   color:#fff;text-align:center;line-height:1.25;
 }
@@ -993,6 +1021,10 @@ footer p{color:var(--muted);font-size:0.85rem}
     <li><a href="#who">Who It's For</a></li>
     <li><a href="#pricing">Pricing</a></li>
   </ul>
+  <div class="nav-auth">
+    <a href="login.html" class="nav-login">Log In</a>
+    <a href="login.html?signup=1" class="nav-signup">Sign Up</a>
+  </div>
   <a href="#cta-banner" class="nav-cta">Request Demo</a>
 </nav>
 
