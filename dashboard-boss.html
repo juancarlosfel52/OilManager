@@ -813,6 +813,146 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 }
 .page-title span{color:var(--gold)}
 
+/* ── EMPTY STATES ── */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2.5rem 1.5rem;text-align:center;
+}
+.empty-state-icon{
+  font-size:2.8rem;margin-bottom:0.85rem;opacity:0.45;
+  filter:grayscale(0.3);
+}
+.empty-state-title{
+  font-size:0.95rem;font-weight:700;color:var(--text);
+  margin-bottom:0.4rem;
+}
+.empty-state-sub{
+  font-size:0.8rem;color:var(--muted);line-height:1.6;
+  max-width:240px;margin-bottom:1.2rem;
+}
+.empty-state-btn{
+  background:linear-gradient(135deg,var(--amber),var(--gold));
+  color:#000;border:none;border-radius:8px;
+  padding:0.55rem 1.3rem;font-size:0.78rem;font-weight:700;
+  font-family:'Inter',sans-serif;letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:opacity 0.2s,transform 0.15s;
+}
+.empty-state-btn:hover{opacity:0.85;transform:translateY(-1px)}
+
+/* ── WELCOME BANNER ── */
+.welcome-banner{
+  background:linear-gradient(135deg,rgba(245,166,35,0.1) 0%,rgba(200,120,10,0.06) 100%);
+  border:1px solid rgba(245,166,35,0.25);
+  border-radius:14px;padding:1.25rem 1.5rem;
+  margin-bottom:1.25rem;
+  display:flex;align-items:center;gap:1.25rem;
+  position:relative;
+}
+.welcome-banner-icon{font-size:2rem;flex-shrink:0}
+.welcome-banner-text h3{
+  font-size:0.92rem;font-weight:700;color:var(--text);margin-bottom:0.25rem;
+}
+.welcome-banner-text p{font-size:0.78rem;color:var(--muted);line-height:1.5}
+.welcome-banner-close{
+  position:absolute;top:0.75rem;right:0.75rem;
+  background:none;border:none;color:var(--muted);
+  font-size:1rem;cursor:pointer;padding:0.2rem;
+  transition:color 0.2s;
+}
+.welcome-banner-close:hover{color:var(--text)}
+.welcome-steps{display:flex;gap:0.75rem;margin-top:0.85rem;flex-wrap:wrap}
+.welcome-step{
+  display:flex;align-items:center;gap:0.5rem;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-radius:8px;padding:0.45rem 0.85rem;
+  font-size:0.75rem;color:var(--muted);cursor:pointer;
+  transition:background 0.2s,border-color 0.2s,color 0.2s;
+}
+.welcome-step:hover{background:rgba(245,166,35,0.08);border-color:rgba(245,166,35,0.25);color:var(--text)}
+.welcome-step.done{color:var(--green);border-color:rgba(76,175,80,0.25);background:rgba(76,175,80,0.06)}
+.welcome-step-icon{font-size:0.85rem}
+
+/* ── TOAST NOTIFICATIONS ── */
+#toast-container{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  z-index:9999;display:flex;flex-direction:column;gap:0.6rem;
+  pointer-events:none;
+}
+.toast{
+  display:flex;align-items:center;gap:0.75rem;
+  background:rgba(12,18,35,0.97);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px;padding:0.75rem 1.1rem;
+  min-width:260px;max-width:360px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  pointer-events:auto;
+  animation:toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+.toast.removing{animation:toastOut 0.25s ease forwards}
+.toast-icon{font-size:1.1rem;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-size:0.82rem;font-weight:700;color:var(--text)}
+.toast-msg{font-size:0.74rem;color:var(--muted);margin-top:1px}
+.toast-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:0;font-size:0.9rem;transition:color 0.15s;flex-shrink:0}
+.toast-close:hover{color:var(--text)}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error  {border-left:3px solid var(--red)}
+.toast.info   {border-left:3px solid var(--gold)}
+.toast.warning{border-left:3px solid #f97316}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(30px)}}
+
+/* ── NOTIFICATION BELL ── */
+.notif-bell-wrap{position:relative;cursor:pointer}
+.notif-bell{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;padding:0.35rem 0.6rem;
+  font-size:1rem;transition:background 0.2s;
+  cursor:pointer;position:relative;
+}
+.notif-bell:hover{background:rgba(255,255,255,0.1)}
+.notif-count{
+  position:absolute;top:-5px;right:-5px;
+  background:var(--red);color:#fff;
+  font-size:0.6rem;font-weight:800;
+  width:16px;height:16px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;
+}
+.notif-count.show{display:flex}
+.notif-dropdown{
+  position:absolute;top:calc(100% + 8px);right:0;
+  width:300px;
+  background:rgba(10,15,28,0.98);
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.6);
+  z-index:500;display:none;
+  overflow:hidden;
+}
+.notif-dropdown.open{display:block}
+.notif-dropdown-head{
+  padding:0.85rem 1rem;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.notif-dropdown-head span{font-size:0.78rem;font-weight:700;color:var(--text);letter-spacing:0.5px}
+.notif-clear{background:none;border:none;font-size:0.7rem;color:var(--muted);cursor:pointer}
+.notif-clear:hover{color:var(--gold)}
+.notif-list{max-height:280px;overflow-y:auto}
+.notif-item{
+  display:flex;gap:0.75rem;padding:0.75rem 1rem;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  cursor:pointer;transition:background 0.15s;
+}
+.notif-item:hover{background:rgba(255,255,255,0.03)}
+.notif-item:last-child{border-bottom:none}
+.notif-item-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.notif-item-text{flex:1;font-size:0.78rem;color:var(--muted);line-height:1.5}
+.notif-item-text strong{color:var(--text)}
+.notif-item-time{font-size:0.65rem;color:rgba(180,190,210,0.35);margin-top:2px}
+.notif-empty{padding:2rem;text-align:center;font-size:0.78rem;color:var(--muted)}
+
 /* ── MOBILE HAMBURGER ── */
 .mob-menu-btn{
   display:none;background:none;border:none;color:var(--text);
@@ -892,6 +1032,19 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
     <div class="topbar-logo">Oil<span>Manager</span></div>
   </div>
   <div class="topbar-right">
+    <!-- Notification Bell -->
+    <div class="notif-bell-wrap" onclick="toggleNotifDropdown()">
+      <div class="notif-bell">🔔<span class="notif-count" id="notif-count"></span></div>
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-dropdown-head">
+          <span>Notifications</span>
+          <button class="notif-clear" onclick="clearNotifs(event)">Clear all</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+          <div class="notif-empty">No new notifications</div>
+        </div>
+      </div>
+    </div>
     <div class="topbar-user">Signed in as <strong id="topbar-user-name">Loading…</strong></div>
     <button class="btn-logout" onclick="doLogout()">Log Out</button>
   </div>
@@ -926,9 +1079,36 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
   <!-- MAIN -->
   <div class="main">
 
+    <!-- Toast container (global) -->
+    <div id="toast-container"></div>
+
     <!-- ══ DASHBOARD PANEL ══ -->
     <div id="panel-dashboard" class="dash-panel active">
     <div class="page-title">Operations <span>Dashboard</span></div>
+
+    <!-- Welcome banner (shown to new users) -->
+    <div class="welcome-banner" id="welcome-banner" style="display:none">
+      <div class="welcome-banner-icon">🛢</div>
+      <div class="welcome-banner-text" style="flex:1">
+        <h3>Welcome to OilManager — Let's get your operation set up</h3>
+        <p>Complete these steps to start managing your crew in the field.</p>
+        <div class="welcome-steps">
+          <div class="welcome-step" id="ws-worker" onclick="showPanel('workers')">
+            <span class="welcome-step-icon">👷</span> Add your first worker
+          </div>
+          <div class="welcome-step" id="ws-job" onclick="showPanel('jobs')">
+            <span class="welcome-step-icon">📍</span> Create a job
+          </div>
+          <div class="welcome-step" id="ws-sms" onclick="showPanel('sms')">
+            <span class="welcome-step-icon">💬</span> Send a message
+          </div>
+          <div class="welcome-step" id="ws-settings" onclick="showPanel('settings')">
+            <span class="welcome-step-icon">⚙</span> Set up your profile
+          </div>
+        </div>
+      </div>
+      <button class="welcome-banner-close" onclick="dismissWelcome()">✕</button>
+    </div>
 
     <!-- STAT CARDS -->
     <div class="stats-row">
@@ -1271,7 +1451,9 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
         </div>
         <div style="padding:1rem">
           <p style="color:var(--muted);font-size:0.85rem">Job assignments from the map panel are listed here. Use <strong style="color:var(--gold)">+ New Job</strong> to create and dispatch.</p>
-          <div id="jobs-panel-list" style="margin-top:1rem"></div>
+          <div id="jobs-panel-list" style="margin-top:1rem">
+            <div class="empty-state"><div class="empty-state-icon">📍</div><div class="empty-state-title">No jobs yet</div><div class="empty-state-sub">Create your first job assignment and dispatch workers to the field.</div><button class="empty-state-btn" onclick="openModal()">+ New Job</button></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1284,7 +1466,7 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
           <div class="panel-title">Crew Roster</div>
           <button class="panel-action" onclick="openModal()">+ Add Worker</button>
         </div>
-        <div class="worker-list" style="padding:0.5rem 1rem 1rem">
+        <div class="worker-list" id="workers-panel-list" style="padding:0.5rem 1rem 1rem">
           <div class="worker-item"><div class="worker-avatar">JR</div><div class="worker-info"><div class="worker-name">Juan Reyes</div><div class="worker-job">Pump Unit 14</div></div><div class="worker-status status-active">On Site</div></div>
           <div class="worker-item"><div class="worker-avatar">MT</div><div class="worker-info"><div class="worker-name">Miguel Torres</div><div class="worker-job">Lease Road 22</div></div><div class="worker-status status-active">On Site</div></div>
           <div class="worker-item"><div class="worker-avatar">DG</div><div class="worker-info"><div class="worker-name">David Garcia</div><div class="worker-job">En Route → Tk7</div></div><div class="worker-status status-route">En Route</div></div>
@@ -1409,6 +1591,100 @@ window.MAPBOX_TOKEN = _mt ? _mt.content : '';
 // ── FIREBASE SHARED STATE ─────────────────────────────────
 let _firebaseUser = null;
 let _fbWorkers = {}, _fbJobs = {}, _fbTimecards = {};
+
+// ── TOAST SYSTEM ─────────────────────────────────────────────
+function showToast(title, msg, type, duration) {
+  type = type || 'info';
+  duration = duration || 3500;
+  var icons = {success:'✅', error:'❌', info:'💬', warning:'⚠️'};
+  var container = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = '<span class="toast-icon">'+icons[type]+'</span>'
+    +'<div class="toast-body"><div class="toast-title">'+title+'</div>'
+    +(msg?'<div class="toast-msg">'+msg+'</div>':'')+'</div>'
+    +'<button class="toast-close" onclick="removeToast(this.parentElement)">✕</button>';
+  container.appendChild(t);
+  // Add to notifications
+  addNotif(title, msg, type);
+  setTimeout(function(){ removeToast(t); }, duration);
+}
+function removeToast(el) {
+  if(!el || !el.parentElement) return;
+  el.classList.add('removing');
+  setTimeout(function(){ if(el.parentElement) el.parentElement.removeChild(el); }, 280);
+}
+
+// ── NOTIFICATION BELL ─────────────────────────────────────────
+var _notifs = [];
+function addNotif(title, msg, type) {
+  _notifs.unshift({title, msg, type, time: new Date()});
+  if(_notifs.length > 20) _notifs.pop();
+  renderNotifs();
+}
+function renderNotifs() {
+  var list  = document.getElementById('notif-list');
+  var count = document.getElementById('notif-count');
+  if(!list) return;
+  if(!_notifs.length) {
+    list.innerHTML = '<div class="notif-empty">No new notifications</div>';
+    count.classList.remove('show');
+    return;
+  }
+  var colors = {success:'var(--green)',error:'var(--red)',info:'var(--gold)',warning:'#f97316'};
+  list.innerHTML = _notifs.map(function(n){
+    var mins = Math.floor((Date.now()-n.time)/60000);
+    var timeStr = mins < 1 ? 'Just now' : mins < 60 ? mins+'m ago' : Math.floor(mins/60)+'h ago';
+    return '<div class="notif-item">'
+      +'<div class="notif-item-dot" style="background:'+( colors[n.type]||'var(--gold)')+'"></div>'
+      +'<div class="notif-item-text"><strong>'+n.title+'</strong>'
+      +(n.msg?'<br>'+n.msg:'')
+      +'<div class="notif-item-time">'+timeStr+'</div></div></div>';
+  }).join('');
+  count.textContent = Math.min(_notifs.length, 9);
+  count.classList.add('show');
+}
+function toggleNotifDropdown() {
+  document.getElementById('notif-dropdown').classList.toggle('open');
+}
+function clearNotifs(e) {
+  if(e) e.stopPropagation();
+  _notifs = [];
+  renderNotifs();
+  document.getElementById('notif-dropdown').classList.remove('open');
+}
+// Close dropdown on outside click
+document.addEventListener('click', function(e){
+  var wrap = document.querySelector('.notif-bell-wrap');
+  if(wrap && !wrap.contains(e.target))
+    document.getElementById('notif-dropdown')?.classList.remove('open');
+});
+
+// ── WELCOME BANNER ────────────────────────────────────────────
+function showWelcomeBanner() {
+  if(localStorage.getItem('om_welcome_dismissed')) return;
+  document.getElementById('welcome-banner').style.display = 'flex';
+}
+function dismissWelcome() {
+  document.getElementById('welcome-banner').style.display = 'none';
+  localStorage.setItem('om_welcome_dismissed','1');
+}
+function updateWelcomeSteps(hasWorkers, hasJobs) {
+  if(hasWorkers) document.getElementById('ws-worker')?.classList.add('done');
+  if(hasJobs)    document.getElementById('ws-job')?.classList.add('done');
+}
+
+// ── EMPTY STATES ──────────────────────────────────────────────
+function showEmptyState(containerId, icon, title, sub, btnLabel, btnAction) {
+  var el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = '<div class="empty-state">'
+    +'<div class="empty-state-icon">'+icon+'</div>'
+    +'<div class="empty-state-title">'+title+'</div>'
+    +'<div class="empty-state-sub">'+sub+'</div>'
+    +(btnLabel?'<button class="empty-state-btn" onclick="'+btnAction+'">'+btnLabel+'</button>':'')
+    +'</div>';
+}
 
 // ── MOBILE SIDEBAR TOGGLE ────────────────────────────────────
 function toggleSidebar() {
@@ -3077,28 +3353,69 @@ onAuthStateChanged(auth, user => {
     }
   }).catch(() => {});
 
+  // Show welcome banner for new users
+  setTimeout(showWelcomeBanner, 800);
+
   // ── Realtime DB — Workers ──
   onValue(ref(db, 'bosses/' + user.uid + '/workers'), snap => {
     _fbWorkers = snap.val() || {};
-    const count = Object.values(_fbWorkers).filter(w => w.clockedIn).length;
+    const workers = Object.values(_fbWorkers);
+    const active  = workers.filter(w => w.clockedIn).length;
     const el = document.getElementById('stat-workers');
-    if (el && count > 0) el.textContent = count;
+    if(el) el.textContent = active || workers.length || '0';
+
+    // Empty state in panel
+    if(!workers.length) {
+      showEmptyState('workers-panel-list','👷','No workers yet',
+        'Add your first crew member to start assigning jobs and tracking hours.',
+        '+ Add Worker', "showPanel('workers')");
+    }
+    // Welcome steps
+    updateWelcomeSteps(workers.length > 0, Object.keys(_fbJobs).length > 0);
+    // Badge
+    var b = document.getElementById('badge-workers');
+    if(b) b.textContent = workers.length;
   });
 
   // ── Realtime DB — Jobs ──
   onValue(ref(db, 'bosses/' + user.uid + '/jobs'), snap => {
     _fbJobs = snap.val() || {};
-    const count = Object.values(_fbJobs).filter(j => j.status === 'active' || j.status === 'pending').length;
+    const jobs   = Object.values(_fbJobs);
+    const active = jobs.filter(j => j.status === 'active' || j.status === 'pending').length;
     const el = document.getElementById('stat-jobs');
-    if (el && count > 0) el.textContent = count;
+    if(el) el.textContent = active || '0';
+
+    // Empty state in jobs panel
+    if(!jobs.length) {
+      showEmptyState('jobs-panel-list','📍','No jobs created',
+        'Create your first job assignment and dispatch workers to the field.',
+        '+ New Job', "openModal()");
+    }
+    // Welcome steps
+    updateWelcomeSteps(Object.keys(_fbWorkers).length > 0, jobs.length > 0);
+    // Badge
+    var b = document.getElementById('badge-jobs');
+    if(b) b.textContent = active || '0';
   });
 
   // ── Realtime DB — Timecards ──
   onValue(ref(db, 'bosses/' + user.uid + '/timecards'), snap => {
     _fbTimecards = snap.val() || {};
-    const count = Object.values(_fbTimecards).filter(t => t.status === 'pending').length;
+    const pending = Object.values(_fbTimecards).filter(t => t.status === 'pending');
     const el = document.getElementById('stat-tc');
-    if (el && count > 0) el.textContent = count;
+    if(el) el.textContent = pending.length || '0';
+
+    // Empty state
+    if(!pending.length) {
+      showEmptyState('tc-panel-list','✅','All clear',
+        'No time cards are pending approval right now.', '', '');
+    } else {
+      // Toast when new time cards come in
+      addNotif('Time Cards', pending.length + ' time card'+( pending.length>1?'s':'')+' pending approval', 'warning');
+    }
+    // Badge
+    var b = document.getElementById('badge-tc');
+    if(b) b.textContent = pending.length || '0';
   });
 });
 
