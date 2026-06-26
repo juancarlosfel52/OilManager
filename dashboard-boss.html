@@ -3114,12 +3114,11 @@ async function toggleGLOInactive() {
   const hide = id => { try { map.setLayoutProperty(id,'visibility','none'); } catch(_){} };
   if (_gloInactiveActive) {
     dot.classList.add('visible');
-    const bounds = map.getBounds();
-    const bbox = [bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()];
     try {
+      // Use local downloaded GeoJSON — statewide, no bbox limit, faster than API
       const [li, ui] = await Promise.allSettled([
-        GLOService.fetchLeasesInactive(bbox),
-        GLOService.fetchUnitsInactive(bbox),
+        fetch('./data/Oil_and_Gas_Leases_In_Active_-2319755522309970979.geojson').then(r => r.json()),
+        fetch('./data/Oil_and_Gas_Units_In_Active_-2613314903367941666.geojson').then(r => r.json()),
       ]);
       if (li.status==='fulfilled' && li.value?.features) {
         map.getSource('glo-leases-inactive').setData(li.value);
