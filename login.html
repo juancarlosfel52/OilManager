@@ -787,19 +787,28 @@ document.getElementById('tos-overlay').addEventListener('click', e => {
 
 // ── WORKER LOGIN ─────────────────────────────────────────────
 async function workerLogin() {
-  // Normalize: strip non-alphanumeric, re-insert dash — accepts JF2026 or JF-2026
-  let raw = document.getElementById('worker-code').value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
-  let code = raw.length > 3 && /\d/.test(raw[2]) ? raw.slice(0,3)+'-'+raw.slice(3) : raw.slice(0,2)+'-'+raw.slice(2);
+  const raw  = document.getElementById('worker-code').value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  // Format: always letters first, then dash, then digits
+  // JF2026 → JF-2026  |  JFC2026 → JFC-2026  (collision codes like JF2-2026 stored as JF2-2026)
+  const letPart = raw.match(/^[A-Z]+/)?.[0] || '';
+  const numPart = raw.slice(letPart.length);
+  const code = letPart && numPart ? letPart + '-' + numPart : raw;
+
   const btn  = document.getElementById('worker-btn');
   const err  = document.getElementById('worker-error');
   const ok   = document.getElementById('worker-success');
   clearAllMsgs();
-  if (!code || code.length < 6) {
+  if (!code || !letPart || !numPart) {
     err.textContent = 'Enter your full worker code (e.g. JF-2026).';
     err.classList.add('show'); return;
   }
   btn.classList.add('loading');
   try {
+    // Wait up to 3s for Firebase module to be ready
+    let attempts = 0;
+    while (!window._lookupWorkerCode && attempts++ < 30) {
+      await new Promise(r => setTimeout(r, 100));
+    }
     const lookup = window._lookupWorkerCode;
     if (!lookup) throw new Error('Not ready');
     const result = await lookup(code);
@@ -830,14 +839,10 @@ function formatCode(el) {
 }
 
 function finalizeCode(el) {
-  // On blur: normalize to XX-YYYY format for display
-  let v = el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
-  if (v.length > 3 && /\d/.test(v[2])) {
-    v = v.slice(0,3) + '-' + v.slice(3,7); // JF2-2026
-  } else if (v.length >= 2) {
-    v = v.slice(0,2) + '-' + v.slice(2,6); // JF-2026
-  }
-  el.value = v;
+  const raw     = el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  const letPart = raw.match(/^[A-Z]+/)?.[0] || '';
+  const numPart = raw.slice(letPart.length);
+  el.value = letPart && numPart ? letPart + '-' + numPart : raw;
 }
 
 // Enter key support
