@@ -953,6 +953,89 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 .notif-item-time{font-size:0.65rem;color:rgba(180,190,210,0.35);margin-top:2px}
 .notif-empty{padding:2rem;text-align:center;font-size:0.78rem;color:var(--muted)}
 
+/* ── GOOGLE MAPS STYLE DETAIL PANEL ── */
+#map-detail-panel{
+  position:absolute;
+  top:0;left:0;bottom:0;
+  width:320px;
+  background:rgba(8,12,24,0.97);
+  border-right:1px solid var(--border);
+  z-index:40;
+  transform:translateX(-100%);
+  transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  display:flex;flex-direction:column;
+  backdrop-filter:blur(16px);
+  overflow:hidden;
+}
+#map-detail-panel.open{transform:translateX(0)}
+.detail-panel-header{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:1rem;border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.detail-panel-back{
+  width:32px;height:32px;border-radius:8px;
+  background:rgba(255,255,255,0.06);border:none;
+  color:var(--muted);cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;flex-shrink:0;
+}
+.detail-panel-back:hover{background:rgba(255,255,255,0.12);color:var(--text)}
+.detail-panel-title{font-size:0.82rem;font-weight:700;color:var(--text);letter-spacing:0.5px}
+.detail-panel-body{overflow-y:auto;flex:1;padding:1.25rem}
+.detail-panel-body::-webkit-scrollbar{width:3px}
+.detail-panel-body::-webkit-scrollbar-thumb{background:rgba(245,166,35,0.2);border-radius:2px}
+
+/* Avatar header */
+.dp-avatar-row{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
+.dp-avatar{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;font-weight:800;color:#fff;flex-shrink:0;
+}
+.dp-name{font-size:1.05rem;font-weight:700;color:var(--text)}
+.dp-sub{font-size:0.78rem;color:var(--muted);margin-top:2px}
+.dp-badge{
+  display:inline-flex;align-items:center;gap:0.35rem;
+  padding:0.3rem 0.75rem;border-radius:20px;
+  font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  margin-top:0.5rem;
+}
+
+/* Detail rows */
+.dp-section{margin-bottom:1.2rem}
+.dp-section-label{
+  font-size:0.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:0.6rem;
+}
+.dp-row{
+  display:flex;align-items:center;gap:0.75rem;
+  padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.dp-row:last-child{border-bottom:none}
+.dp-row-icon{font-size:1rem;width:22px;text-align:center;flex-shrink:0}
+.dp-row-text{font-size:0.82rem;color:var(--text)}
+.dp-row-muted{font-size:0.75rem;color:var(--muted)}
+
+/* Action buttons */
+.dp-actions{display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem}
+.dp-action-btn{
+  width:100%;padding:0.72rem;border-radius:9px;
+  font-size:0.8rem;font-weight:600;font-family:'Inter',sans-serif;
+  cursor:pointer;letter-spacing:0.5px;border:none;
+  display:flex;align-items:center;justify-content:center;gap:0.5rem;
+  transition:opacity 0.2s,transform 0.15s;
+}
+.dp-action-btn:hover{opacity:0.85;transform:translateY(-1px)}
+.dp-btn-primary{background:linear-gradient(135deg,var(--amber),var(--gold));color:#000}
+.dp-btn-blue{background:rgba(68,136,255,0.15);border:1px solid rgba(68,136,255,0.3);color:#4488FF}
+.dp-btn-red{background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.25);color:#F44336}
+
+/* Mobile — panel goes full width on small screens */
+@media(max-width:480px){
+  #map-detail-panel{width:100%}
+}
+
 /* ── MOBILE HAMBURGER ── */
 .mob-menu-btn{
   display:none;background:none;border:none;color:var(--text);
@@ -1209,6 +1292,15 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
         </div>
         <div class="map-area" id="map-area">
           <div id="mapbox-map"></div>
+
+          <!-- Google Maps-style detail panel -->
+          <div id="map-detail-panel">
+            <div class="detail-panel-header">
+              <button class="detail-panel-back" onclick="closeDetailPanel()">←</button>
+              <div class="detail-panel-title" id="dp-header-title">Details</div>
+            </div>
+            <div class="detail-panel-body" id="dp-body"></div>
+          </div>
           <!-- 3D CAMERA CONTROLLER -->
           <div id="cam-ctrl">
             <div id="cam-sphere">
@@ -2032,7 +2124,8 @@ map.on('load', () => {
     });
   });
 
-  // ── Job pins ──
+  // ── Job pins — stored for detail panel ──
+  window._jobMarkers = {};
   JOBS.forEach(job => {
     const el = document.createElement('div');
     el.className = 'job-marker';
@@ -2041,33 +2134,26 @@ map.on('load', () => {
       <div class="job-marker-label" style="border-color:${job.color}44;color:${job.color}">${job.title}</div>
     `;
     const popup = new mapboxgl.Popup({ offset:20, closeButton:false })
-      .setHTML(`
-        <div class="popup-name">${job.title}</div>
-        <div class="popup-detail">${job.sub}</div>
-        <div class="popup-status" style="color:${job.color}">${job.priority}</div>
-      `);
-    new mapboxgl.Marker({ element:el, anchor:'bottom' })
-      .setLngLat(job.coords)
-      .setPopup(popup)
-      .addTo(map);
+      .setHTML(`<div class="popup-name">${job.title}</div><div class="popup-detail">${job.sub}</div><div class="popup-status" style="color:${job.color}">${job.priority}</div>`);
+    const marker = new mapboxgl.Marker({ element:el, anchor:'bottom' })
+      .setLngLat(job.coords).setPopup(popup).addTo(map);
+    window._jobMarkers[job.title] = marker;
+    el.addEventListener('click', () => openDetailPanel({type:'job', ...job}));
   });
 
-  // ── Worker markers ──
+  // ── Worker markers — stored for detail panel ──
+  window._workerMarkers = {};
   WORKERS.forEach(w => {
     const el = document.createElement('div');
-    el.className = 'worker-marker ' + (w.status === 'route' ? 'route' : w.status === 'idle' ? 'idle' : '');
+    el.className = 'worker-marker ' + (w.status==='route'?'route':w.status==='idle'?'idle':'');
     el.textContent = w.id;
+    const sColor = w.status==='active'?'#4CAF50':w.status==='route'?'#F5A623':'#6B7280';
     const popup = new mapboxgl.Popup({ offset:18, closeButton:false })
-      .setHTML(`
-        <div class="popup-name">${w.name}</div>
-        <div class="popup-detail">${w.job}</div>
-        <div class="popup-status" style="color:${w.status==='active'?'#4CAF50':w.status==='route'?'#F5A623':'#6B7280'}">${w.status.toUpperCase()}</div>
-      `);
-    new mapboxgl.Marker({ element:el })
-      .setLngLat(w.coords)
-      .setPopup(popup)
-      .addTo(map);
-    el.addEventListener('click', () => popup.isOpen() ? popup.remove() : popup.addTo(map).setLngLat(w.coords));
+      .setHTML(`<div class="popup-name">${w.name}</div><div class="popup-detail">${w.job}</div><div class="popup-status" style="color:${sColor}">${w.status.toUpperCase()}</div>`);
+    const marker = new mapboxgl.Marker({ element:el })
+      .setLngLat(w.coords).setPopup(popup).addTo(map);
+    window._workerMarkers[w.name] = marker;
+    el.addEventListener('click', () => openDetailPanel({type:'worker', ...w, color:sColor}));
   });
 
   // ── PLSS / Land Grid sources (empty until toggled on) ──
@@ -2412,15 +2498,112 @@ function selectResult(idx) {
   map.flyTo({
     center: item.coords,
     zoom: item.type === 'place' ? (item.name.includes('Basin') ? 8 : 11) : 14,
-    pitch: 55,
-    speed: 1.4,
-    essential: true
+    pitch: 55, speed: 1.4, essential: true
   });
 
-  // Flash marker popup if job or worker
   document.getElementById('map-search-input').value = item.name;
   document.getElementById('map-search-dropdown').classList.remove('open');
   document.getElementById('map-search-clear').classList.add('visible');
+
+  // Open detail panel for workers and jobs
+  if(item.type === 'worker' || item.type === 'job') {
+    openDetailPanel(item);
+    // Trigger marker popup after fly
+    setTimeout(() => {
+      if(item.type === 'worker' && window._workerMarkers?.[item.name]) {
+        window._workerMarkers[item.name].getPopup()?.addTo(map);
+      } else if(item.type === 'job' && window._jobMarkers?.[item.name]) {
+        window._jobMarkers[item.name].getPopup()?.addTo(map);
+      }
+    }, 1200);
+  }
+}
+
+// ── DETAIL PANEL ─────────────────────────────────────────────
+function openDetailPanel(item) {
+  const panel = document.getElementById('map-detail-panel');
+  const body  = document.getElementById('dp-body');
+  const title = document.getElementById('dp-header-title');
+
+  if(item.type === 'worker') {
+    const sColor = item.color || '#4CAF50';
+    const statusLabels = {active:'ON SITE', route:'EN ROUTE', idle:'IDLE'};
+    const statusLabel  = statusLabels[item.status] || item.status?.toUpperCase() || 'UNKNOWN';
+    title.textContent = 'Worker Profile';
+    body.innerHTML = `
+      <div class="dp-avatar-row">
+        <div class="dp-avatar" style="background:linear-gradient(135deg,${sColor}44,${sColor}22);border:2px solid ${sColor}66">
+          <span style="color:${sColor};font-size:1.2rem;font-weight:800">${item.id||item.name?.split(' ').map(n=>n[0]).join('').slice(0,2)}</span>
+        </div>
+        <div>
+          <div class="dp-name">${item.name}</div>
+          <div class="dp-sub">${item.job||'Field Worker'}</div>
+          <span class="dp-badge" style="background:${sColor}22;color:${sColor};border:1px solid ${sColor}44">
+            <span style="width:6px;height:6px;border-radius:50%;background:${sColor};display:inline-block"></span>
+            ${statusLabel}
+          </span>
+        </div>
+      </div>
+
+      <div class="dp-section">
+        <div class="dp-section-label">Location</div>
+        <div class="dp-row"><div class="dp-row-icon">📍</div><div><div class="dp-row-text">${item.sub||'Andrews County, TX'}</div></div></div>
+        <div class="dp-row"><div class="dp-row-icon">🗺</div><div><div class="dp-row-text">${item.coords?item.coords[1].toFixed(4)+'° N, '+Math.abs(item.coords[0]).toFixed(4)+'° W':'—'}</div></div></div>
+      </div>
+
+      <div class="dp-section">
+        <div class="dp-section-label">Shift</div>
+        <div class="dp-row"><div class="dp-row-icon">⏱</div><div><div class="dp-row-text">Clocked in since 6:45 AM</div><div class="dp-row-muted">4h 22m active</div></div></div>
+        <div class="dp-row"><div class="dp-row-icon">📋</div><div><div class="dp-row-text">Current Job</div><div class="dp-row-muted">${item.job||'No assignment'}</div></div></div>
+      </div>
+
+      <div class="dp-actions">
+        <button class="dp-action-btn dp-btn-primary" onclick="alert('SMS: ${item.name}')">💬 Send SMS</button>
+        <button class="dp-action-btn dp-btn-blue" onclick="map.flyTo({center:[${item.coords}],zoom:16,pitch:55})">🎯 Center on Map</button>
+        <button class="dp-action-btn dp-btn-red" onclick="closeDetailPanel()">✕ Close</button>
+      </div>`;
+
+  } else if(item.type === 'job') {
+    const color = item.color || '#F5A623';
+    title.textContent = 'Job Details';
+    body.innerHTML = `
+      <div class="dp-avatar-row">
+        <div class="dp-avatar" style="background:${color}22;border:2px solid ${color}44;font-size:1.5rem">📍</div>
+        <div>
+          <div class="dp-name">${item.name}</div>
+          <div class="dp-sub">${item.sub||''}</div>
+          <span class="dp-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${item.badge||item.priority||'ACTIVE'}</span>
+        </div>
+      </div>
+
+      <div class="dp-section">
+        <div class="dp-section-label">Location</div>
+        <div class="dp-row"><div class="dp-row-icon">📍</div><div><div class="dp-row-text">${item.sub?.split('·')[1]?.trim()||'Andrews County, TX'}</div></div></div>
+        <div class="dp-row"><div class="dp-row-icon">🗺</div><div><div class="dp-row-text">${item.coords?item.coords[1].toFixed(4)+'° N, '+Math.abs(item.coords[0]).toFixed(4)+'° W':'—'}</div></div></div>
+      </div>
+
+      <div class="dp-section">
+        <div class="dp-section-label">Assignment</div>
+        <div class="dp-row"><div class="dp-row-icon">👷</div><div><div class="dp-row-text">Assigned Workers</div><div class="dp-row-muted">See crew panel</div></div></div>
+        <div class="dp-row"><div class="dp-row-icon">⚡</div><div><div class="dp-row-text">Priority</div><div class="dp-row-muted" style="color:${color}">${item.badge||item.priority||'ACTIVE'}</div></div></div>
+      </div>
+
+      <div class="dp-actions">
+        <button class="dp-action-btn dp-btn-primary" onclick="openModal()">+ Assign Workers</button>
+        <button class="dp-action-btn dp-btn-blue" onclick="map.flyTo({center:[${item.coords}],zoom:16,pitch:55})">🎯 Center on Map</button>
+        <button class="dp-action-btn dp-btn-red" onclick="closeDetailPanel()">✕ Close</button>
+      </div>`;
+
+  } else {
+    title.textContent = item.name;
+    body.innerHTML = `<div style="padding:1rem;color:var(--muted);font-size:0.85rem">${item.sub}</div>`;
+  }
+
+  panel.classList.add('open');
+}
+
+function closeDetailPanel() {
+  document.getElementById('map-detail-panel').classList.remove('open');
 }
 
 function clearSearch() {
