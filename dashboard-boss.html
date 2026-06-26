@@ -1269,8 +1269,20 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
             <!-- GLO LEASES TOGGLE -->
             <div class="glo-toggle-wrap">
               <button class="btn-glo" id="btn-glo" onclick="toggleGLO()" title="Texas GLO — Active O&G Leases, Units, PSF Lands">
-                🛢 GLO Leases
+                🛢 Active Leases
                 <span class="glo-loading-dot" id="glo-dot"></span>
+              </button>
+            </div>
+            <div class="glo-toggle-wrap">
+              <button class="btn-glo" id="btn-glo-inactive" onclick="toggleGLOInactive()" title="Texas GLO — Inactive/Expired O&G Leases & Units" style="opacity:0.75">
+                ⬜ Inactive
+                <span class="glo-loading-dot" id="glo-inactive-dot"></span>
+              </button>
+            </div>
+            <div class="glo-toggle-wrap">
+              <button class="btn-glo" id="btn-glo-nominated" onclick="toggleGLONominated()" title="Texas GLO — Lease Sale Nominated Tracts" style="border-color:rgba(245,166,35,0.4)">
+                🏷 For Sale
+                <span class="glo-loading-dot" id="glo-nominated-dot"></span>
               </button>
             </div>
             <!-- LOCAL GAS UNITS -->
@@ -2329,7 +2341,7 @@ map.on('load', () => {
   });
 
   // ── GLO sources (empty until toggled on) ──────────────────────────────────
-  ['glo-leases','glo-units','glo-psf'].forEach(id => {
+  ['glo-leases','glo-leases-inactive','glo-units','glo-units-inactive','glo-nominated','glo-psf'].forEach(id => {
     map.addSource(id, { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
   });
 
@@ -2401,24 +2413,68 @@ map.on('load', () => {
     layout:{ visibility:'none' }
   });
 
+  // ── Inactive leases — grey dashed
+  map.addLayer({ id:'glo-lease-inactive-fill', type:'fill', source:'glo-leases-inactive',
+    paint:{ 'fill-color':'#6B7280', 'fill-opacity':0.06 }, layout:{ visibility:'none' } });
+  map.addLayer({ id:'glo-lease-inactive-line', type:'line', source:'glo-leases-inactive',
+    paint:{ 'line-color':'#9CA3AF', 'line-width':1.2, 'line-opacity':0.6, 'line-dasharray':[3,3] },
+    layout:{ visibility:'none' } });
+  map.addLayer({ id:'glo-lease-inactive-label', type:'symbol', source:'glo-leases-inactive',
+    minzoom:12,
+    layout:{ visibility:'none', 'text-field':['get','LEASE_NUMBER'], 'text-size':8,
+             'text-font':['DIN Offc Pro Regular','Arial Unicode MS Regular'] },
+    paint:{ 'text-color':'#9CA3AF', 'text-halo-color':'rgba(6,8,16,0.9)', 'text-halo-width':1.2 } });
+
+  // ── Inactive units — purple dashed
+  map.addLayer({ id:'glo-unit-inactive-fill', type:'fill', source:'glo-units-inactive',
+    paint:{ 'fill-color':'#A855F7', 'fill-opacity':0.05 }, layout:{ visibility:'none' } });
+  map.addLayer({ id:'glo-unit-inactive-line', type:'line', source:'glo-units-inactive',
+    paint:{ 'line-color':'#A855F7', 'line-width':1.2, 'line-opacity':0.55, 'line-dasharray':[4,3] },
+    layout:{ visibility:'none' } });
+
+  // ── Lease sale nominated tracts — gold solid
+  map.addLayer({ id:'glo-nominated-fill', type:'fill', source:'glo-nominated',
+    paint:{ 'fill-color':'#F5A623', 'fill-opacity':0.12 }, layout:{ visibility:'none' } });
+  map.addLayer({ id:'glo-nominated-line', type:'line', source:'glo-nominated',
+    paint:{ 'line-color':'#F5A623', 'line-width':1.8, 'line-opacity':0.9 },
+    layout:{ visibility:'none' } });
+  map.addLayer({ id:'glo-nominated-label', type:'symbol', source:'glo-nominated',
+    minzoom:11,
+    layout:{ visibility:'none', 'text-field':['get','TRACT_NUMBER'], 'text-size':9,
+             'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold'] },
+    paint:{ 'text-color':'#F5A623', 'text-halo-color':'rgba(6,8,16,0.9)', 'text-halo-width':1.4 } });
+
   // GLO click handlers
   map.on('click', 'glo-lease-fill', (e) => {
     if (!_gloActive) return;
     showGLOPopup(e.point, e.features[0].properties, 'lease');
   });
+  map.on('click', 'glo-lease-inactive-fill', (e) => {
+    if (!_gloInactiveActive) return;
+    showGLOPopup(e.point, e.features[0].properties, 'lease-inactive');
+  });
   map.on('click', 'glo-unit-fill', (e) => {
     if (!_gloActive) return;
+    showGLOPopup(e.point, e.features[0].properties, 'unit');
+  });
+  map.on('click', 'glo-unit-inactive-fill', (e) => {
+    if (!_gloInactiveActive) return;
     showGLOPopup(e.point, e.features[0].properties, 'unit');
   });
   map.on('click', 'glo-psf-fill', (e) => {
     if (!_gloActive) return;
     showGLOPopup(e.point, e.features[0].properties, 'psf');
   });
+  map.on('click', 'glo-nominated-fill', (e) => {
+    if (!_gloNominatedActive) return;
+    showGLOPopup(e.point, e.features[0].properties, 'nominated');
+  });
 
   // Cursor change over GLO layers
-  ['glo-lease-fill','glo-unit-fill','glo-psf-fill'].forEach(id => {
-    map.on('mouseenter', id, () => { if (_gloActive) map.getCanvas().style.cursor = 'crosshair'; });
-    map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
+  ['glo-lease-fill','glo-lease-inactive-fill','glo-unit-fill','glo-unit-inactive-fill',
+   'glo-psf-fill','glo-nominated-fill'].forEach(id => {
+    map.on('mouseenter', id, () => map.getCanvas().style.cursor = 'crosshair');
+    map.on('mouseleave', id, () => map.getCanvas().style.cursor = '');
   });
 
   // ── Simulate live worker movement ──
@@ -3007,12 +3063,21 @@ function _reAddPLSSLayers() {
 }
 
 // ── GLO LEASES CONTROLLER ─────────────────────────────────────────────────
-let _gloActive   = false;
-let _gloDebounce = null;
+let _gloActive         = false;
+let _gloInactiveActive = false;
+let _gloNominatedActive= false;
+let _gloDebounce       = null;
 const GLO_LAYERS = [
   'glo-lease-fill','glo-lease-line','glo-lease-label',
   'glo-unit-fill','glo-unit-line','glo-unit-label',
   'glo-psf-fill','glo-psf-line',
+];
+const GLO_INACTIVE_LAYERS = [
+  'glo-lease-inactive-fill','glo-lease-inactive-line','glo-lease-inactive-label',
+  'glo-unit-inactive-fill','glo-unit-inactive-line',
+];
+const GLO_NOMINATED_LAYERS = [
+  'glo-nominated-fill','glo-nominated-line','glo-nominated-label',
 ];
 
 function toggleGLO() {
@@ -3037,6 +3102,61 @@ function toggleGLO() {
     hideGLOPopup();
     if (legendGLO) legendGLO.style.display = 'none';
     if (legendPSF) legendPSF.style.display = 'none';
+  }
+}
+
+async function toggleGLOInactive() {
+  _gloInactiveActive = !_gloInactiveActive;
+  const btn = document.getElementById('btn-glo-inactive');
+  btn.classList.toggle('active', _gloInactiveActive);
+  const dot = document.getElementById('glo-inactive-dot');
+  const show = id => { try { map.setLayoutProperty(id,'visibility','visible'); } catch(_){} };
+  const hide = id => { try { map.setLayoutProperty(id,'visibility','none'); } catch(_){} };
+  if (_gloInactiveActive) {
+    dot.classList.add('visible');
+    const bounds = map.getBounds();
+    const bbox = [bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()];
+    try {
+      const [li, ui] = await Promise.allSettled([
+        GLOService.fetchLeasesInactive(bbox),
+        GLOService.fetchUnitsInactive(bbox),
+      ]);
+      if (li.status==='fulfilled' && li.value?.features) {
+        map.getSource('glo-leases-inactive').setData(li.value);
+        show('glo-lease-inactive-fill'); show('glo-lease-inactive-line'); show('glo-lease-inactive-label');
+      }
+      if (ui.status==='fulfilled' && ui.value?.features) {
+        map.getSource('glo-units-inactive').setData(ui.value);
+        show('glo-unit-inactive-fill'); show('glo-unit-inactive-line');
+      }
+    } catch(e) { console.warn('Inactive GLO error:', e.message); }
+    finally { dot.classList.remove('visible'); }
+  } else {
+    GLO_INACTIVE_LAYERS.forEach(hide);
+  }
+}
+
+async function toggleGLONominated() {
+  _gloNominatedActive = !_gloNominatedActive;
+  const btn = document.getElementById('btn-glo-nominated');
+  btn.classList.toggle('active', _gloNominatedActive);
+  const dot = document.getElementById('glo-nominated-dot');
+  const show = id => { try { map.setLayoutProperty(id,'visibility','visible'); } catch(_){} };
+  const hide = id => { try { map.setLayoutProperty(id,'visibility','none'); } catch(_){} };
+  if (_gloNominatedActive) {
+    dot.classList.add('visible');
+    const bounds = map.getBounds();
+    const bbox = [bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()];
+    try {
+      const data = await GLOService.fetchNominated(bbox);
+      if (data?.features) {
+        map.getSource('glo-nominated').setData(data);
+        show('glo-nominated-fill'); show('glo-nominated-line'); show('glo-nominated-label');
+      }
+    } catch(e) { console.warn('Nominated tracts error:', e.message); }
+    finally { dot.classList.remove('visible'); }
+  } else {
+    GLO_NOMINATED_LAYERS.forEach(hide);
   }
 }
 
@@ -3336,6 +3456,27 @@ function showGLOPopup(point, props, type) {
       <div class="glo-info-row"><strong>County:</strong> ${U.county}</div>
       <div class="glo-info-row"><strong>Status:</strong> ${U.status}</div>
       <span class="glo-badge glo-badge-unit">GLO O&amp;G Unit</span>
+    `;
+  } else if (type === 'lease-inactive') {
+    const L = GLOService.formatInactiveLeaseLabel(props);
+    popup.innerHTML = `
+      <div class="glo-info-title">⬜ ${L.title}</div>
+      <div class="glo-info-row"><strong>Lessee:</strong> ${L.lessee}</div>
+      ${L.field !== 'No Field Name' ? `<div class="glo-info-row"><strong>Field:</strong> ${L.field}</div>` : ''}
+      <div class="glo-info-row"><strong>Status:</strong> ${L.status}</div>
+      <div class="glo-info-row"><strong>Ended:</strong> ${L.ended}</div>
+      <div class="glo-info-row"><strong>Acres:</strong> ${L.acres}</div>
+      <span class="glo-badge" style="background:rgba(107,114,128,0.15);color:#9CA3AF;border-color:rgba(107,114,128,0.3)">Inactive Lease</span>
+    `;
+  } else if (type === 'nominated') {
+    const N = GLOService.formatNominatedLabel(props);
+    popup.innerHTML = `
+      <div class="glo-info-title">🏷 ${N.title}</div>
+      <div class="glo-info-row"><strong>County:</strong> ${N.county}</div>
+      <div class="glo-info-row"><strong>Acres:</strong> ${N.acres}</div>
+      ${N.survey ? `<div class="glo-info-row"><strong>Survey:</strong> ${N.survey}</div>` : ''}
+      ${N.block  ? `<div class="glo-info-row"><strong>Block:</strong> ${N.block}</div>`   : ''}
+      <span class="glo-badge" style="background:rgba(245,166,35,0.12);color:#F5A623;border-color:rgba(245,166,35,0.3)">Lease Sale Tract</span>
     `;
   } else if (type === 'psf') {
     const P = GLOService.formatPSFLabel(props);

@@ -3,11 +3,14 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Provides live Texas General Land Office data via ArcGIS FeatureServer REST:
  *
- *   • Active Oil & Gas Leases   — polygon, statewide TX, COUNTY filter
- *   • Active O&G Units          — pooled drilling unit polygons
- *   • Permanent School Fund     — PSF land polygons (~13M acres across TX)
+ *   • Active Oil & Gas Leases      — polygon, statewide TX
+ *   • Inactive Oil & Gas Leases    — expired/terminated leases
+ *   • Active O&G Units             — pooled drilling unit polygons
+ *   • Inactive O&G Units           — expired units
+ *   • Lease Sale Nominated Tracts  — tracts up for next lease sale
+ *   • Permanent School Fund        — PSF land polygons (~13M acres across TX)
  *
- * All three services confirmed live as of 2026-06-24:
+ * All services confirmed live as of 2026-06-26:
  *   https://services1.arcgis.com/YWG34dhJxrbxQWdF/arcgis/rest/services/
  *
  * Usage: GLOService.fetchLeases(bbox) → GeoJSON FeatureCollection
@@ -19,9 +22,12 @@ const GLOService = (() => {
   const BASE = 'https://services1.arcgis.com/YWG34dhJxrbxQWdF/arcgis/rest/services';
 
   const ENDPOINTS = {
-    leases : `${BASE}/Oil_and_Gas_Leases_Active/FeatureServer/0`,
-    units  : `${BASE}/Oil_and_Gas_Units_Active/FeatureServer/0`,
-    psf    : `${BASE}/Permanent_School_Fund_Lands/FeatureServer/0`,
+    leases         : `${BASE}/Oil_and_Gas_Leases_Active/FeatureServer/0`,
+    leasesInactive : `${BASE}/Oil_and_Gas_Leases_In_Active/FeatureServer/0`,
+    units          : `${BASE}/Oil_and_Gas_Units_Active/FeatureServer/0`,
+    unitsInactive  : `${BASE}/Oil_and_Gas_Units_In_Active/FeatureServer/0`,
+    nominated      : `${BASE}/Oil_and_Gas_Lease_Sale_Nominated_Tracts_(Public)/FeatureServer/0`,
+    psf            : `${BASE}/Permanent_School_Fund_Lands/FeatureServer/0`,
   };
 
   // ── Cache ──────────────────────────────────────────────────────────────────
@@ -108,6 +114,44 @@ const GLOService = (() => {
     return data;
   }
 
+  async function fetchLeasesInactive(bbox) {
+    const k = _cacheKey('leasesInactive', bbox);
+    const c = _getCached(k);
+    if (c) return c;
+    const url = _buildUrl(ENDPOINTS.leasesInactive, bbox, [
+      'LEASE_NUMBER','LEASE_STATUS','LEASE_STATUS_DATE','EFFECTIVE_DATE',
+      'PRIMARY_TERM_END_DATE','ORIGINAL_LESSEE','LESSOR','FIELD_NAME',
+      'CURRENT_GROSS_ACRES','LEASE_TYPE','DEPTH_FROM','DEPTH_TO',
+    ], 300);
+    const data = await _fetch(url);
+    _setCache(k, data);
+    return data;
+  }
+
+  async function fetchUnitsInactive(bbox) {
+    const k = _cacheKey('unitsInactive', bbox);
+    const c = _getCached(k);
+    if (c) return c;
+    const url = _buildUrl(ENDPOINTS.unitsInactive, bbox, [
+      'UNIT_NAME','UNIT_STATUS','EFFECTIVE_DATE','FIELD_NAME','COUNTY','OBJECTID',
+    ], 150);
+    const data = await _fetch(url);
+    _setCache(k, data);
+    return data;
+  }
+
+  async function fetchNominated(bbox) {
+    const k = _cacheKey('nominated', bbox);
+    const c = _getCached(k);
+    if (c) return c;
+    const url = _buildUrl(ENDPOINTS.nominated, bbox, [
+      'TRACT_NUMBER','COUNTY','ACRES','LAND_TYPE','SURVEY','BLOCK','OBJECTID',
+    ], 200);
+    const data = await _fetch(url);
+    _setCache(k, data);
+    return data;
+  }
+
   async function fetchPSF(bbox) {
     const k = _cacheKey('psf', bbox);
     const c = _getCached(k);
@@ -159,12 +203,42 @@ const GLOService = (() => {
     };
   }
 
+  function formatInactiveLeaseLabel(props) {
+    const p = props || {};
+    return {
+      title   : `Lease ${p.LEASE_NUMBER || '—'} (Inactive)`,
+      lessee  : p.ORIGINAL_LESSEE || 'Unknown Lessee',
+      field   : p.FIELD_NAME || 'No Field Name',
+      acres   : p.CURRENT_GROSS_ACRES ? `${Number(p.CURRENT_GROSS_ACRES).toLocaleString()} ac` : '—',
+      status  : p.LEASE_STATUS || 'Inactive',
+      ended   : p.LEASE_STATUS_DATE || p.PRIMARY_TERM_END_DATE || '—',
+      depth   : p.DEPTH_FROM && p.DEPTH_TO ? `${p.DEPTH_FROM}–${p.DEPTH_TO} ft` : 'All Depths',
+    };
+  }
+
+  function formatNominatedLabel(props) {
+    const p = props || {};
+    return {
+      title  : `Tract ${p.TRACT_NUMBER || '—'}`,
+      county : p.COUNTY || '',
+      acres  : p.ACRES ? `${Number(p.ACRES).toLocaleString()} ac` : '—',
+      survey : p.SURVEY || '',
+      block  : p.BLOCK  || '',
+      type   : p.LAND_TYPE || '',
+    };
+  }
+
   return {
     fetchLeases,
+    fetchLeasesInactive,
     fetchUnits,
+    fetchUnitsInactive,
+    fetchNominated,
     fetchPSF,
     formatLeaseLabel,
+    formatInactiveLeaseLabel,
     formatUnitLabel,
+    formatNominatedLabel,
     formatPSFLabel,
     clearCache: () => _cache.clear(),
     cacheSize : () => _cache.size,
