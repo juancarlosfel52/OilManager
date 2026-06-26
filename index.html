@@ -153,12 +153,12 @@ nav{
   min-height:100vh;
   display:flex;align-items:flex-end;justify-content:flex-start;
   text-align:left;
-  padding:0 5% 80px;
+  padding:0 5% clamp(24px,4vh,48px);
   overflow:hidden;
 }
 #hero-3d{
   position:absolute;
-  right:0;top:0;bottom:0;
+  right:-20px;top:0;bottom:0;
   width:55%;
   pointer-events:auto;
   z-index:3;
@@ -209,25 +209,61 @@ nav{
   line-height:1.7;
 }
 .hero-btns{display:flex;gap:1rem;justify-content:flex-start;flex-wrap:wrap}
-.hero-iphone{
-  position:absolute;
-  bottom:25px;
-  left:50%;
-  transform:translateX(-50%);
-  height:28%;
-  max-height:240px;
-  width:auto;
+/* stats phone display */
+.oil-stats-header{
+  display:flex;align-items:center;gap:3rem;
+  text-align:left;margin-bottom:3.5rem;
+}
+.stats-header-text{flex:1;min-width:0}
+.stats-header-text .section-tag{margin-bottom:1rem}
+.stats-header-text h2{margin-bottom:1rem}
+.stats-header-text p{margin:0;max-width:480px}
+.stats-phone-display{
+  flex-shrink:0;
+  display:flex;align-items:center;gap:1.2rem;
+  position:relative;
+}
+.stats-platform-badges{
+  display:flex;flex-direction:column;gap:12px;align-items:flex-end;
+}
+.stats-platform-item{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(10,12,20,0.82);
+  border:1px solid rgba(245,166,35,0.35);
+  border-radius:8px;
+  padding:7px 14px 7px 12px;
+  backdrop-filter:blur(8px);
+  white-space:nowrap;
+  position:relative;
+}
+.stats-platform-item svg{width:20px;height:20px;flex-shrink:0;color:#F5A623}
+.stats-platform-item span{
+  font-family:'Maximum Voltage',sans-serif;
+  font-size:0.9rem;letter-spacing:2px;color:#fff;
+}
+.stats-platform-arrow{
+  color:#F5A623;font-size:1.3rem;margin-left:4px;
+  animation:arrowPulse 1.4s ease-in-out infinite;
+}
+@keyframes arrowPulse{0%,100%{transform:translateX(0);opacity:0.7}50%{transform:translateX(5px);opacity:1}}
+.stats-iphone{
+  height:340px;width:auto;
   object-fit:contain;
-  object-position:bottom;
-  z-index:6;
-  pointer-events:auto;
+  filter:drop-shadow(0 0 30px rgba(245,166,35,0.35))
+         drop-shadow(0 20px 40px rgba(0,0,0,0.6));
+  cursor:zoom-in;
   transition:transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94),
              filter 0.4s ease;
+  animation:phoneFloat 4s ease-in-out infinite;
 }
-.hero-iphone:hover{
-  transform:translateX(-50%) scale(1.18);
-  filter:drop-shadow(0 0 24px rgba(245,166,35,0.55));
-  cursor:zoom-in;
+.stats-iphone:hover{
+  transform:scale(1.1);
+  filter:drop-shadow(0 0 40px rgba(245,166,35,0.6))
+         drop-shadow(0 24px 50px rgba(0,0,0,0.7));
+}
+@keyframes phoneFloat{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
 }
 /* ── Phone Expand Modal ── */
 #phone-expand-overlay{
@@ -280,37 +316,6 @@ nav{
   color:rgba(255,255,255,0.3);
   text-transform:uppercase;
   pointer-events:none;
-}
-.platform-badges{
-  position:absolute;
-  bottom:calc(18% + 25px);
-  left:calc(50% + 90px);
-  z-index:7;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-.platform-item{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:rgba(10,12,20,0.72);
-  border:1px solid rgba(245,166,35,0.3);
-  border-radius:8px;
-  padding:6px 14px 6px 10px;
-  backdrop-filter:blur(8px);
-  white-space:nowrap;
-}
-.platform-item svg{
-  width:22px;height:22px;
-  flex-shrink:0;
-  color:#F5A623;
-}
-.platform-item span{
-  font-family:'Maximum Voltage',sans-serif;
-  font-size:1rem;
-  letter-spacing:2px;
-  color:#fff;
 }
 .btn-primary{
   background:var(--gold);color:var(--dark);
@@ -368,13 +373,6 @@ nav{
   position:relative;z-index:1;
   max-width:1100px;margin:0 auto;
 }
-.oil-stats-header{
-  text-align:center;
-  margin-bottom:3.5rem;
-}
-.oil-stats-header .section-tag{
-  margin-bottom:1rem;
-}
 .oil-stats-header h2{
   font-family:'Maximum Voltage',sans-serif;
   font-size:clamp(2rem,4.5vw,3.2rem);
@@ -386,8 +384,6 @@ nav{
 .oil-stats-header p{
   font-size:1rem;
   color:var(--muted);
-  max-width:580px;
-  margin:0 auto;
   line-height:1.7;
 }
 .oil-stats-grid{
@@ -978,11 +974,13 @@ footer p{color:var(--muted);font-size:0.85rem}
   .how-visual{display:none}
   .oil-stats-grid{grid-template-columns:1fr}
 
-  /* Hide GLB canvas + iPhone on mobile — keep hero text clean */
+  /* Hide GLB canvas on mobile — keep hero text clean */
   #hero-3d{display:none}
-  .hero-iphone{display:none}
-  .platform-badges{display:none}
   #phone-expand-overlay{display:none!important}
+  /* Stack stats header on mobile */
+  .oil-stats-header{flex-direction:column;gap:2rem}
+  .stats-iphone{height:220px}
+  .stats-phone-display{flex-direction:row;justify-content:center}
 
   /* Hero text full width */
   #hero{min-height:60vh;padding:5rem 6% 3rem}
@@ -1080,23 +1078,6 @@ footer p{color:var(--muted);font-size:0.85rem}
       <a href="#features" class="btn-ghost">See Features</a>
     </div>
   </div>
-  <img class="hero-iphone" src="Card Photos/iphone.png" alt="OilManager App">
-  <div class="platform-badges">
-    <div class="platform-item">
-      <!-- Android icon -->
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V9H6v9zm-2.5-9C2.67 9 2 9.67 2 10.5v7c0 .83.67 1.5 1.5 1.5S5 18.33 5 17.5v-7C5 9.67 4.33 9 3.5 9zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zM15.53 2.16l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48A5.84 5.84 0 0 0 12 1c-.66 0-1.3.11-1.9.31L8.64.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.27 1.27C7.9 3.08 7 4.57 7 6.25V7h10v-.75c0-1.68-.9-3.17-2.47-4.09zM10 5H9V4h1v1zm5 0h-1V4h1v1z" fill="currentColor"/>
-      </svg>
-      <span>SUPPORTS ANDROID</span>
-    </div>
-    <div class="platform-item">
-      <!-- Apple icon -->
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="currentColor"/>
-      </svg>
-      <span>IOS</span>
-    </div>
-  </div>
 </section>
 
 <!-- COMMAND CENTER STATS -->
@@ -1104,9 +1085,28 @@ footer p{color:var(--muted);font-size:0.85rem}
   <div class="oil-stats-inner">
 
     <div class="oil-stats-header">
-      <div class="section-tag">Live Field Intelligence</div>
-      <h2>Field Operations,<br>Connected in Real Time</h2>
-      <p>Dispatch crews, verify clock-ins, view lease data, and approve hours from one live oilfield command center.</p>
+      <div class="stats-header-text">
+        <div class="section-tag">Live Field Intelligence</div>
+        <h2>Field Operations,<br>Connected in Real Time</h2>
+        <p>Dispatch crews, verify clock-ins, view lease data, and approve hours from one live oilfield command center.</p>
+      </div>
+      <div class="stats-phone-display">
+        <!-- Android + iOS badges LEFT of phone with arrows -->
+        <div class="stats-platform-badges">
+          <div class="stats-platform-item">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M6 18c0 .55.45 1 1 1h1v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h2v3.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5V19h1c.55 0 1-.45 1-1V9H6v9zm-2.5-9C2.67 9 2 9.67 2 10.5v7c0 .83.67 1.5 1.5 1.5S5 18.33 5 17.5v-7C5 9.67 4.33 9 3.5 9zm17 0c-.83 0-1.5.67-1.5 1.5v7c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-7c0-.83-.67-1.5-1.5-1.5zM15.53 2.16l1.3-1.3c.2-.2.2-.51 0-.71-.2-.2-.51-.2-.71 0l-1.48 1.48A5.84 5.84 0 0 0 12 1c-.66 0-1.3.11-1.9.31L8.64.15c-.2-.2-.51-.2-.71 0-.2.2-.2.51 0 .71l1.27 1.27C7.9 3.08 7 4.57 7 6.25V7h10v-.75c0-1.68-.9-3.17-2.47-4.09zM10 5H9V4h1v1zm5 0h-1V4h1v1z" fill="currentColor"/></svg>
+            <span>ANDROID</span>
+            <span class="stats-platform-arrow">➔</span>
+          </div>
+          <div class="stats-platform-item">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="currentColor"/></svg>
+            <span>iOS</span>
+            <span class="stats-platform-arrow">➔</span>
+          </div>
+        </div>
+        <!-- iPhone image -->
+        <img class="stats-iphone" src="Card Photos/iphone.png" alt="OilManager App">
+      </div>
     </div>
 
     <div class="oil-stats-grid">
@@ -1797,7 +1797,7 @@ window.addEventListener('load', function() {
 <!-- ── 2D TEXT WITH FAKE DEPTH ───────────────────────────────── -->
 <script>
 (function() {
-  const WORDS = ['GPS','LIVE ROUTES','GLO','RRC','OILFIELD','WORKER CLOCK IN','BOSS DASHBOARD'];
+  const WORDS = ['GPS','LIVE ROUTES','GLO MAP','RRC DATA','OILFIELD SUPPORT','WORKER ACCESS','LIVE TIME-CLOCK','BOSS DASHBOARD'];
   const HOLD_MS = 3200;
 
   const heroEl = document.getElementById('hero-3d');
@@ -1888,7 +1888,7 @@ window.addEventListener('load', function() {
   var overlay  = document.getElementById('phone-expand-overlay');
   var wrap     = document.getElementById('phone-expand-wrap');
   var img      = document.getElementById('phone-expand-img');
-  var phone    = document.querySelector('.hero-iphone');
+  var phone    = document.querySelector('.stats-iphone');
   var isOpen   = false;
   var tiltX = 0, tiltY = 0, targetX = 0, targetY = 0;
   var raf;

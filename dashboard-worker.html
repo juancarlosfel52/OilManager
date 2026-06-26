@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>OilManager — Worker</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#060810">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -382,6 +386,11 @@ input,textarea,select{font-size:16px!important}
 
 </div><!-- end .worker-layout -->
 
+<!-- GPS STATUS BAR -->
+<div id="gps-bar" style="display:none;position:fixed;bottom:68px;left:0;right:0;z-index:100;text-align:center;padding:5px 12px;font-size:0.7rem;font-weight:600;letter-spacing:0.3px;background:rgba(6,8,16,0.92);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,0.07)">
+  <span id="gps-bar-text">📍 GPS starting...</span>
+</div>
+
 <!-- EOD MODAL -->
 <div class="modal-bg" id="report-modal" onclick="closeReport(event)">
   <div class="modal">
@@ -397,12 +406,108 @@ input,textarea,select{font-size:16px!important}
   </div>
 </div>
 
-<script>
-// Clock toggle
+<script type="module">
+// ── Worker session — set by login.html after code verified ────
+const _session = JSON.parse(sessionStorage.getItem('workerSession') || '{}');
+const _bossId  = _session.bossId  || '';
+const _wid     = _session.wid     || 'w0';
+const _wname   = _session.name    || 'Worker';
+
+// Redirect to login if no session
+if (!_bossId) { window.location.href = 'login.html?role=worker'; }
+
+// ── Firebase ──────────────────────────────────────────────────
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const _fbApp = initializeApp({
+  apiKey:"AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
+  authDomain:"oilmanager-118b7.firebaseapp.com",
+  databaseURL:"https://oilmanager-118b7-default-rtdb.firebaseio.com",
+  projectId:"oilmanager-118b7",
+  storageBucket:"oilmanager-118b7.firebasestorage.app",
+  messagingSenderId:"1062793158063",
+  appId:"1:1062793158063:web:49023cc020e5e11e6d235a"
+}, 'worker-app');
+const _db = getDatabase(_fbApp);
+// Firebase Realtime DB has built-in offline persistence —
+// writes are queued locally and auto-synced when signal returns.
+
+// ── GPS state ─────────────────────────────────────────────────
+let _watchId = null;
+
+function _gpsBar(text, color) {
+  const bar  = document.getElementById('gps-bar');
+  const span = document.getElementById('gps-bar-text');
+  if (!bar) return;
+  bar.style.display = 'block';
+  span.textContent  = text;
+  span.style.color  = color || 'var(--muted)';
+}
+
+function _startGPS() {
+  if (!navigator.geolocation) {
+    _gpsBar('⚠️ GPS not supported on this device', 'var(--gold)');
+    return;
+  }
+  _gpsBar('📍 Acquiring GPS signal...', 'var(--muted)');
+  _watchId = navigator.geolocation.watchPosition(
+    _onPos,
+    _onErr,
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
+  );
+}
+
+function _stopGPS() {
+  if (_watchId !== null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
+  if (_bossId) set(ref(_db, `bosses/${_bossId}/gps/${_wid}/clockedIn`), false).catch(() => {});
+  const bar = document.getElementById('gps-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+function _onPos(pos) {
+  const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+
+  // Skip fixes worse than 50m — common in dead zones or indoors
+  if (accuracy > 50) {
+    _gpsBar(`📍 Weak signal (±${Math.round(accuracy)}m) — waiting for better fix`, 'var(--gold)');
+    return;
+  }
+
+  _gpsBar(`📍 GPS active · ±${Math.round(accuracy)}m`, 'var(--green)');
+
+  if (!_bossId) return; // no boss link — GPS display only
+  // Firebase queues this write offline automatically if no signal
+  set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
+    lat, lng,
+    accuracy:  Math.round(accuracy),
+    timestamp: Date.now(),
+    name:      _wname,
+    wid:       _wid,
+    clockedIn: true
+  }).catch(() => {
+    // Caught only on permanent failures — offline retries are silent/automatic
+    _gpsBar('📡 Cached — syncs when signal returns', 'var(--gold)');
+  });
+}
+
+function _onErr(err) {
+  // Code 1 = permission denied, 2 = unavailable, 3 = timeout
+  // watchPosition auto-retries for codes 2 & 3 — no manual retry needed
+  const msg   = { 1:'🔒 Location blocked — allow in browser settings',
+                  2:'📡 No signal — last location held',
+                  3:'⏱ GPS timeout — retrying...' };
+  const color = { 1:'var(--red)', 2:'var(--gold)', 3:'var(--muted)' };
+  _gpsBar(msg[err.code] || 'GPS error', color[err.code] || 'var(--gold)');
+}
+
+// ── Clock toggle ──────────────────────────────────────────────
 let clockedIn = true;
 let clockStart = Date.now() - (4*3600+22*60)*1000;
 
-function toggleClock() {
+_startGPS(); // begin tracking immediately on load
+
+window.toggleClock = function() {
   clockedIn = !clockedIn;
   const banner = document.getElementById('clock-banner');
   const label  = document.getElementById('clock-label');
@@ -410,82 +515,85 @@ function toggleClock() {
   const dot    = document.getElementById('clock-dot');
   const time   = document.getElementById('clock-time');
 
-  if(clockedIn) {
+  if (clockedIn) {
     clockStart = Date.now();
     banner.classList.remove('clocked-out');
-    label.textContent = 'Clocked In';
-    label.style.color = 'var(--green)';
+    label.textContent    = 'Clocked In';
+    label.style.color    = 'var(--green)';
     dot.style.background = 'var(--green)';
     dot.style.boxShadow  = '0 0 8px var(--green)';
     dot.style.animation  = 'pulse-dot 2s ease-in-out infinite';
-    btn.className = 'btn-clock btn-clock-out';
-    btn.textContent = 'Clock Out';
-    time.textContent = 'Just clocked in';
+    btn.className        = 'btn-clock btn-clock-out';
+    btn.textContent      = 'Clock Out';
+    time.textContent     = 'Just clocked in';
+    _startGPS();
   } else {
     banner.classList.add('clocked-out');
-    label.textContent = 'Clocked Out';
-    label.style.color = 'var(--gold)';
+    label.textContent    = 'Clocked Out';
+    label.style.color    = 'var(--gold)';
     dot.style.background = 'var(--gold)';
     dot.style.boxShadow  = '0 0 8px var(--gold)';
     dot.style.animation  = 'none';
-    btn.className = 'btn-clock btn-clock-in';
-    btn.textContent = 'Clock In';
-    time.textContent = 'Have a good one 👊';
+    btn.className        = 'btn-clock btn-clock-in';
+    btn.textContent      = 'Clock In';
+    time.textContent     = 'Have a good one 👊';
+    _stopGPS();
   }
-}
+};
 
-// Elapsed time
+// ── Elapsed time ──────────────────────────────────────────────
 setInterval(() => {
-  if(!clockedIn) return;
+  if (!clockedIn) return;
   const el = (Date.now() - clockStart) / 1000;
-  const h = Math.floor(el/3600);
-  const m = Math.floor((el%3600)/60);
+  const h  = Math.floor(el / 3600);
+  const m  = Math.floor((el % 3600) / 60);
   const clkTime = document.getElementById('clock-time');
-  const since = new Date(clockStart).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const since = new Date(clockStart).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
   clkTime.textContent = `Since ${since} · ${h}h ${m}m`;
 }, 10000);
 
-// Week bars
+// ── Week bars ─────────────────────────────────────────────────
 const days = ['M','T','W','T','F','S','S'];
-const hrs   = [8.5, 9, 7.5, 3.5, 0, 0, 0];
-const wb = document.getElementById('week-bars');
-days.forEach((d,i) => {
-  const barH = Math.round(hrs[i]/10 * 50);
-  const ot   = hrs[i] > 8;
-  wb.innerHTML += `
-    <div class="hours-day">
-      <div class="hours-day-label">${d}</div>
-      <div class="hours-day-bar${ot?' ot':''}" id="bar-${i}" style="height:0"></div>
-      <div class="hours-day-num">${hrs[i]||''}</div>
-    </div>`;
+const hrs  = [8.5, 9, 7.5, 3.5, 0, 0, 0];
+const wb   = document.getElementById('week-bars');
+days.forEach((d, i) => {
+  const ot = hrs[i] > 8;
+  wb.innerHTML += `<div class="hours-day">
+    <div class="hours-day-label">${d}</div>
+    <div class="hours-day-bar${ot?' ot':''}" id="bar-${i}" style="height:0"></div>
+    <div class="hours-day-num">${hrs[i]||''}</div>
+  </div>`;
 });
 setTimeout(() => {
-  days.forEach((_,i) => {
-    const barH = Math.round(hrs[i]/10*50);
+  days.forEach((_, i) => {
     const el = document.getElementById(`bar-${i}`);
-    if(el) el.style.height = barH + 'px';
+    if (el) el.style.height = Math.round(hrs[i] / 10 * 50) + 'px';
   });
-},300);
+}, 300);
 
-// Complete job
-function completeJob(btn) {
+// ── UI helpers exposed to HTML onclick ────────────────────────
+window.completeJob = function(btn) {
   btn.textContent = '✓ Completed';
   btn.classList.add('done');
   btn.disabled = true;
   const badge = btn.closest('.job-card').querySelector('.job-badge');
   badge.textContent = 'Complete';
   badge.className = 'job-badge badge-active';
-}
+};
 
-// Report modal
-function openReport(){document.getElementById('report-modal').classList.add('open')}
-function closeReport(e){
-  if(!e||e.target===document.getElementById('report-modal'))
+window.openReport  = () => document.getElementById('report-modal').classList.add('open');
+window.closeReport = (e) => {
+  if (!e || e.target === document.getElementById('report-modal'))
     document.getElementById('report-modal').classList.remove('open');
-}
-function submitReport(){
+};
+window.submitReport = () => {
   document.getElementById('report-modal').classList.remove('open');
   alert('Report submitted. Good work today 👊');
+};
+
+// ── Register service worker (PWA / iOS background keep-alive) ─
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
 </body>

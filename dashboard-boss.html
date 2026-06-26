@@ -340,6 +340,10 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 }
 .worker-marker.route{border-color:var(--gold);color:var(--gold);box-shadow:0 0 10px rgba(245,166,35,0.5)}
 .worker-marker.idle{border-color:#6B7280;color:#6B7280;box-shadow:none;animation:none}
+@keyframes liveRing{
+  0%{transform:scale(1);opacity:0.6}
+  100%{transform:scale(1.8);opacity:0}
+}
 @keyframes worker-pulse{
   0%,100%{box-shadow:0 0 8px rgba(76,175,80,0.5)}
   50%{box-shadow:0 0 18px rgba(76,175,80,0.9)}
@@ -1556,7 +1560,7 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Crew Roster</div>
-          <button class="panel-action" onclick="openModal()">+ Add Worker</button>
+          <button class="panel-action" onclick="openAddWorker()">+ Add Worker</button>
         </div>
         <div class="worker-list" id="workers-panel-list" style="padding:0.5rem 1rem 1rem">
           <div class="worker-item"><div class="worker-avatar">JR</div><div class="worker-info"><div class="worker-name">Juan Reyes</div><div class="worker-job">Pump Unit 14</div></div><div class="worker-status status-active">On Site</div></div>
@@ -1643,6 +1647,39 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 </div>
 
 <!-- NEW JOB MODAL -->
+<!-- ══ ADD WORKER MODAL ══ -->
+<div class="modal-bg" id="modal-add-worker" onclick="if(event.target===this)closeAddWorker()">
+  <div class="modal">
+    <div class="modal-title">👷 Add Worker</div>
+    <label>Full Name</label>
+    <input type="text" id="aw-name" placeholder="e.g. Carlos Reyes">
+    <label>Role</label>
+    <select id="aw-role">
+      <option>Operator</option>
+      <option>Driller</option>
+      <option>Roughneck</option>
+      <option>Supervisor</option>
+      <option>Mechanic</option>
+      <option>Driver</option>
+    </select>
+    <label>Job Site</label>
+    <input type="text" id="aw-jobsite" placeholder="e.g. Section 14 — Pad A">
+    <label>Phone (optional)</label>
+    <input type="tel" id="aw-phone" placeholder="e.g. 432-555-0100">
+    <div id="aw-code-box" style="display:none;margin:1rem 0;padding:1rem;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);border-radius:10px;text-align:center">
+      <div style="font-size:0.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem">Worker Code</div>
+      <div id="aw-code-display" style="font-size:1.8rem;font-weight:800;letter-spacing:6px;color:var(--gold);font-family:'Bebas Neue',sans-serif"></div>
+      <div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem">Share this code with the worker — they enter it to log in</div>
+      <button onclick="copyWorkerCode()" style="margin-top:0.7rem;padding:0.4rem 1rem;background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3);border-radius:7px;color:var(--gold);font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif" id="aw-copy-btn">Copy Code</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAddWorker()">Cancel</button>
+      <button class="btn-create" id="aw-save-btn" onclick="saveWorker()">Add Worker</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEW JOB MODAL ══ -->
 <div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
   <div class="modal">
     <div class="modal-title">Create New Job</div>
@@ -1871,6 +1908,7 @@ const map = new mapboxgl.Map({
   antialias: true,
   maxPitch: 85,
 });
+window._oilMap = map; // expose for Firebase module GPS updates
 
 // Navigation controls — zoom, rotate, compass, pitch
 map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
@@ -3479,6 +3517,74 @@ function _spawnBurstParticles(point) {
 }
 
 // Modal
+// ── ADD WORKER ────────────────────────────────────────────────
+function openAddWorker() {
+  document.getElementById('aw-name').value    = '';
+  document.getElementById('aw-phone').value   = '';
+  document.getElementById('aw-jobsite').value = '';
+  document.getElementById('aw-code-box').style.display = 'none';
+  document.getElementById('aw-save-btn').textContent   = 'Add Worker';
+  window._pendingWorker = null;
+  document.getElementById('modal-add-worker').classList.add('open');
+}
+function closeAddWorker() {
+  document.getElementById('modal-add-worker').classList.remove('open');
+}
+
+function _genCode(name, existingCodes) {
+  const parts = name.trim().split(/\s+/);
+  const initials = ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'WK';
+  const year = new Date().getFullYear();
+  let code = `${initials}-${year}`;
+  // Handle collision — append digit
+  let n = 2;
+  while (existingCodes.includes(code)) { code = `${initials}${n}-${year}`; n++; }
+  return code;
+}
+
+function saveWorker() {
+  const name    = document.getElementById('aw-name').value.trim();
+  const role    = document.getElementById('aw-role').value;
+  const jobsite = document.getElementById('aw-jobsite').value.trim();
+  const phone   = document.getElementById('aw-phone').value.trim();
+  if (!name) { alert('Enter the worker\'s full name.'); return; }
+
+  // Get existing codes to check collision
+  const existingCodes = Object.values(_fbWorkers).map(w => w.code).filter(Boolean);
+  const code = _genCode(name, existingCodes);
+
+  window._pendingWorker = { name, role, jobsite, phone, code, clockedIn: false };
+
+  // Show the generated code — boss sees it before confirming
+  document.getElementById('aw-code-display').textContent = code;
+  document.getElementById('aw-code-box').style.display   = 'block';
+  document.getElementById('aw-save-btn').textContent     = 'Confirm & Save';
+
+  // Second click confirms and saves to Firebase
+  document.getElementById('aw-save-btn').onclick = _confirmSaveWorker;
+}
+
+function _confirmSaveWorker() {
+  if (!_firebaseUser || !window._pendingWorker) return;
+  const wid = 'w_' + Date.now();
+  // Push to Firebase — handled in the module block below via window._saveWorkerToFB
+  if (window._saveWorkerToFB) {
+    window._saveWorkerToFB(wid, window._pendingWorker);
+  }
+  closeAddWorker();
+  addNotif('Worker Added', `${window._pendingWorker.name} — code ${window._pendingWorker.code}`, 'success');
+  window._pendingWorker = null;
+  document.getElementById('aw-save-btn').onclick = saveWorker;
+}
+
+function copyWorkerCode() {
+  const code = document.getElementById('aw-code-display').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    document.getElementById('aw-copy-btn').textContent = '✓ Copied!';
+    setTimeout(() => document.getElementById('aw-copy-btn').textContent = 'Copy Code', 2000);
+  });
+}
+
 function openModal(){document.getElementById('modal-bg').classList.add('open')}
 function closeModal(e){
   if(!e||e.target===document.getElementById('modal-bg'))
@@ -3498,7 +3604,7 @@ function approveTC(btn){
 <script type="module">
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -3515,6 +3621,13 @@ const app       = initializeApp(firebaseConfig);
 const auth      = getAuth(app);
 const db        = getDatabase(app);
 const firestore = getFirestore(app);
+
+// ── Expose Firebase worker save to non-module JS ──────────────
+window._saveWorkerToFB = (wid, data) => {
+  const uid = _firebaseUser?.uid;
+  if (!uid) return;
+  set(ref(db, `bosses/${uid}/workers/${wid}`), data).catch(console.error);
+};
 
 // ── AUTH GUARD ────────────────────────────────────────────────
 onAuthStateChanged(auth, user => {
@@ -3551,7 +3664,7 @@ onAuthStateChanged(auth, user => {
     if(!workers.length) {
       showEmptyState('workers-panel-list','👷','No workers yet',
         'Add your first crew member to start assigning jobs and tracking hours.',
-        '+ Add Worker', "showPanel('workers')");
+        '+ Add Worker', "openAddWorker()");
     }
     // Welcome steps
     updateWelcomeSteps(workers.length > 0, Object.keys(_fbJobs).length > 0);
@@ -3600,7 +3713,96 @@ onAuthStateChanged(auth, user => {
     var b = document.getElementById('badge-tc');
     if(b) b.textContent = pending.length || '0';
   });
+
+  // ── Realtime DB — Live Worker GPS ────────────────────────────
+  window._liveMarkers = {};
+  window._lastGPSSnap = {};
+
+  onValue(ref(db, 'bosses/' + user.uid + '/gps'), snap => {
+    window._lastGPSSnap = snap.val() || {};
+    _renderLiveGPS(window._lastGPSSnap);
+  });
+
+  // Re-run every 60s so staleness colors update even without new Firebase events
+  setInterval(() => _renderLiveGPS(window._lastGPSSnap || {}), 60000);
 });
+
+// ── GPS HELPERS (outside auth block so setInterval can call them) ─
+
+function _renderLiveGPS(data) {
+  const map = window._oilMap;
+  if (!map || !map.loaded()) return;
+
+  const now = Date.now();
+  Object.entries(data).forEach(([wid, w]) => {
+    if (!w.lat || !w.lng) return;
+    const age   = now - (w.timestamp || 0);
+    const color = age < 300000 ? '#4CAF50' : age < 1200000 ? '#F5A623' : '#F44336';
+    const label = (w.name || wid).split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+    const ageStr = _fmtAge(age);
+
+    if (window._liveMarkers[wid]) {
+      const lm = window._liveMarkers[wid];
+      _smoothMove(lm.marker, [w.lng, w.lat]);
+      lm.el.style.background = color;
+      lm.el.style.boxShadow  = `0 0 10px ${color}88`;
+      lm.el.style.borderColor = color;
+      lm.marker.setPopup(_gpsPopup(w, color, ageStr));
+    } else {
+      const el = document.createElement('div');
+      el.className = 'worker-marker';
+      el.textContent = label;
+      el.style.cssText = `background:${color};box-shadow:0 0 10px ${color}88;border:2px solid ${color};color:#fff;font-size:0.68rem;font-weight:700;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative`;
+      // Live pulse ring
+      const ring = document.createElement('div');
+      ring.style.cssText = `position:absolute;inset:-4px;border-radius:50%;border:2px solid ${color};opacity:0.5;animation:liveRing 2s ease-out infinite`;
+      el.appendChild(ring);
+      const mk = new mapboxgl.Marker({ element: el })
+        .setLngLat([w.lng, w.lat])
+        .setPopup(_gpsPopup(w, color, ageStr))
+        .addTo(map);
+      window._liveMarkers[wid] = { marker: mk, el };
+    }
+  });
+
+  // Remove markers for workers no longer reporting
+  Object.keys(window._liveMarkers).forEach(wid => {
+    if (!data[wid]) {
+      window._liveMarkers[wid].marker.remove();
+      delete window._liveMarkers[wid];
+    }
+  });
+}
+
+function _gpsPopup(w, color, ageStr) {
+  const status = w.clockedIn ? 'ON SHIFT' : 'CLOCKED OUT';
+  return new mapboxgl.Popup({ offset: 18, closeButton: false }).setHTML(
+    `<div class="popup-name">${w.name || w.wid}</div>
+     <div class="popup-detail">Last seen: ${ageStr}</div>
+     <div class="popup-status" style="color:${color}">${status}</div>`
+  );
+}
+
+function _smoothMove(marker, to) {
+  const from  = marker.getLngLat();
+  const steps = 20;
+  let i = 0;
+  const dx = (to[0] - from.lng) / steps;
+  const dy = (to[1] - from.lat) / steps;
+  const tick = setInterval(() => {
+    i++;
+    marker.setLngLat([from.lng + dx * i, from.lat + dy * i]);
+    if (i >= steps) clearInterval(tick);
+  }, 50);
+}
+
+function _fmtAge(ms) {
+  const s = Math.floor(ms / 1000);
+  if (s < 60)  return 'Just now';
+  const m = Math.floor(s / 60);
+  if (m < 60)  return `${m} min ago`;
+  return `${Math.floor(m / 60)}h ${m % 60}m ago`;
+}
 
 // ── LOGOUT ───────────────────────────────────────────────────
 window.doLogout = () => signOut(auth).then(() => window.location.href = 'login.html');

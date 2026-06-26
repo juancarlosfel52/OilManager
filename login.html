@@ -377,13 +377,13 @@ input.invalid{border-color:rgba(239,68,68,0.5)!important;background:rgba(239,68,
       <div id="worker-card" style="display:none">
         <div class="sec-title">Worker Check-In</div>
         <div class="sec-sub">Enter your worker code to view today's jobs.</div>
-        <div class="demo-creds"><strong>Demo code</strong> &nbsp;·&nbsp; <strong>JR-4821</strong></div>
+        <div class="demo-creds"><strong>Code format</strong> &nbsp;·&nbsp; <strong>JF-2026</strong></div>
         <div class="msg error"   id="worker-error"></div>
         <div class="msg success" id="worker-success"></div>
         <div class="field">
           <label>Worker Code</label>
           <div class="input-wrap">
-            <input type="text" id="worker-code" class="code-input" placeholder="XX-0000" maxlength="7" autocomplete="off" oninput="formatCode(this)">
+            <input type="text" id="worker-code" class="code-input" placeholder="XX-2026" maxlength="7" autocomplete="off" oninput="formatCode(this)">
           </div>
         </div>
         <button class="btn-submit" id="worker-btn" onclick="workerLogin()">
@@ -786,24 +786,47 @@ document.getElementById('tos-overlay').addEventListener('click', e => {
 });
 
 // ── WORKER LOGIN ─────────────────────────────────────────────
-function workerLogin() {
+async function workerLogin() {
   const code = document.getElementById('worker-code').value.trim().toUpperCase();
   const btn  = document.getElementById('worker-btn');
   const err  = document.getElementById('worker-error');
   const ok   = document.getElementById('worker-success');
   clearAllMsgs();
-  if(!code || code.length < 7) { err.textContent='Enter your full code (e.g. JR-4821).'; err.classList.add('show'); return; }
+  if (!code || code.length < 6) {
+    err.textContent = 'Enter your full worker code (e.g. JF-2026).';
+    err.classList.add('show'); return;
+  }
   btn.classList.add('loading');
-  setTimeout(() => {
+  try {
+    const lookup = window._lookupWorkerCode;
+    if (!lookup) throw new Error('Not ready');
+    const result = await lookup(code);
     btn.classList.remove('loading');
-    if(code === 'JR-4821') { ok.textContent='Code verified — loading your jobs…'; ok.classList.add('show'); setTimeout(()=>window.location.href='dashboard-worker.html',1100); }
-    else { err.textContent='Invalid code. Check with your supervisor.'; err.classList.add('show'); }
-  }, 900);
+    if (result) {
+      // Store session so worker dashboard knows who they are
+      sessionStorage.setItem('workerSession', JSON.stringify(result));
+      ok.textContent = `Code verified — welcome, ${result.name.split(' ')[0]}!`;
+      ok.classList.add('show');
+      setTimeout(() => window.location.href = 'dashboard-worker.html', 1100);
+    } else {
+      err.textContent = 'Invalid code. Check with your supervisor.';
+      err.classList.add('show');
+    }
+  } catch(e) {
+    btn.classList.remove('loading');
+    err.textContent = 'Connection error — try again.';
+    err.classList.add('show');
+  }
 }
 
 function formatCode(el) {
   let v = el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
-  if(v.length > 2) v = v.slice(0,2)+'-'+v.slice(2,6);
+  // Support JF-2026 (7 chars) and JF2-2026 (8 chars) for collision codes
+  if (v.length > 3 && /\d/.test(v[2])) {
+    v = v.slice(0,3) + '-' + v.slice(3,7); // JF2-2026
+  } else if (v.length > 2) {
+    v = v.slice(0,2) + '-' + v.slice(2,6); // JF-2026
+  }
   el.value = v;
 }
 
@@ -835,6 +858,7 @@ import {
   GoogleAuthProvider
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
@@ -850,7 +874,26 @@ const firebaseConfig = {
 const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
 const db       = getFirestore(app);
+const rtdb     = getDatabase(app);
 const provider = new GoogleAuthProvider();
+
+// ── Worker code lookup — expose to non-module workerLogin() ───
+window._lookupWorkerCode = async (code) => {
+  // Scan all bosses' worker lists for a matching code
+  // Structure: bosses/{bossId}/workers/{wid}/code
+  const snap = await get(ref(rtdb, 'bosses'));
+  if (!snap.exists()) return null;
+  const bosses = snap.val();
+  for (const [bossId, bossData] of Object.entries(bosses)) {
+    const workers = bossData.workers || {};
+    for (const [wid, w] of Object.entries(workers)) {
+      if (w.code === code) {
+        return { bossId, wid, name: w.name, role: w.role, jobsite: w.jobsite };
+      }
+    }
+  }
+  return null;
+};
 
 // Handle redirect result from mobile Google sign-in
 getRedirectResult(auth).then(async result => {
