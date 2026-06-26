@@ -1574,13 +1574,7 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
           <div class="panel-title">Crew Roster</div>
           <button class="panel-action" onclick="openAddWorker()">+ Add Worker</button>
         </div>
-        <div class="worker-list" id="workers-panel-list" style="padding:0.5rem 1rem 1rem">
-          <div class="worker-item"><div class="worker-avatar">JR</div><div class="worker-info"><div class="worker-name">Juan Reyes</div><div class="worker-job">Pump Unit 14</div></div><div class="worker-status status-active">On Site</div></div>
-          <div class="worker-item"><div class="worker-avatar">MT</div><div class="worker-info"><div class="worker-name">Miguel Torres</div><div class="worker-job">Lease Road 22</div></div><div class="worker-status status-active">On Site</div></div>
-          <div class="worker-item"><div class="worker-avatar">DG</div><div class="worker-info"><div class="worker-name">David Garcia</div><div class="worker-job">En Route → Tk7</div></div><div class="worker-status status-route">En Route</div></div>
-          <div class="worker-item"><div class="worker-avatar">RC</div><div class="worker-info"><div class="worker-name">Ramon Chavez</div><div class="worker-job">No assignment</div></div><div class="worker-status status-idle">Off Clock</div></div>
-          <div class="worker-item"><div class="worker-avatar">EL</div><div class="worker-info"><div class="worker-name">Eddie Lopez</div><div class="worker-job">Pump Unit 14</div></div><div class="worker-status status-active">On Site</div></div>
-        </div>
+        <div class="worker-list" id="workers-panel-list" style="padding:0.5rem 1rem 1rem"></div>
       </div>
     </div>
 
@@ -3657,6 +3651,36 @@ function _spawnBurstParticles(point) {
 }
 
 // Modal
+// ── RENDER WORKERS LIST ───────────────────────────────────────
+function _renderWorkersList(workers) {
+  const list = document.getElementById('workers-panel-list');
+  if (!list) return;
+  if (!workers.length) {
+    showEmptyState('workers-panel-list','👷','No workers yet',
+      'Add your first crew member to start assigning jobs and tracking hours.',
+      '+ Add Worker', "openAddWorker()");
+    return;
+  }
+  list.innerHTML = workers.map(w => {
+    const initials = (w.name || '?').split(' ').map(p => p[0]).join('').toUpperCase().slice(0,2);
+    const clocked  = w.clockedIn;
+    const statusClass = clocked ? 'status-active' : 'status-idle';
+    const statusText  = clocked ? 'Clocked In' : 'Off Clock';
+    return `
+      <div class="worker-item">
+        <div class="worker-avatar">${initials}</div>
+        <div class="worker-info">
+          <div class="worker-name">${w.name || '—'}</div>
+          <div class="worker-job">${w.jobsite || w.role || 'No assignment'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="worker-status ${statusClass}">${statusText}</div>
+          <div style="font-size:0.62rem;color:var(--muted);letter-spacing:1px">${w.code || ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 // ── ADD WORKER ────────────────────────────────────────────────
 function openAddWorker() {
   document.getElementById('aw-name').value    = '';
@@ -3800,12 +3824,9 @@ onAuthStateChanged(auth, user => {
     const el = document.getElementById('stat-workers');
     if(el) el.textContent = active || workers.length || '0';
 
-    // Empty state in panel
-    if(!workers.length) {
-      showEmptyState('workers-panel-list','👷','No workers yet',
-        'Add your first crew member to start assigning jobs and tracking hours.',
-        '+ Add Worker', "openAddWorker()");
-    }
+    // Render worker cards
+    _renderWorkersList(workers);
+
     // Welcome steps
     updateWelcomeSteps(workers.length > 0, Object.keys(_fbJobs).length > 0);
     // Badge
