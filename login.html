@@ -9,283 +9,227 @@
 @font-face{
   font-family:'Maximum Voltage';
   src:url('Fonts/maximum_voltage/Maximum Voltage.ttf') format('truetype');
-  font-weight:normal;font-style:normal;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --gold:#F5A623;
-  --amber:#E8860A;
-  --gold-glow:rgba(245,166,35,0.18);
-  --gold-border:rgba(245,166,35,0.28);
+  --gold:#F5A623;--amber:#c97d10;
   --dark:#04080f;
-  --card:rgba(6,10,16,0.84);
-  --border:rgba(245,166,35,0.2);
-  --text:#eef0f5;
-  --muted:rgba(170,175,190,0.6);
+  --glass:rgba(8,14,26,0.72);
+  --glass-border:rgba(255,255,255,0.09);
+  --glass-gold:rgba(245,166,35,0.22);
+  --text:#eef0f5;--muted:rgba(170,180,200,0.58);
+  --green:#22c55e;--red:#ef4444;
 }
-html,body{height:100%;overflow:hidden}
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--dark);
-  color:var(--text);
-  min-height:100vh;
-  display:flex;flex-direction:column;
-}
+html,body{min-height:100%;overflow-x:hidden}
+body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);display:flex;flex-direction:column}
 
-/* ── BACKGROUND ── */
-.login-bg{
-  position:fixed;inset:0;z-index:0;
-  background:url('Card Photos/login-bg.jpg') center/cover no-repeat;
-}
-.login-bg::after{
-  content:'';position:absolute;inset:0;
-  background:
-    linear-gradient(135deg, rgba(2,5,8,0.78) 0%, rgba(4,10,6,0.65) 50%, rgba(2,5,8,0.82) 100%);
-}
+/* ── BG ── */
+.login-bg{position:fixed;inset:0;z-index:0;background:url('Card Photos/login-bg.jpg') center/cover no-repeat}
+.login-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(145deg,rgba(2,4,10,0.85) 0%,rgba(4,9,18,0.7) 50%,rgba(2,4,10,0.9) 100%)}
 
-/* ── LAYOUT ── */
-.page{
-  position:relative;z-index:1;
-  flex:1;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  padding:1.5rem;
-  min-height:100vh;
-  overflow-y:auto;
-}
+/* ── PAGE ── */
+.page{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem;min-height:100vh}
+.back-home{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-decoration:none;color:rgba(245,166,35,0.6);margin-bottom:1.1rem;transition:color 0.2s,transform 0.15s}
+.back-home:hover{color:var(--gold);transform:translateX(-3px)}
 
 /* ── LOGO ── */
-.back-home{
-  display:inline-flex;align-items:center;gap:0.4rem;
-  font-size:0.78rem;font-weight:600;letter-spacing:1px;
-  text-transform:uppercase;text-decoration:none;
-  color:rgba(245,166,35,0.7);
-  margin-bottom:1.2rem;
-  transition:color 0.2s,transform 0.15s;
-}
-.back-home:hover{color:var(--gold);transform:translateX(-3px)}
-.logo-wrap{text-align:center;margin-bottom:1.8rem}
-.logo{
-  font-family:'Maximum Voltage',sans-serif;
-  font-size:2.6rem;letter-spacing:4px;
-  color:#fff;line-height:1;
-  text-shadow:0 0 30px rgba(245,166,35,0.4), 0 2px 8px rgba(0,0,0,0.8);
-}
+.logo-wrap{text-align:center;margin-bottom:1.5rem}
+.logo{font-family:'Maximum Voltage',sans-serif;font-size:2.3rem;letter-spacing:5px;color:#fff;text-shadow:0 0 28px rgba(245,166,35,0.38),0 2px 10px rgba(0,0,0,0.9)}
 .logo span{color:var(--gold)}
-.logo-sub{
-  font-size:0.68rem;letter-spacing:3px;text-transform:uppercase;
-  color:var(--muted);margin-top:0.4rem;
-}
+.logo-sub{font-size:0.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-top:0.4rem}
 
-/* ── CARD ── */
+/* ── FROSTED GLASS CARD ── */
 .card{
-  width:100%;max-width:560px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:2rem 2rem 1.75rem;
-  backdrop-filter:blur(20px);
+  width:100%;max-width:500px;
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  border-radius:20px;
+  padding:2rem;
+  backdrop-filter:blur(28px) saturate(1.4);
+  -webkit-backdrop-filter:blur(28px) saturate(1.4);
   box-shadow:
     0 0 0 1px rgba(245,166,35,0.06),
-    0 24px 64px rgba(0,0,0,0.7),
-    0 0 40px rgba(245,166,35,0.06);
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 28px 72px rgba(0,0,0,0.7),
+    0 0 60px rgba(245,166,35,0.04);
   position:relative;overflow:hidden;
+  transition:max-width 0.3s ease;
 }
-/* top green shimmer line */
-.card::before{
-  content:'';
-  position:absolute;top:0;left:8%;right:8%;height:1px;
-  background:linear-gradient(90deg, transparent, rgba(245,166,35,0.6), transparent);
-}
+/* top shimmer */
+.card::before{content:'';position:absolute;top:0;left:5%;right:5%;height:1px;background:linear-gradient(90deg,transparent,rgba(245,166,35,0.5),transparent)}
+/* inner frost grain */
+.card::after{content:'';position:absolute;inset:0;border-radius:20px;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E") repeat;pointer-events:none;z-index:0;opacity:0.4}
+.card>*{position:relative;z-index:1}
+.card.signup-wide{max-width:700px}
 
-/* ── MODE TOGGLE ── */
-.mode-toggle{
-  display:flex;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(245,166,35,0.15);
-  border-radius:10px;overflow:hidden;
-  margin-bottom:1.75rem;
-}
-.mode-btn{
-  flex:1;padding:0.7rem;
-  background:transparent;border:none;
-  color:var(--muted);
-  font-family:'Inter',sans-serif;
-  font-size:0.8rem;font-weight:700;
-  letter-spacing:2px;text-transform:uppercase;
-  cursor:pointer;transition:all 0.22s;
-}
-.mode-btn.active{
-  background:linear-gradient(135deg,#c97d10,#F5A623);
-  color:#fff;
-  box-shadow:0 2px 12px rgba(245,166,35,0.3);
-}
-.mode-btn:not(.active):hover{color:var(--text)}
+/* ── MODE TABS ── */
+.mode-toggle{display:flex;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:11px;overflow:hidden;margin-bottom:1.5rem}
+.mode-btn{flex:1;padding:0.65rem;background:transparent;border:none;color:var(--muted);font-family:'Inter',sans-serif;font-size:0.76rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.22s}
+.mode-btn.active{background:linear-gradient(135deg,var(--amber),var(--gold));color:#000;box-shadow:0 2px 14px rgba(245,166,35,0.28)}
+.mode-btn:not(.active):hover{color:var(--text);background:rgba(255,255,255,0.04)}
 
-/* ── ROLE TOGGLE ── */
-.role-toggle{
-  display:flex;gap:0.5rem;
-  margin-bottom:1.5rem;
-}
-.role-btn{
-  flex:1;padding:0.6rem 0.5rem;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(245,166,35,0.15);
-  border-radius:8px;
-  color:var(--muted);
-  font-family:'Inter',sans-serif;
-  font-size:0.75rem;font-weight:600;
-  letter-spacing:0.5px;
-  cursor:pointer;transition:all 0.2s;
-  text-align:center;
-}
-.role-btn.active{
-  background:rgba(245,166,35,0.1);
-  border-color:var(--gold);
-  color:var(--gold);
-}
-.role-btn:not(.active):hover{
-  background:rgba(255,255,255,0.06);color:var(--text);
-}
+/* ── ROLE TABS ── */
+.role-toggle{display:flex;gap:0.5rem;margin-bottom:1.3rem}
+.role-btn{flex:1;padding:0.52rem 0.4rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;color:var(--muted);font-family:'Inter',sans-serif;font-size:0.73rem;font-weight:600;cursor:pointer;transition:all 0.2s;text-align:center}
+.role-btn.active{background:rgba(245,166,35,0.1);border-color:rgba(245,166,35,0.4);color:var(--gold)}
 
-/* ── SECTION HEADING ── */
-.section-title{
-  font-size:1rem;font-weight:700;color:#fff;
-  margin-bottom:0.2rem;
-}
-.section-sub{
-  font-size:0.78rem;color:var(--muted);
-  margin-bottom:1.4rem;line-height:1.5;
-}
+/* ── SECTION TITLE ── */
+.sec-title{font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:0.2rem}
+.sec-sub{font-size:0.74rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.5}
 
-/* ── FORM ── */
-.field{margin-bottom:1rem}
-label{
-  display:block;font-size:0.7rem;font-weight:600;
-  letter-spacing:1.5px;text-transform:uppercase;
-  color:rgba(160,180,165,0.7);margin-bottom:0.4rem;
-}
-input{
-  width:100%;padding:0.72rem 1rem;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(245,166,35,0.18);
-  border-radius:9px;
+/* ── FORM FIELDS ── */
+.field{margin-bottom:0.85rem;position:relative}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+label{display:flex;align-items:center;gap:0.4rem;font-size:0.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(170,180,200,0.6);margin-bottom:0.35rem}
+label .field-icon{font-size:0.75rem}
+.input-wrap{position:relative}
+input[type=text],input[type=email],input[type=password],input[type=tel],input[type=date],input[type=number],select{
+  width:100%;padding:0.68rem 2.2rem 0.68rem 0.9rem;
+  background:rgba(255,255,255,0.06);
+  border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:10px;
   color:var(--text);
-  font-size:0.92rem;font-family:'Inter',sans-serif;
+  font-family:'Inter',sans-serif;font-size:0.86rem;
   outline:none;
-  transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;
+  transition:border-color 0.2s,background 0.2s,box-shadow 0.2s;
+  backdrop-filter:blur(4px);
 }
-input:focus{
-  border-color:var(--gold);
-  background:rgba(245,166,35,0.06);
-  box-shadow:0 0 0 3px rgba(245,166,35,0.1);
-}
-input::placeholder{color:rgba(160,180,165,0.3)}
+input:focus,select:focus{border-color:rgba(245,166,35,0.5);background:rgba(245,166,35,0.04);box-shadow:0 0 0 3px rgba(245,166,35,0.08)}
+input::placeholder{color:rgba(170,180,200,0.25)}
+select option{background:#0c1422}
+/* validation states */
+input.valid{border-color:rgba(34,197,94,0.45)!important;background:rgba(34,197,94,0.04)!important}
+input.invalid{border-color:rgba(239,68,68,0.5)!important;background:rgba(239,68,68,0.04)!important}
+.field-status{position:absolute;right:0.7rem;top:50%;transform:translateY(-50%);font-size:0.85rem;pointer-events:none;transition:opacity 0.2s}
+.field-status.ok{color:var(--green)}
+.field-status.err{color:var(--red)}
+.field-hint{font-size:0.65rem;color:var(--red);margin-top:0.28rem;display:none;padding-left:0.1rem}
+.field-hint.show{display:block}
 
-/* ── CODE INPUT ── */
-.code-input{
-  text-align:center;
-  font-size:1.6rem;font-weight:700;
-  letter-spacing:8px;text-transform:uppercase;
-}
-
-/* ── DEMO BADGE ── */
-.demo-creds{
-  background:rgba(245,166,35,0.06);
-  border:1px solid rgba(245,166,35,0.18);
-  border-radius:8px;padding:0.7rem 0.9rem;
-  margin-bottom:1.2rem;
-  font-size:0.76rem;color:var(--muted);
-  line-height:1.9;
-}
-.demo-creds strong{color:var(--gold);font-weight:600}
+/* CODE INPUT */
+.code-input{text-align:center!important;font-size:1.5rem!important;font-weight:700!important;letter-spacing:8px!important;text-transform:uppercase!important;padding-right:0.9rem!important}
 
 /* ── MESSAGES ── */
-.msg{
-  font-size:0.8rem;padding:0.6rem 0.85rem;
-  border-radius:7px;margin-bottom:0.85rem;
-  display:none;line-height:1.4;
-}
-.msg.error{ background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#f87171}
-.msg.success{background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.25); color:var(--gold)}
+.msg{font-size:0.76rem;padding:0.6rem 0.85rem;border-radius:8px;margin-bottom:0.85rem;display:none;line-height:1.5;backdrop-filter:blur(8px)}
+.msg.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171}
+.msg.success{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.22);color:var(--green)}
+.msg.info{background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.2);color:var(--gold)}
 .msg.show{display:block}
 
-/* ── SUBMIT BUTTON ── */
-.btn-submit{
-  width:100%;padding:0.85rem;
-  background:linear-gradient(135deg,#c97d10 0%,#F5A623 100%);
-  color:#fff;border:none;border-radius:9px;
-  font-size:0.88rem;font-weight:700;
-  font-family:'Inter',sans-serif;
-  letter-spacing:1.5px;text-transform:uppercase;
-  cursor:pointer;
-  transition:opacity 0.2s,transform 0.15s,box-shadow 0.2s;
-  margin-top:0.5rem;
-  box-shadow:0 4px 18px rgba(245,166,35,0.25);
-}
-.btn-submit:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 8px 28px rgba(245,166,35,0.35)}
-.btn-submit:active{transform:translateY(0)}
-.btn-submit:disabled{opacity:0.5;cursor:not-allowed}
+/* ── DEMO BADGE ── */
+.demo-creds{background:rgba(245,166,35,0.05);border:1px solid rgba(245,166,35,0.13);border-radius:8px;padding:0.6rem 0.85rem;margin-bottom:1rem;font-size:0.72rem;color:var(--muted);line-height:1.9}
+.demo-creds strong{color:var(--gold)}
 
-/* spinner */
-.spinner{
-  display:none;width:18px;height:18px;
-  border:2px solid rgba(255,255,255,0.3);
-  border-top-color:#fff;border-radius:50%;
-  animation:spin 0.7s linear infinite;margin:0 auto;
-}
+/* ── CHECKBOX ROW ── */
+.check-row{display:flex;align-items:flex-start;gap:0.65rem;margin-bottom:0.75rem;cursor:pointer}
+.check-row input[type=checkbox]{width:17px;height:17px;flex-shrink:0;margin-top:1px;accent-color:var(--gold);cursor:pointer;padding:0;border:none;background:none}
+.check-label{font-size:0.75rem;color:var(--muted);line-height:1.5;cursor:pointer;padding:0}
+.check-label a{color:var(--gold);text-decoration:none}
+.check-label a:hover{text-decoration:underline}
+.check-error{font-size:0.68rem;color:var(--red);display:none;margin-bottom:0.5rem;margin-top:-0.3rem;padding-left:1.5rem}
+.check-error.show{display:block}
+
+/* ── BUTTONS ── */
+.btn-submit{width:100%;padding:0.82rem;background:linear-gradient(135deg,var(--amber) 0%,var(--gold) 100%);color:#000;border:none;border-radius:10px;font-size:0.83rem;font-weight:800;font-family:'Inter',sans-serif;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s,transform 0.15s,box-shadow 0.2s;margin-top:0.5rem;box-shadow:0 4px 20px rgba(245,166,35,0.22)}
+.btn-submit:hover:not(:disabled){opacity:0.88;transform:translateY(-1px);box-shadow:0 8px 30px rgba(245,166,35,0.32)}
+.btn-submit:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.spinner{display:none;width:16px;height:16px;border:2px solid rgba(0,0,0,0.2);border-top-color:#000;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto}
 .btn-submit.loading .spinner{display:inline-block}
 .btn-submit.loading .btn-text{display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── DIVIDER ── */
-.divider{display:flex;align-items:center;gap:0.75rem;margin:1.2rem 0}
-.divider-line{flex:1;height:1px;background:rgba(245,166,35,0.12)}
-.divider span{font-size:0.72rem;color:var(--muted)}
+.divider{display:flex;align-items:center;gap:0.75rem;margin:1rem 0}
+.divider-line{flex:1;height:1px;background:rgba(255,255,255,0.07)}
+.divider span{font-size:0.68rem;color:var(--muted)}
 
-/* ── FORGOT / LINKS ── */
-.foot-links{
-  text-align:center;margin-top:1.2rem;
-  font-size:0.78rem;color:var(--muted);
-  line-height:1.8;
-}
+/* ── GOOGLE BTN ── */
+.btn-google{width:100%;padding:0.72rem;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.83rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.65rem;transition:background 0.2s,border-color 0.2s,transform 0.15s;backdrop-filter:blur(4px)}
+.btn-google:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.22);transform:translateY(-1px)}
+.btn-google svg{width:17px;height:17px;flex-shrink:0}
+
+/* ── LINKS ── */
+.foot-links{text-align:center;margin-top:1rem;font-size:0.73rem;color:var(--muted);line-height:2}
 .foot-links a{color:var(--gold);text-decoration:none}
 .foot-links a:hover{text-decoration:underline}
+.back-to-login{background:none;border:none;color:var(--gold);font-size:0.76rem;cursor:pointer;font-family:'Inter',sans-serif;padding:0;margin-bottom:1.1rem;display:flex;align-items:center;gap:0.35rem}
+.back-to-login:hover{opacity:0.7}
 
-/* ── FOOTER ── */
-.page-footer{
-  position:relative;z-index:1;
-  text-align:center;padding:1rem;
-  font-size:0.7rem;color:rgba(120,140,125,0.5);
-  letter-spacing:1px;
+/* ── FINE PRINT ── */
+.fine-print{margin-top:1rem;padding:0.75rem;background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.1);border-radius:8px;font-size:0.65rem;color:rgba(170,180,200,0.45);line-height:1.7;text-align:center}
+.fine-print strong{color:rgba(245,166,35,0.6)}
+.beta-badge{display:inline-block;background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.25);color:var(--gold);font-size:0.6rem;font-weight:800;letter-spacing:2px;padding:1px 7px;border-radius:10px;margin-right:4px;vertical-align:middle}
+
+/* ── PAGE FOOTER ── */
+.page-footer{position:relative;z-index:1;text-align:center;padding:0.8rem;font-size:0.65rem;color:rgba(120,130,145,0.4);letter-spacing:1px}
+.page-footer span{color:rgba(245,166,35,0.45)}
+
+/* ── TOS MODAL ── */
+.tos-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);z-index:2000;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.tos-overlay.open{display:flex}
+.tos-box{
+  width:100%;max-width:680px;max-height:88vh;
+  background:rgba(8,14,26,0.92);
+  border:1px solid rgba(245,166,35,0.2);
+  border-radius:18px;
+  display:flex;flex-direction:column;
+  backdrop-filter:blur(32px);
+  box-shadow:0 32px 80px rgba(0,0,0,0.75),inset 0 1px 0 rgba(255,255,255,0.06);
 }
-.page-footer span{color:rgba(245,166,35,0.6)}
+.tos-head{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0}
+.tos-title{font-family:'Maximum Voltage',sans-serif;font-size:1.1rem;letter-spacing:2px;color:var(--gold)}
+.tos-close{width:28px;height:28px;border-radius:7px;border:none;background:rgba(255,255,255,0.06);color:var(--muted);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.tos-close:hover{background:rgba(239,68,68,0.15);color:var(--red)}
+.tos-body{overflow-y:auto;padding:1.5rem;flex:1;scroll-behavior:smooth}
+.tos-body::-webkit-scrollbar{width:4px}
+.tos-body::-webkit-scrollbar-track{background:transparent}
+.tos-body::-webkit-scrollbar-thumb{background:rgba(245,166,35,0.2);border-radius:2px}
+.tos-section{margin-bottom:1.5rem}
+.tos-section h3{font-size:0.72rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:0.6rem;padding-bottom:0.4rem;border-bottom:1px solid rgba(245,166,35,0.12)}
+.tos-section p{font-size:0.78rem;color:rgba(180,190,210,0.75);line-height:1.8;margin-bottom:0.6rem}
+.tos-section ul{padding-left:1.2rem;margin-bottom:0.6rem}
+.tos-section li{font-size:0.76rem;color:rgba(180,190,210,0.7);line-height:1.8;margin-bottom:0.3rem}
+.tos-section .law-cite{font-size:0.68rem;color:rgba(245,166,35,0.55);font-style:italic;border-left:2px solid rgba(245,166,35,0.2);padding-left:0.6rem;margin:0.5rem 0;display:block}
+.tos-footer{padding:1rem 1.5rem;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.tos-footer p{font-size:0.7rem;color:var(--muted)}
+.btn-accept{padding:0.6rem 1.5rem;background:linear-gradient(135deg,var(--amber),var(--gold));color:#000;border:none;border-radius:8px;font-size:0.78rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s}
+.btn-accept:hover{opacity:0.85}
 
 /* ── MOBILE ── */
-/* ── GOOGLE BUTTON ── */
-.btn-google{
-  width:100%;padding:0.78rem;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:9px;
-  color:var(--text);
-  font-family:'Inter',sans-serif;
-  font-size:0.88rem;font-weight:600;
-  letter-spacing:0.5px;
-  cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:0.65rem;
-  transition:background 0.2s,border-color 0.2s,transform 0.15s;
-  margin-bottom:0;
+/* ── iOS INPUT ZOOM FIX (must be 16px+) ── */
+@media(max-width:767px){
+  input,select{font-size:16px!important}
 }
-.btn-google:hover{
-  background:rgba(255,255,255,0.1);
-  border-color:rgba(255,255,255,0.25);
-  transform:translateY(-1px);
+@media(max-width:600px){
+  html,body{overflow-y:auto}
+  .page{padding:1.25rem 1rem;justify-content:flex-start;padding-top:1.5rem}
+  .card{padding:1.4rem 1.1rem;border-radius:16px;max-height:none}
+  .card.signup-wide{max-width:100%}
+  .field-row{grid-template-columns:1fr}
+  .logo{font-size:1.8rem;letter-spacing:3px}
+  .logo-sub{font-size:0.58rem;letter-spacing:2px}
+  /* Touch targets */
+  .btn-submit{min-height:48px;font-size:0.9rem;padding:0.9rem}
+  .btn-google{min-height:48px;font-size:0.88rem}
+  .mode-btn{min-height:44px}
+  .role-btn{min-height:44px}
+  .back-to-login{min-height:44px}
+  .back-home{min-height:36px}
+  /* Checkboxes */
+  .check-row{padding:0.3rem 0}
+  .check-row input[type=checkbox]{width:20px;height:20px;min-width:20px}
+  /* TOS modal full screen */
+  .tos-overlay{padding:0}
+  .tos-box{max-height:100vh;border-radius:0;border-left:none;border-right:none}
+  .tos-close{width:36px;height:36px}
+  .btn-accept{min-height:48px;width:100%}
+  .tos-footer{flex-direction:column;gap:0.5rem}
+  .fine-print{font-size:0.62rem}
 }
-.btn-google svg{width:18px;height:18px;flex-shrink:0}
-@media(max-width:480px){
-  .card{padding:1.5rem 1.25rem;border-radius:14px;max-width:100%}
-  .logo{font-size:2rem}
-  .page{justify-content:flex-start;padding-top:2rem}
+@media(max-width:380px){
+  .logo{font-size:1.5rem}
+  .card{padding:1.1rem 0.9rem}
+  .sec-title{font-size:0.85rem}
 }
 </style>
 </head>
@@ -293,8 +237,8 @@ input::placeholder{color:rgba(160,180,165,0.3)}
 
 <div class="login-bg"></div>
 
+<!-- PAGE -->
 <div class="page">
-  <!-- Logo -->
   <a href="index.html" class="back-home">← Back to Home</a>
 
   <div class="logo-wrap">
@@ -302,167 +246,217 @@ input::placeholder{color:rgba(160,180,165,0.3)}
     <div class="logo-sub">Permian Basin Field Operations</div>
   </div>
 
-  <!-- Card -->
-  <div class="card">
+  <div class="card" id="main-card">
 
-    <!-- Mode toggle -->
-    <div class="mode-toggle">
+    <!-- MODE TOGGLE -->
+    <div class="mode-toggle" id="mode-bar">
       <button class="mode-btn active" id="mode-login"  onclick="setMode('login')">Log In</button>
       <button class="mode-btn"        id="mode-signup" onclick="setMode('signup')">Sign Up</button>
     </div>
 
-    <!-- ── LOGIN SECTION ── -->
+    <!-- ══ LOGIN ══ -->
     <div id="login-section">
-
-      <!-- Role toggle -->
       <div class="role-toggle">
         <button class="role-btn active" id="role-boss"   onclick="setRole('boss')">⚙ Supervisor</button>
         <button class="role-btn"        id="role-worker" onclick="setRole('worker')">👷 Field Worker</button>
       </div>
 
-      <!-- Boss login -->
+      <!-- BOSS -->
       <div id="boss-card">
-        <div class="section-title">Supervisor Login</div>
-        <div class="section-sub">Access crew dashboard, job dispatch &amp; time cards.</div>
-
-        <div class="demo-creds">
-          <strong>Demo</strong> &nbsp;·&nbsp;
-          Email: <strong>boss@oilmanager.com</strong> &nbsp;·&nbsp;
-          Password: <strong>demo1234</strong>
-        </div>
-
+        <div class="sec-title">Supervisor Login</div>
+        <div class="sec-sub">Access crew dashboard, job dispatch &amp; time cards.</div>
+        <div class="demo-creds"><strong>Demo</strong> &nbsp;·&nbsp; boss@oilmanager.com &nbsp;/&nbsp; <strong>demo1234</strong></div>
         <div class="msg error"   id="boss-error"></div>
         <div class="msg success" id="boss-success"></div>
-
         <div class="field">
-          <label>Email Address</label>
-          <input type="email" id="boss-email" placeholder="you@company.com" autocomplete="email">
+          <label><span class="field-icon">✉</span> Email Address</label>
+          <div class="input-wrap">
+            <input type="email" id="boss-email" placeholder="you@company.com" autocomplete="email" oninput="validateEmail('boss-email')">
+            <span class="field-status" id="boss-email-st"></span>
+          </div>
         </div>
         <div class="field">
-          <label>Password</label>
-          <input type="password" id="boss-pass" placeholder="••••••••" autocomplete="current-password">
+          <label><span class="field-icon">🔒</span> Password</label>
+          <div class="input-wrap">
+            <input type="password" id="boss-pass" placeholder="••••••••" autocomplete="current-password" oninput="validateLen('boss-pass',8)">
+            <span class="field-status" id="boss-pass-st"></span>
+          </div>
         </div>
-
         <button class="btn-submit" id="boss-btn" onclick="bossLogin()">
           <span class="btn-text">Sign In to Dashboard</span>
           <div class="spinner"></div>
         </button>
-
         <div class="divider"><div class="divider-line"></div><span>or</span><div class="divider-line"></div></div>
-
         <button class="btn-google" onclick="googleSignIn()">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
           Continue with Google
         </button>
-
         <div class="foot-links">
-          <a href="#">Forgot password?</a> &nbsp;·&nbsp; <a href="index.html">Back to site</a>
+          <a href="#" onclick="showForgot();return false">Forgot password?</a> &nbsp;·&nbsp; <a href="index.html">Back to site</a>
         </div>
       </div>
 
-      <!-- Worker login -->
+      <!-- WORKER -->
       <div id="worker-card" style="display:none">
-        <div class="section-title">Worker Check-In</div>
-        <div class="section-sub">Enter your worker code to view today's assigned jobs.</div>
-
-        <div class="demo-creds">
-          <strong>Demo code</strong> &nbsp;·&nbsp; <strong>JR-4821</strong>
-        </div>
-
+        <div class="sec-title">Worker Check-In</div>
+        <div class="sec-sub">Enter your worker code to view today's jobs.</div>
+        <div class="demo-creds"><strong>Demo code</strong> &nbsp;·&nbsp; <strong>JR-4821</strong></div>
         <div class="msg error"   id="worker-error"></div>
         <div class="msg success" id="worker-success"></div>
-
         <div class="field">
           <label>Worker Code</label>
-          <input type="text" id="worker-code" class="code-input" placeholder="XX-0000" maxlength="7" autocomplete="off" oninput="formatCode(this)">
+          <div class="input-wrap">
+            <input type="text" id="worker-code" class="code-input" placeholder="XX-0000" maxlength="7" autocomplete="off" oninput="formatCode(this)">
+          </div>
         </div>
-
         <button class="btn-submit" id="worker-btn" onclick="workerLogin()">
           <span class="btn-text">View My Jobs</span>
           <div class="spinner"></div>
         </button>
+        <div class="foot-links"><a href="#">Need help?</a> &nbsp;·&nbsp; <a href="index.html">Back to site</a></div>
+      </div>
+    </div>
 
-        <div class="foot-links">
-          <a href="#">Need help?</a> &nbsp;·&nbsp; <a href="index.html">Back to site</a>
+    <!-- ══ FORGOT PASSWORD ══ -->
+    <div id="forgot-panel" style="display:none">
+      <button class="back-to-login" onclick="hideForgot()">← Back to Login</button>
+      <div class="sec-title">Reset Your Password</div>
+      <div class="sec-sub">Enter the email on your account. We'll send a secure reset link within minutes.</div>
+      <div class="msg error"   id="forgot-error"></div>
+      <div class="msg success" id="forgot-success"></div>
+      <div class="field">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <input type="email" id="forgot-email" placeholder="you@company.com" oninput="validateEmail('forgot-email')">
+          <span class="field-status" id="forgot-email-st"></span>
         </div>
       </div>
+      <button class="btn-submit" id="forgot-btn" onclick="sendReset()">
+        <span class="btn-text">Send Reset Link</span>
+        <div class="spinner"></div>
+      </button>
+      <div class="foot-links"><a href="#" onclick="hideForgot();return false">Back to Login</a></div>
+    </div>
 
-    </div><!-- end #login-section -->
-
-    <!-- ── SIGN UP SECTION ── -->
+    <!-- ══ SIGN UP ══ -->
     <div id="signup-section" style="display:none">
-      <div class="section-title">Create Boss Account</div>
-      <div class="section-sub">All fields required. This information is used to verify your account.</div>
-
+      <div class="sec-title">Create Boss Account</div>
+      <div class="sec-sub">All fields required. Your data is stored securely and never sold.</div>
       <div class="msg error"   id="signup-error"></div>
       <div class="msg success" id="signup-success"></div>
 
-      <!-- Name row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div class="field-row">
         <div class="field">
           <label>First Name</label>
-          <input type="text" id="su-first" placeholder="Juan">
+          <div class="input-wrap">
+            <input type="text" id="su-first" placeholder="Juan" oninput="validateRequired('su-first')">
+            <span class="field-status" id="su-first-st"></span>
+          </div>
         </div>
         <div class="field">
           <label>Last Name</label>
-          <input type="text" id="su-last" placeholder="Felix">
+          <div class="input-wrap">
+            <input type="text" id="su-last" placeholder="Felix" oninput="validateRequired('su-last')">
+            <span class="field-status" id="su-last-st"></span>
+          </div>
         </div>
       </div>
 
       <div class="field">
         <label>Business / Company Name</label>
-        <input type="text" id="su-company" placeholder="Felix Energy LLC">
+        <div class="input-wrap">
+          <input type="text" id="su-company" placeholder="Felix Energy LLC" oninput="validateRequired('su-company')">
+          <span class="field-status" id="su-company-st"></span>
+        </div>
       </div>
 
-      <!-- Date of Birth + Phone -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div class="field-row">
         <div class="field">
           <label>Date of Birth</label>
-          <input type="date" id="su-dob">
+          <div class="input-wrap">
+            <input type="date" id="su-dob" onchange="validateDob()">
+            <span class="field-status" id="su-dob-st"></span>
+          </div>
+          <div class="field-hint" id="su-dob-hint">Must be 18 or older</div>
         </div>
         <div class="field">
           <label>Work Phone</label>
-          <input type="tel" id="su-phone" placeholder="+1 (432) 000-0000">
+          <div class="input-wrap">
+            <input type="tel" id="su-phone" placeholder="+1 (432) 000-0000" oninput="validateRequired('su-phone')">
+            <span class="field-status" id="su-phone-st"></span>
+          </div>
         </div>
       </div>
 
       <div class="field">
         <label>Job Title</label>
-        <input type="text" id="su-title" placeholder="Field Supervisor / Owner / Operations Manager">
+        <div class="input-wrap">
+          <input type="text" id="su-title" placeholder="Field Supervisor / Owner / Operations Manager" oninput="validateRequired('su-title')">
+          <span class="field-status" id="su-title-st"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Operating Area</label>
+        <select id="su-area" onchange="validateSelect('su-area')">
+          <option value="">Select your area</option>
+          <option value="andrews">Andrews County, TX</option>
+          <option value="ector">Ector County (Odessa), TX</option>
+          <option value="midland">Midland County, TX</option>
+          <option value="loving">Loving County, TX</option>
+          <option value="winkler">Winkler County, TX</option>
+          <option value="ward">Ward County, TX</option>
+          <option value="other">Other Permian Basin</option>
+        </select>
       </div>
 
       <div class="field">
         <label>Email Address</label>
-        <input type="email" id="su-email" placeholder="you@company.com">
+        <div class="input-wrap">
+          <input type="email" id="su-email" placeholder="you@company.com" oninput="validateEmail('su-email')">
+          <span class="field-status" id="su-email-st"></span>
+        </div>
       </div>
 
-      <!-- Password row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div class="field-row">
         <div class="field">
           <label>Password</label>
-          <input type="password" id="su-password" placeholder="Min. 8 characters">
+          <div class="input-wrap">
+            <input type="password" id="su-password" placeholder="Min. 8 characters" oninput="validateLen('su-password',8)">
+            <span class="field-status" id="su-password-st"></span>
+          </div>
         </div>
         <div class="field">
           <label>Confirm Password</label>
-          <input type="password" id="su-confirm" placeholder="Repeat password">
+          <div class="input-wrap">
+            <input type="password" id="su-confirm" placeholder="Repeat password" oninput="validateConfirm()">
+            <span class="field-status" id="su-confirm-st"></span>
+          </div>
         </div>
       </div>
 
-      <div class="field">
-        <label>Andrews / Permian Basin Area</label>
-        <select id="su-area" style="width:100%;padding:0.72rem 1rem;background:rgba(255,255,255,0.05);border:1px solid rgba(245,166,35,0.18);border-radius:9px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.92rem;outline:none;">
-          <option value="" style="background:#06080f">Select your operating area</option>
-          <option value="andrews" style="background:#06080f">Andrews County, TX</option>
-          <option value="ector" style="background:#06080f">Ector County (Odessa), TX</option>
-          <option value="midland" style="background:#06080f">Midland County, TX</option>
-          <option value="loving" style="background:#06080f">Loving County, TX</option>
-          <option value="winkler" style="background:#06080f">Winkler County, TX</option>
-          <option value="ward" style="background:#06080f">Ward County, TX</option>
-          <option value="other" style="background:#06080f">Other Permian Basin</option>
-        </select>
+      <!-- ToS checkbox -->
+      <div style="margin-top:0.5rem">
+        <label class="check-row" for="tos-check">
+          <input type="checkbox" id="tos-check" onchange="clearCheckErr('tos-err')">
+          <span class="check-label">I have read and agree to the <a href="#" onclick="openTos();return false">Terms of Service &amp; Beta Agreement</a>, including the AI bot prohibition and website protection policy.</span>
+        </label>
+        <div class="check-error" id="tos-err">You must accept the Terms of Service to continue.</div>
+
+        <label class="check-row" for="age-check">
+          <input type="checkbox" id="age-check" onchange="clearCheckErr('age-err')">
+          <span class="check-label">I confirm I am 18 years of age or older.</span>
+        </label>
+        <div class="check-error" id="age-err">You must confirm you are 18 or older.</div>
+
+        <label class="check-row" for="price-check">
+          <input type="checkbox" id="price-check" onchange="clearCheckErr('price-err')">
+          <span class="check-label">I understand that <strong>AI-related pricing may change</strong> as technology costs fluctuate. Beta pricing is fixed until full release.</span>
+        </label>
+        <div class="check-error" id="price-err">Please acknowledge the pricing notice.</div>
       </div>
 
-      <button class="btn-submit" onclick="doSignup()">
+      <button class="btn-submit" id="signup-btn" onclick="doSignup()">
         <span class="btn-text">Create Boss Account</span>
         <div class="spinner"></div>
       </button>
@@ -474,46 +468,243 @@ input::placeholder{color:rgba(160,180,165,0.3)}
         Sign Up with Google
       </button>
 
+      <!-- Fine print -->
+      <div class="fine-print">
+        <span class="beta-badge">BETA</span>
+        <strong>OilManager Early Beta Program</strong> — Pricing is fixed for all beta participants until the full platform release. After full release, subscription rates may be updated with 30-day advance notice.<br>
+        AI-powered features (SMS dispatch, smart scheduling, analytics) are subject to upstream AI provider cost changes. OilManager reserves the right to adjust AI feature pricing with notice.<br><br>
+        By creating an account you agree to our Terms of Service. This platform and all its contents are protected under U.S. copyright, trademark, and computer fraud laws.
+      </div>
+
       <div class="foot-links">
-        Already have an account?
-        <a href="#" onclick="setMode('login');return false">Log In</a>
+        Already have an account? <a href="#" onclick="setMode('login');return false">Log In</a>
         &nbsp;·&nbsp; <a href="index.html">Back to site</a>
       </div>
-    </div><!-- end #signup-section -->
+    </div>
 
   </div><!-- end .card -->
-</div><!-- end .page -->
+</div>
 
 <div class="page-footer">
-  <span>OilManager</span> &nbsp;·&nbsp; Built in Andrews, TX &nbsp;·&nbsp; Serving the Permian Basin
+  <span>OilManager</span> &nbsp;·&nbsp; Andrews, TX &nbsp;·&nbsp; Permian Basin &nbsp;·&nbsp;
+  <a href="#" onclick="openTos();return false" style="color:rgba(245,166,35,0.4);text-decoration:none">Terms of Service</a>
+</div>
+
+<!-- ══ TERMS OF SERVICE MODAL ══ -->
+<div class="tos-overlay" id="tos-overlay">
+  <div class="tos-box">
+    <div class="tos-head">
+      <div class="tos-title">Terms of Service &amp; Beta Agreement</div>
+      <button class="tos-close" onclick="closeTos()">✕</button>
+    </div>
+    <div class="tos-body">
+
+      <div style="background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.18);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1.5rem;font-size:0.75rem;color:rgba(245,166,35,0.8);line-height:1.7">
+        <strong>🛢 OilManager — Early Beta Program</strong><br>
+        Last Updated: June 2026 &nbsp;·&nbsp; Effective Immediately upon account creation.<br>
+        Beta pricing is <strong>fixed and locked</strong> for all beta participants until the official full platform launch. Post-launch pricing will be announced with a minimum 30-day notice.
+      </div>
+
+      <div class="tos-section">
+        <h3>1. Acceptance of Terms</h3>
+        <p>By creating an account on OilManager ("Platform," "Service," "we," "us"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree, do not use the Service. These Terms constitute a legally binding agreement between you and OilManager.</p>
+      </div>
+
+      <div class="tos-section">
+        <h3>2. Beta Program — Pricing Notice</h3>
+        <p>OilManager is currently in <strong>Early Beta</strong>. Beta participants receive a fixed, locked pricing rate for the duration of the beta period. Upon full public launch, new pricing tiers will be announced with no less than 30 days advance notice.</p>
+        <p>AI-powered features (including SMS dispatch, analytics, and smart scheduling) rely on third-party AI infrastructure. Costs associated with these features are subject to change based on upstream provider pricing. OilManager will provide written notice of any AI feature pricing adjustments no less than 14 days in advance.</p>
+      </div>
+
+      <div class="tos-section">
+        <h3>3. Intellectual Property &amp; Copyright Protection</h3>
+        <p>All content, design, code, interfaces, logos, branding, and materials on OilManager are the exclusive intellectual property of OilManager and are protected under:</p>
+        <ul>
+          <li><strong>Copyright Act of 1976 (17 U.S.C. § 101 et seq.)</strong> — Protects all original works including UI design, code, and written content. Copyright attaches automatically at creation (Berne Convention).</li>
+          <li><strong>17 U.S.C. § 106</strong> — Grants OilManager exclusive rights of reproduction, distribution, derivative works, and public display.</li>
+          <li><strong>17 U.S.C. § 504</strong> — Willful infringement is subject to statutory damages up to <strong>$150,000 per work</strong> infringed.</li>
+          <li><strong>Digital Millennium Copyright Act (DMCA), 17 U.S.C. §§ 512 &amp; 1201</strong> — Prohibits circumvention of digital access controls and enables DMCA takedown of infringing copies.</li>
+          <li><strong>Lanham Act (15 U.S.C. § 1125(a))</strong> — Protects OilManager trademarks, trade dress, and brand identity from unauthorized reproduction or false designation of origin.</li>
+          <li><strong>Defend Trade Secrets Act (DTSA), 18 U.S.C. § 1836</strong> — Protects proprietary workflows, algorithms, and platform logic as trade secrets.</li>
+          <li><strong>Economic Espionage Act, 18 U.S.C. § 1831</strong> — Criminal liability for theft of proprietary data or algorithms embedded in the platform.</li>
+        </ul>
+        <span class="law-cite">You may not copy, reproduce, distribute, reverse-engineer, or create derivative works of any part of this platform without express written permission. Violations expose infringers to civil damages up to $150,000 per work and criminal prosecution.</span>
+      </div>
+
+      <div class="tos-section">
+        <h3>4. Prohibition of AI Scraping &amp; Automated Bots</h3>
+        <p>The use of automated bots, AI crawlers, scraping tools, large language model training pipelines, or any automated system to access, copy, reproduce, index, or extract data from OilManager is <strong>strictly prohibited</strong>. Violations are subject to civil and criminal penalties under:</p>
+        <ul>
+          <li><strong>Computer Fraud and Abuse Act (CFAA), 18 U.S.C. § 1030</strong> — Criminalizes unauthorized access to computer systems; applies to scrapers who bypass authentication or rate limits.</li>
+          <li><strong>DMCA Anti-Circumvention, 17 U.S.C. § 1201</strong> — Prohibits bypassing technological protection measures including login gates, paywalls, and API authentication.</li>
+          <li><strong>California Comprehensive Computer Data Access and Fraud Act (CDAFA), Cal. Penal Code § 502</strong> — State-level companion to CFAA; civil and criminal penalties for unauthorized automated access.</li>
+          <li><strong>Trespass to Chattels (Common Law)</strong> — Courts including in <em>hiQ Labs v. LinkedIn, 9th Cir. 2022</em> have recognized that ToS bot prohibitions are enforceable and bots impose cognizable harm on server resources.</li>
+          <li><strong>Robots Exclusion Protocol</strong> — OilManager maintains a robots.txt file. Violation of its directives constitutes breach of these Terms and strengthens CFAA claims.</li>
+          <li><strong>EU AI Act (extraterritorial)</strong> — Where applicable, use of OilManager content to train AI models without consent violates data governance obligations under the EU AI Act.</li>
+        </ul>
+        <span class="law-cite">Any individual or entity found scraping, crawling, or using OilManager content to train or fine-tune AI models will face immediate account termination, DMCA takedown, injunctive relief, and statutory damages including attorneys' fees.</span>
+      </div>
+
+      <div class="tos-section">
+        <h3>5. Anti-Plagiarism &amp; UI Reproduction</h3>
+        <p>Reproducing, cloning, or substantially replicating the OilManager user interface, layout, visual design, feature set, or product structure — in whole or in part — constitutes copyright infringement and unfair competition. Applicable protections include:</p>
+        <ul>
+          <li><strong>Copyright Act § 102(a)</strong> — Protects pictorial, graphic, and audiovisual works including UI design and visual elements.</li>
+          <li><strong>Trade Dress Protection under the Lanham Act § 43(a)</strong> — The overall look and feel of OilManager constitutes protectable trade dress.</li>
+          <li><strong>Defend Trade Secrets Act (DTSA), 18 U.S.C. § 1836</strong> — Protects proprietary workflows, algorithms, and operational logic.</li>
+        </ul>
+      </div>
+
+      <div class="tos-section">
+        <h3>6. Data Privacy &amp; User Information</h3>
+        <p>OilManager collects only the information necessary to provide the Service. We do not sell, rent, or share personal information with third parties for marketing purposes. All data is stored using industry-standard encryption. Applicable laws include:</p>
+        <ul>
+          <li><strong>Texas Data Privacy and Security Act (TDPSA)</strong> — Governs collection and processing of personal data for Texas residents.</li>
+          <li><strong>California Consumer Privacy Act (CCPA), Cal. Civil Code § 1798.100 / CPRA (2023)</strong> — Grants California users rights over their data. OilManager applies these rights to all users regardless of state.</li>
+          <li><strong>Electronic Communications Privacy Act (ECPA), 18 U.S.C. § 2510</strong> — Protects private electronic communications transmitted through our platform from unauthorized interception.</li>
+          <li><strong>CAN-SPAM Act, 15 U.S.C. § 7701</strong> — All platform-originated email communications comply with CAN-SPAM opt-out and disclosure requirements.</li>
+          <li><strong>Children's Online Privacy Protection Act (COPPA)</strong> — This service is not directed to persons under 13. Accounts require users to be 18+.</li>
+        </ul>
+        <span class="law-cite">Work phone numbers submitted for SMS dispatch features are stored server-side only and are never displayed to workers or third parties.</span>
+      </div>
+
+      <div class="tos-section">
+        <h3>7. SMS Dispatch &amp; Communications</h3>
+        <p>SMS dispatch features are powered by Twilio. By using SMS features, you confirm you have obtained proper consent from all workers to receive text messages. You agree to use a <strong>dedicated work or company phone number only</strong> — not a personal cell number. OilManager is not liable for any misuse of the SMS feature.</p>
+        <p>Applicable regulations: <strong>Telephone Consumer Protection Act (TCPA), 47 U.S.C. § 227</strong> — You are responsible for compliance with TCPA requirements for all messages sent through the platform.</p>
+      </div>
+
+      <div class="tos-section">
+        <h3>8. Limitation of Liability</h3>
+        <p>OilManager is provided "as is" during the beta period. To the maximum extent permitted by law, OilManager shall not be liable for any indirect, incidental, special, or consequential damages arising from use of the platform. Beta users acknowledge the Service may be subject to downtime, changes, or feature removal during the beta phase.</p>
+      </div>
+
+      <div class="tos-section">
+        <h3>9. Governing Law</h3>
+        <p>These Terms are governed by the laws of the State of Texas. Any disputes shall be resolved in the courts of Andrews County, Texas, or in binding arbitration at OilManager's election.</p>
+      </div>
+
+      <div class="tos-section">
+        <h3>10. Contact</h3>
+        <p>For legal inquiries, DMCA takedown requests, or Terms questions, contact: <strong>legal@oilmanager.app</strong></p>
+      </div>
+
+    </div>
+    <div class="tos-footer">
+      <p>Scroll to read all terms before accepting.</p>
+      <button class="btn-accept" onclick="acceptTos()">I Accept These Terms</button>
+    </div>
+  </div>
 </div>
 
 <script>
-// ── MODE TOGGLE ──────────────────────────────────────────────
+// ── UI TOGGLES ───────────────────────────────────────────────
 function setMode(mode) {
   const isSignup = mode === 'signup';
-  document.getElementById('login-section').style.display  = isSignup ? 'none'  : 'block';
+  document.getElementById('login-section').style.display  = isSignup ? 'none' : 'block';
   document.getElementById('signup-section').style.display = isSignup ? 'block' : 'none';
+  document.getElementById('forgot-panel').style.display   = 'none';
   document.getElementById('mode-login').classList.toggle('active',  !isSignup);
   document.getElementById('mode-signup').classList.toggle('active',  isSignup);
+  document.getElementById('main-card').classList.toggle('signup-wide', isSignup);
+  document.getElementById('mode-bar').style.display = 'flex';
+  clearAllMsgs();
 }
 
-// ── ROLE TOGGLE ──────────────────────────────────────────────
 function setRole(role) {
-  document.getElementById('role-boss').classList.toggle('active',   role==='boss');
-  document.getElementById('role-worker').classList.toggle('active', role==='worker');
-  document.getElementById('boss-card').style.display   = role==='boss'   ? 'block' : 'none';
-  document.getElementById('worker-card').style.display = role==='worker' ? 'block' : 'none';
+  document.getElementById('role-boss').classList.toggle('active',   role === 'boss');
+  document.getElementById('role-worker').classList.toggle('active', role === 'worker');
+  document.getElementById('boss-card').style.display   = role === 'boss'   ? 'block' : 'none';
+  document.getElementById('worker-card').style.display = role === 'worker' ? 'block' : 'none';
 }
 
-// ── FORMAT WORKER CODE ───────────────────────────────────────
-function formatCode(el) {
-  let v = el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
-  if(v.length > 2) v = v.slice(0,2) + '-' + v.slice(2,6);
-  el.value = v;
+function showForgot() {
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('forgot-panel').style.display  = 'block';
+  document.getElementById('mode-bar').style.display      = 'none';
+  clearAllMsgs();
 }
 
-// bossLogin and doSignup are handled by Firebase module below
+function hideForgot() {
+  document.getElementById('forgot-panel').style.display  = 'none';
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('mode-bar').style.display      = 'flex';
+  clearAllMsgs();
+}
+
+function clearAllMsgs() {
+  document.querySelectorAll('.msg').forEach(m => m.classList.remove('show'));
+}
+
+// ── FIELD VALIDATION ─────────────────────────────────────────
+function setFieldState(id, valid) {
+  const input = document.getElementById(id);
+  const st    = document.getElementById(id + '-st');
+  if(!input) return;
+  input.classList.toggle('valid',   !!valid);
+  input.classList.toggle('invalid', valid === false);
+  if(st) { st.textContent = valid ? '✓' : '✕'; st.className = 'field-status ' + (valid ? 'ok' : 'err'); }
+}
+
+function validateRequired(id) {
+  const v = document.getElementById(id)?.value.trim();
+  setFieldState(id, v ? true : (v === '' ? null : false));
+  return !!v;
+}
+
+function validateEmail(id) {
+  const v = document.getElementById(id)?.value.trim();
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  if(v) setFieldState(id, ok);
+  else   setFieldState(id, null);
+  return ok && !!v;
+}
+
+function validateLen(id, min) {
+  const v = document.getElementById(id)?.value;
+  if(v) setFieldState(id, v.length >= min);
+  return v && v.length >= min;
+}
+
+function validateConfirm() {
+  const p = document.getElementById('su-password')?.value;
+  const c = document.getElementById('su-confirm')?.value;
+  if(c) setFieldState('su-confirm', p === c);
+  return p === c && !!c;
+}
+
+function validateDob() {
+  const dob   = document.getElementById('su-dob')?.value;
+  const hint  = document.getElementById('su-dob-hint');
+  if(!dob) { setFieldState('su-dob', null); return false; }
+  const age = Math.floor((Date.now() - new Date(dob)) / (1000*60*60*24*365.25));
+  const ok  = age >= 18;
+  setFieldState('su-dob', ok);
+  if(hint) { hint.classList.toggle('show', !ok); }
+  return ok;
+}
+
+function validateSelect(id) {
+  const v = document.getElementById(id)?.value;
+  return !!v;
+}
+
+// ── CHECKBOX HELPERS ─────────────────────────────────────────
+function clearCheckErr(errId) {
+  document.getElementById(errId)?.classList.remove('show');
+}
+
+// ── TOS MODAL ────────────────────────────────────────────────
+function openTos() { document.getElementById('tos-overlay').classList.add('open'); }
+function closeTos(){ document.getElementById('tos-overlay').classList.remove('open'); }
+function acceptTos(){
+  document.getElementById('tos-check').checked = true;
+  clearCheckErr('tos-err');
+  closeTos();
+}
+document.getElementById('tos-overlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('tos-overlay')) closeTos();
+});
 
 // ── WORKER LOGIN ─────────────────────────────────────────────
 function workerLogin() {
@@ -521,172 +712,204 @@ function workerLogin() {
   const btn  = document.getElementById('worker-btn');
   const err  = document.getElementById('worker-error');
   const ok   = document.getElementById('worker-success');
-  err.classList.remove('show'); ok.classList.remove('show');
-  if(!code||code.length<7){ err.textContent='Enter your full worker code (e.g. JR-4821).'; err.classList.add('show'); return; }
+  clearAllMsgs();
+  if(!code || code.length < 7) { err.textContent='Enter your full code (e.g. JR-4821).'; err.classList.add('show'); return; }
   btn.classList.add('loading');
-  setTimeout(()=>{
+  setTimeout(() => {
     btn.classList.remove('loading');
-    if(code==='JR-4821'){
-      ok.textContent='Code verified — loading your jobs…'; ok.classList.add('show');
-      setTimeout(()=>window.location.href='dashboard-worker.html', 1200);
-    } else {
-      err.textContent='Invalid code. Check with your supervisor.'; err.classList.add('show');
-    }
-  },1200);
+    if(code === 'JR-4821') { ok.textContent='Code verified — loading your jobs…'; ok.classList.add('show'); setTimeout(()=>window.location.href='dashboard-worker.html',1100); }
+    else { err.textContent='Invalid code. Check with your supervisor.'; err.classList.add('show'); }
+  }, 900);
 }
 
-// ── ENTER KEY ────────────────────────────────────────────────
+function formatCode(el) {
+  let v = el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  if(v.length > 2) v = v.slice(0,2)+'-'+v.slice(2,6);
+  el.value = v;
+}
+
+// Enter key support
 document.addEventListener('keydown', e => {
   if(e.key !== 'Enter') return;
-  const loginVisible = document.getElementById('login-section').style.display !== 'none';
-  if(!loginVisible){ doSignup(); return; }
+  if(document.getElementById('forgot-panel').style.display === 'block') { sendReset(); return; }
+  if(document.getElementById('signup-section').style.display === 'block') { doSignup(); return; }
   if(document.getElementById('boss-card').style.display !== 'none') bossLogin();
   else workerLogin();
 });
 
-// ── AUTO MODE FROM URL ───────────────────────────────────────
-if(new URLSearchParams(window.location.search).get('signup')==='1') setMode('signup');
+if(new URLSearchParams(window.location.search).get('signup') === '1') setMode('signup');
 </script>
 
 <!-- Firebase SDK -->
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import {
-    getAuth,
-    signInWithPopup,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    updateProfile,
-    GoogleAuthProvider
-  } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+  GoogleAuthProvider
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-  const firebaseConfig = {
-    apiKey:            "AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
-    authDomain:        "oilmanager-118b7.firebaseapp.com",
-    databaseURL:       "https://oilmanager-118b7-default-rtdb.firebaseio.com",
-    projectId:         "oilmanager-118b7",
-    storageBucket:     "oilmanager-118b7.firebasestorage.app",
-    messagingSenderId: "1062793158063",
-    appId:             "1:1062793158063:web:49023cc020e5e11e6d235a",
-    measurementId:     "G-WB0SDJZQBT"
-  };
+const firebaseConfig = {
+  apiKey:            "AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
+  authDomain:        "oilmanager-118b7.firebaseapp.com",
+  databaseURL:       "https://oilmanager-118b7-default-rtdb.firebaseio.com",
+  projectId:         "oilmanager-118b7",
+  storageBucket:     "oilmanager-118b7.firebasestorage.app",
+  messagingSenderId: "1062793158063",
+  appId:             "1:1062793158063:web:49023cc020e5e11e6d235a",
+  measurementId:     "G-WB0SDJZQBT"
+};
 
-  const app      = initializeApp(firebaseConfig);
-  const auth     = getAuth(app);
-  const db       = getDatabase(app);
-  const provider = new GoogleAuthProvider();
+const app      = initializeApp(firebaseConfig);
+const auth     = getAuth(app);
+const db       = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-  // ── GOOGLE SIGN IN ───────────────────────────────────────────
-  window.googleSignIn = async function() {
-    try {
-      await signInWithPopup(auth, provider);
-      window.location.href = 'dashboard-boss.html';
-    } catch(err) {
-      if(err.code !== 'auth/popup-closed-by-user') {
-        showAuthError('Google sign-in failed: ' + err.message);
-      }
-    }
-  };
+// Redirect if already logged in
+onAuthStateChanged(auth, user => {
+  if(user) window.location.href = 'dashboard-boss.html';
+});
 
-  // ── EMAIL / PASSWORD LOGIN ───────────────────────────────────
-  window.bossLogin = async function() {
-    const email = document.getElementById('boss-email').value.trim();
-    const pass  = document.getElementById('boss-pass').value;
-    const btn   = document.getElementById('boss-btn');
-    const err   = document.getElementById('boss-error');
-    const ok    = document.getElementById('boss-success');
-    err.classList.remove('show'); ok.classList.remove('show');
+function showErr(id, msg){ const e=document.getElementById(id); e.textContent=msg; e.classList.add('show'); }
+function showOk(id, msg) { const e=document.getElementById(id); e.textContent=msg; e.classList.add('show'); }
 
-    if(!email || !pass) {
-      err.textContent = 'Please fill in all fields.'; err.classList.add('show'); return;
-    }
-    btn.classList.add('loading');
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      ok.textContent = 'Login successful — loading dashboard…'; ok.classList.add('show');
-      setTimeout(() => window.location.href = 'dashboard-boss.html', 1000);
-    } catch(e) {
-      btn.classList.remove('loading');
-      const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password'
-        ? 'Incorrect email or password.'
-        : e.code === 'auth/user-not-found'
-        ? 'No account found with that email.'
-        : e.code === 'auth/too-many-requests'
-        ? 'Too many attempts. Try again later.'
-        : 'Login failed: ' + e.message;
-      err.textContent = msg; err.classList.add('show');
-    }
-  };
+function authMsg(code) {
+  return code==='auth/invalid-credential'||code==='auth/wrong-password' ? 'Incorrect email or password.'
+    : code==='auth/user-not-found'       ? 'No account found with that email.'
+    : code==='auth/email-already-in-use' ? 'An account with that email already exists.'
+    : code==='auth/invalid-email'        ? 'Invalid email address.'
+    : code==='auth/weak-password'        ? 'Password must be at least 8 characters.'
+    : code==='auth/too-many-requests'    ? 'Too many attempts. Try again later.'
+    : code==='auth/network-request-failed' ? 'Network error. Check your connection.'
+    : 'Error: ' + code;
+}
 
-  // ── EMAIL / PASSWORD SIGN UP ─────────────────────────────────
-  window.doSignup = async function() {
-    const first   = document.getElementById('su-first').value.trim();
-    const last    = document.getElementById('su-last').value.trim();
-    const company = document.getElementById('su-company').value.trim();
-    const dob     = document.getElementById('su-dob').value;
-    const phone   = document.getElementById('su-phone').value.trim();
-    const title   = document.getElementById('su-title').value.trim();
-    const area    = document.getElementById('su-area').value;
-    const email   = document.getElementById('su-email').value.trim();
-    const pass    = document.getElementById('su-password').value;
-    const confirm = document.getElementById('su-confirm').value;
-    const err     = document.getElementById('signup-error');
-    const ok      = document.getElementById('signup-success');
-    err.classList.remove('show'); ok.classList.remove('show');
-
-    if(!first||!last||!company||!dob||!phone||!title||!area||!email||!pass){
-      err.textContent='Please fill in all fields.'; err.classList.add('show'); return;
-    }
-    if(pass.length < 8){
-      err.textContent='Password must be at least 8 characters.'; err.classList.add('show'); return;
-    }
-    if(pass !== confirm){
-      err.textContent='Passwords do not match.'; err.classList.add('show'); return;
-    }
-    // Age check — must be 18+
-    const dobDate = new Date(dob);
-    const age = Math.floor((Date.now() - dobDate) / (1000*60*60*24*365.25));
-    if(age < 18){
-      err.textContent='You must be 18 or older to create an account.'; err.classList.add('show'); return;
-    }
-
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      await updateProfile(cred.user, { displayName: first + ' ' + last });
-
-      // Save full boss profile to Realtime DB
-      await set(ref(db, 'bosses/' + cred.user.uid), {
-        firstName:   first,
-        lastName:    last,
-        fullName:    first + ' ' + last,
-        company,
-        dateOfBirth: dob,
-        phone,
-        jobTitle:    title,
-        area,
-        email,
-        role:        'boss',
-        createdAt:   new Date().toISOString(),
-        workers:     {},
-        jobs:        {}
-      });
-
-      ok.textContent = 'Account created! Redirecting to your dashboard…'; ok.classList.add('show');
-      setTimeout(() => window.location.href = 'dashboard-boss.html', 1200);
-    } catch(e) {
-      const msg = e.code==='auth/email-already-in-use' ? 'An account with that email already exists.'
-        : e.code==='auth/invalid-email'   ? 'Invalid email address.'
-        : e.code==='auth/weak-password'   ? 'Password is too weak — use at least 8 characters.'
-        : 'Sign up failed: ' + e.message;
-      err.textContent = msg; err.classList.add('show');
-    }
-  };
-
-  function showAuthError(msg) {
-    const err = document.getElementById('boss-error');
-    err.textContent = msg; err.classList.add('show');
+// ── BOSS EMAIL LOGIN ─────────────────────────────────────────
+window.bossLogin = async function() {
+  const email = document.getElementById('boss-email').value.trim();
+  const pass  = document.getElementById('boss-pass').value;
+  const btn   = document.getElementById('boss-btn');
+  document.querySelectorAll('.msg').forEach(m=>m.classList.remove('show'));
+  if(!email||!pass){ showErr('boss-error','Please enter your email and password.'); return; }
+  btn.classList.add('loading'); btn.disabled=true;
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    showOk('boss-success','Login successful — loading your dashboard…');
+  } catch(e) {
+    btn.classList.remove('loading'); btn.disabled=false;
+    showErr('boss-error', authMsg(e.code));
   }
+};
+
+// ── GOOGLE SIGN IN ───────────────────────────────────────────
+window.googleSignIn = async function() {
+  document.querySelectorAll('.msg').forEach(m=>m.classList.remove('show'));
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user   = result.user;
+    const snap   = await getDoc(doc(db,'bosses',user.uid));
+    if(!snap.exists()){
+      const p = (user.displayName||'').split(' ');
+      await setDoc(doc(db,'bosses',user.uid),{
+        firstName:p[0]||'', lastName:p.slice(1).join(' ')||'',
+        fullName:user.displayName||'', email:user.email,
+        photoURL:user.photoURL||'', role:'boss', provider:'google',
+        createdAt:new Date().toISOString(),
+        company:'',dateOfBirth:'',phone:'',jobTitle:'',area:''
+      });
+    }
+    // onAuthStateChanged handles redirect
+  } catch(e) {
+    if(e.code!=='auth/popup-closed-by-user')
+      showErr('boss-error','Google sign-in failed: '+e.message);
+  }
+};
+
+// ── SIGN UP ──────────────────────────────────────────────────
+window.doSignup = async function() {
+  const first   = document.getElementById('su-first').value.trim();
+  const last    = document.getElementById('su-last').value.trim();
+  const company = document.getElementById('su-company').value.trim();
+  const dob     = document.getElementById('su-dob').value;
+  const phone   = document.getElementById('su-phone').value.trim();
+  const title   = document.getElementById('su-title').value.trim();
+  const area    = document.getElementById('su-area').value;
+  const email   = document.getElementById('su-email').value.trim();
+  const pass    = document.getElementById('su-password').value;
+  const confirm = document.getElementById('su-confirm').value;
+  const tosOk   = document.getElementById('tos-check').checked;
+  const ageOk   = document.getElementById('age-check').checked;
+  const priceOk = document.getElementById('price-check').checked;
+  const btn     = document.getElementById('signup-btn');
+
+  document.querySelectorAll('.msg').forEach(m=>m.classList.remove('show'));
+
+  // Validate all fields
+  let valid = true;
+  if(!first)   { document.getElementById('su-first').classList.add('invalid');   valid=false; }
+  if(!last)    { document.getElementById('su-last').classList.add('invalid');    valid=false; }
+  if(!company) { document.getElementById('su-company').classList.add('invalid'); valid=false; }
+  if(!phone)   { document.getElementById('su-phone').classList.add('invalid');   valid=false; }
+  if(!title)   { document.getElementById('su-title').classList.add('invalid');   valid=false; }
+  if(!area)    { document.getElementById('su-area').style.borderColor='rgba(239,68,68,0.5)'; valid=false; }
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ document.getElementById('su-email').classList.add('invalid'); valid=false; }
+  if(!pass||pass.length<8){ document.getElementById('su-password').classList.add('invalid'); valid=false; }
+  if(pass!==confirm){ document.getElementById('su-confirm').classList.add('invalid'); valid=false; }
+
+  const age = dob ? Math.floor((Date.now()-new Date(dob))/(1000*60*60*24*365.25)) : 0;
+  if(!dob||age<18){ document.getElementById('su-dob').classList.add('invalid'); document.getElementById('su-dob-hint').classList.add('show'); valid=false; }
+
+  if(!tosOk)   { document.getElementById('tos-err').classList.add('show');   valid=false; }
+  if(!ageOk)   { document.getElementById('age-err').classList.add('show');   valid=false; }
+  if(!priceOk) { document.getElementById('price-err').classList.add('show'); valid=false; }
+
+  if(!valid){ showErr('signup-error','Please complete all required fields and checkboxes above.'); return; }
+
+  btn.classList.add('loading'); btn.disabled=true;
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user,{displayName:first+' '+last});
+    await setDoc(doc(db,'bosses',cred.user.uid),{
+      firstName:first, lastName:last, fullName:first+' '+last,
+      email, company, dateOfBirth:dob, phone, jobTitle:title, area,
+      role:'boss', provider:'email', createdAt:new Date().toISOString(),
+      tosAccepted:true, tosAcceptedAt:new Date().toISOString()
+    });
+    showOk('signup-success','Account created! Redirecting to your dashboard…');
+    // onAuthStateChanged handles redirect
+  } catch(e) {
+    btn.classList.remove('loading'); btn.disabled=false;
+    showErr('signup-error', authMsg(e.code));
+  }
+};
+
+// ── PASSWORD RESET ───────────────────────────────────────────
+window.sendReset = async function() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn   = document.getElementById('forgot-btn');
+  document.querySelectorAll('.msg').forEach(m=>m.classList.remove('show'));
+  if(!email){ showErr('forgot-error','Enter your email address.'); return; }
+  btn.classList.add('loading'); btn.disabled=true;
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showOk('forgot-success','Reset link sent to '+email+'. Check your inbox and spam folder.');
+    document.getElementById('forgot-email').value='';
+    btn.classList.remove('loading'); btn.disabled=false;
+  } catch(e) {
+    btn.classList.remove('loading'); btn.disabled=false;
+    showErr('forgot-error',
+      e.code==='auth/user-not-found' ? 'No account found with that email.'
+      : e.code==='auth/invalid-email' ? 'Invalid email address.'
+      : authMsg(e.code)
+    );
+  }
+};
 </script>
 </body>
 </html>

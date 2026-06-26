@@ -163,7 +163,7 @@ nav{
   pointer-events:auto;
   z-index:3;
 }
-#hero-3d canvas{width:100%!important;height:100%!important;}
+#hero-3d canvas{width:100%!important;height:100%!important;transition:opacity 0.4s ease;background:transparent!important;}
 .hero-bg{
   position:absolute;inset:0;z-index:0;
   background:url('Card Photos/Hero Background.png') center/cover no-repeat;
@@ -971,12 +971,51 @@ footer p{color:var(--muted);font-size:0.85rem}
 .reveal.visible{opacity:1;transform:translateY(0)}
 
 /* ── RESPONSIVE ── */
+/* ── MOBILE ── */
 @media(max-width:768px){
   .nav-links{display:none}
   .how-grid{grid-template-columns:1fr}
   .how-visual{display:none}
   .oil-stats-grid{grid-template-columns:1fr}
+
+  /* Hide GLB canvas + iPhone on mobile — keep hero text clean */
+  #hero-3d{display:none}
+  .hero-iphone{display:none}
+  .platform-badges{display:none}
+  #phone-expand-overlay{display:none!important}
+
+  /* Hero text full width */
+  #hero{min-height:60vh;padding:5rem 6% 3rem}
+  .hero-content{transform:none!important;max-width:100%}
+  #hero h1{font-size:clamp(2.4rem,10vw,3.8rem)}
+
+  /* Hide dot nav on mobile */
+  #dot-nav{display:none}
+
+  /* Platform cards — 1 col on phone */
+  .pillars-grid{grid-template-columns:repeat(2,1fr)!important}
+
+  /* Pricing cards stack */
+  .pricing-grid{grid-template-columns:1fr!important;max-width:420px;margin:0 auto}
+
+  /* Nav auth buttons compact */
+  .nav-auth{gap:0.25rem}
+  .nav-login{padding:0.4rem 0.5rem;font-size:0.75rem}
+  .nav-signup{padding:0.4rem 0.65rem;font-size:0.75rem}
+
+  /* Section padding */
+  section{padding:4rem 5%}
+
+  /* Touch target — buttons */
+  .btn-primary,.btn-ghost,.nav-cta{min-height:44px;padding:0.75rem 1.5rem}
 }
+
+@media(max-width:480px){
+  .pillars-grid{grid-template-columns:1fr!important}
+  #hero h1{font-size:2.2rem}
+  .oil-stats-grid{gap:0.75rem}
+}
+
 @media(min-width:769px) and (max-width:1024px){
   .oil-stats-grid{grid-template-columns:repeat(2,1fr)}
 }
@@ -1641,19 +1680,44 @@ window.addEventListener('load', function() {
   }
 
   function advancePlaylist() {
-    // Remove current
     if (currentGroup) scene.remove(currentGroup);
-    playIdx     = (playIdx + 1) % PLAYLIST.length;
+    playIdx      = (playIdx + 1) % PLAYLIST.length;
     currentGroup = nextGroup;
+    nextGroup    = null;
+
     if (currentGroup) {
       scene.add(currentGroup);
       setGroupOpacity(currentGroup, 0);
+      currentGroup.scale.setScalar(0);
+      orbitAngle = 0;
+      fadeState  = 'in';
+      fadeAlpha  = 0;
+      fadeScale  = 0;
+      renderer.domElement.style.opacity = '1';
+    } else {
+      // Next model not ready yet — hide canvas, wait and retry
+      renderer.domElement.style.opacity = '0';
+      fadeState = 'hold';
+      var retryUrl = PLAYLIST[playIdx];
+      function tryLoad() {
+        loadModel(retryUrl, function(g) {
+          if (!g) { setTimeout(tryLoad, 800); return; }
+          currentGroup = g;
+          currentGroup.rotation.x = -0.15;
+          scene.add(currentGroup);
+          setGroupOpacity(currentGroup, 0);
+          currentGroup.scale.setScalar(0);
+          orbitAngle = 0;
+          fadeState  = 'in';
+          fadeAlpha  = 0;
+          fadeScale  = 0;
+          renderer.domElement.style.opacity = '1';
+          preloadNext();
+        });
+      }
+      tryLoad();
+      return; // preloadNext called inside tryLoad
     }
-    orbitAngle = 0;
-    fadeState  = 'in';
-    fadeAlpha  = 0;
-    fadeScale  = 0;
-    nextGroup  = null;
     preloadNext();
   }
 

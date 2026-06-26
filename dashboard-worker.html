@@ -176,6 +176,32 @@ body{
 .modal-btns{display:flex;gap:0.8rem;margin-top:1.2rem}
 .btn-cancel{flex:1;padding:0.65rem;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:0.875rem;cursor:pointer;font-family:'Inter',sans-serif}
 .btn-submit-report{flex:2;padding:0.65rem;background:var(--gold);border:none;border-radius:8px;color:var(--dark);font-size:0.875rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+
+/* ── MOBILE POLISH ── */
+/* iOS input zoom fix */
+input,textarea,select{font-size:16px!important}
+
+/* Touch targets */
+.bnav-item{min-height:48px;justify-content:center;padding:0.3rem 1.2rem}
+.btn-cancel,.btn-submit-report{min-height:48px}
+.job-action-btn{min-height:44px}
+.modal textarea{font-size:16px}
+
+/* Landscape phones */
+@media(max-height:500px) and (orientation:landscape){
+  body{max-width:100%;padding:0 1rem}
+  .bottom-nav{position:fixed;bottom:0;width:100%}
+  .topbar{padding:0.5rem 1rem}
+  .page-content{padding-bottom:80px}
+}
+
+/* Small phones */
+@media(max-width:380px){
+  body{padding:0}
+  .topbar{padding:0.75rem}
+  .page-content{padding:0.75rem}
+  .job-card-head{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>

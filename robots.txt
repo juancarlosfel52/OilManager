@@ -1,0 +1,39 @@
+# OilManager robots.txt
+# https://oilmanager.app
+
+User-agent: *
+Disallow: /dashboard-boss.html
+Disallow: /dashboard-worker.html
+Disallow: /sms-dispatch.html
+Disallow: /data/
+Disallow: /api/
+
+# AI training bots — explicitly prohibited per Terms of Service (CFAA 18 U.S.C. § 1030, DMCA 17 U.S.C. § 1201)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: omgili
+Disallow: /
+
+User-agent: omgilibot
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+Sitemap: https://oilmanager.up.railway.app/sitemap.xml

@@ -10,6 +10,16 @@ const PORT = process.env.PORT || 5600;
 
 app.use(cors());
 app.use(express.json());
+
+// ── Inject Mapbox token into dashboard-boss.html via meta tag ──
+app.get('/dashboard-boss.html', (req, res) => {
+  let html = fs.readFileSync(path.join(__dirname, 'dashboard-boss.html'), 'utf8');
+  const token = process.env.MAPBOX_TOKEN || '';
+  html = html.replace('<head>', `<head>\n<meta name="mb" content="${token}">`);
+  res.setHeader('Content-Type', 'text/html');
+  res.send(html);
+});
+
 app.use(express.static(path.join(__dirname)));
 
 // ── Twilio client ──────────────────────────────────────────────
