@@ -826,6 +826,8 @@ import {
   getAuth,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -849,6 +851,27 @@ const app      = initializeApp(firebaseConfig);
 const auth     = getAuth(app);
 const db       = getFirestore(app);
 const provider = new GoogleAuthProvider();
+
+// Handle redirect result from mobile Google sign-in
+getRedirectResult(auth).then(async result => {
+  if(!result) return;
+  const user = result.user;
+  const snap = await getDoc(doc(db,'bosses',user.uid));
+  if(!snap.exists()){
+    const p = (user.displayName||'').split(' ');
+    await setDoc(doc(db,'bosses',user.uid),{
+      firstName:p[0]||'', lastName:p.slice(1).join(' ')||'',
+      fullName:user.displayName||'', email:user.email,
+      photoURL:user.photoURL||'', role:'boss', provider:'google',
+      createdAt:new Date().toISOString(),
+      company:'',dateOfBirth:'',phone:'',jobTitle:'',area:''
+    });
+  }
+  window.location.href = 'dashboard-boss.html';
+}).catch(e => {
+  if(e.code !== 'auth/popup-closed-by-user')
+    showErr('boss-error','Google sign-in failed: '+e.message);
+});
 
 // Redirect if already logged in
 onAuthStateChanged(auth, user => {
@@ -887,23 +910,31 @@ window.bossLogin = async function() {
 };
 
 // ── GOOGLE SIGN IN ───────────────────────────────────────────
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 window.googleSignIn = async function() {
   document.querySelectorAll('.msg').forEach(m=>m.classList.remove('show'));
   try {
-    const result = await signInWithPopup(auth, provider);
-    const user   = result.user;
-    const snap   = await getDoc(doc(db,'bosses',user.uid));
-    if(!snap.exists()){
-      const p = (user.displayName||'').split(' ');
-      await setDoc(doc(db,'bosses',user.uid),{
-        firstName:p[0]||'', lastName:p.slice(1).join(' ')||'',
-        fullName:user.displayName||'', email:user.email,
-        photoURL:user.photoURL||'', role:'boss', provider:'google',
-        createdAt:new Date().toISOString(),
-        company:'',dateOfBirth:'',phone:'',jobTitle:'',area:''
-      });
+    if(isMobile){
+      // Mobile browsers block popups — use redirect instead
+      await signInWithRedirect(auth, provider);
+      // Google redirects back to this page; getRedirectResult() above handles the result
+    } else {
+      // Desktop — popup works fine
+      const result = await signInWithPopup(auth, provider);
+      const user   = result.user;
+      const snap   = await getDoc(doc(db,'bosses',user.uid));
+      if(!snap.exists()){
+        const p = (user.displayName||'').split(' ');
+        await setDoc(doc(db,'bosses',user.uid),{
+          firstName:p[0]||'', lastName:p.slice(1).join(' ')||'',
+          fullName:user.displayName||'', email:user.email,
+          photoURL:user.photoURL||'', role:'boss', provider:'google',
+          createdAt:new Date().toISOString(),
+          company:'',dateOfBirth:'',phone:'',jobTitle:'',area:''
+        });
+      }
     }
-    // onAuthStateChanged handles redirect
   } catch(e) {
     if(e.code!=='auth/popup-closed-by-user')
       showErr('boss-error','Google sign-in failed: '+e.message);
