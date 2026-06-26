@@ -383,7 +383,7 @@ input.invalid{border-color:rgba(239,68,68,0.5)!important;background:rgba(239,68,
         <div class="field">
           <label>Worker Code</label>
           <div class="input-wrap">
-            <input type="text" id="worker-code" class="code-input" placeholder="XX-2026" maxlength="7" autocomplete="off" oninput="formatCode(this)">
+            <input type="text" id="worker-code" class="code-input" placeholder="JF-2026" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" oninput="formatCode(this)" onblur="finalizeCode(this)">
           </div>
         </div>
         <button class="btn-submit" id="worker-btn" onclick="workerLogin()">
@@ -787,7 +787,9 @@ document.getElementById('tos-overlay').addEventListener('click', e => {
 
 // ── WORKER LOGIN ─────────────────────────────────────────────
 async function workerLogin() {
-  const code = document.getElementById('worker-code').value.trim().toUpperCase();
+  // Normalize: strip non-alphanumeric, re-insert dash — accepts JF2026 or JF-2026
+  let raw = document.getElementById('worker-code').value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  let code = raw.length > 3 && /\d/.test(raw[2]) ? raw.slice(0,3)+'-'+raw.slice(3) : raw.slice(0,2)+'-'+raw.slice(2);
   const btn  = document.getElementById('worker-btn');
   const err  = document.getElementById('worker-error');
   const ok   = document.getElementById('worker-success');
@@ -820,11 +822,19 @@ async function workerLogin() {
 }
 
 function formatCode(el) {
+  // Strip everything non-alphanumeric, uppercase — no dash auto-insert while typing
+  // Dash is added on blur only so mobile keyboards don't fight cursor position
+  const pos = el.selectionStart;
+  let v = el.value.replace(/[^A-Za-z0-9\-]/g,'').toUpperCase();
+  el.value = v;
+}
+
+function finalizeCode(el) {
+  // On blur: normalize to XX-YYYY format for display
   let v = el.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
-  // Support JF-2026 (7 chars) and JF2-2026 (8 chars) for collision codes
   if (v.length > 3 && /\d/.test(v[2])) {
     v = v.slice(0,3) + '-' + v.slice(3,7); // JF2-2026
-  } else if (v.length > 2) {
+  } else if (v.length >= 2) {
     v = v.slice(0,2) + '-' + v.slice(2,6); // JF-2026
   }
   el.value = v;
