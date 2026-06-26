@@ -2185,20 +2185,9 @@ map.on('load', () => {
     el.addEventListener('click', () => openDetailPanel({type:'job', ...job}));
   });
 
-  // ── Worker markers — stored for detail panel ──
+  // ── Worker markers — live from Firebase GPS only ──
+  // Dots appear when real workers log in with their code and clock in
   window._workerMarkers = {};
-  WORKERS.forEach(w => {
-    const el = document.createElement('div');
-    el.className = 'worker-marker ' + (w.status==='route'?'route':w.status==='idle'?'idle':'');
-    el.textContent = w.id;
-    const sColor = w.status==='active'?'#4CAF50':w.status==='route'?'#F5A623':'#6B7280';
-    const popup = new mapboxgl.Popup({ offset:18, closeButton:false })
-      .setHTML(`<div class="popup-name">${w.name}</div><div class="popup-detail">${w.job}</div><div class="popup-status" style="color:${sColor}">${w.status.toUpperCase()}</div>`);
-    const marker = new mapboxgl.Marker({ element:el })
-      .setLngLat(w.coords).setPopup(popup).addTo(map);
-    window._workerMarkers[w.name] = marker;
-    el.addEventListener('click', () => openDetailPanel({type:'worker', ...w, color:sColor}));
-  });
 
   // ── PLSS / Land Grid sources (empty until toggled on) ──
   map.addSource('plss-townships', {
@@ -2471,17 +2460,7 @@ map.on('load', () => {
     map.on('mouseleave', id, () => map.getCanvas().style.cursor = '');
   });
 
-  // ── Simulate live worker movement ──
-  let tick = 0;
-  setInterval(() => {
-    tick++;
-    // Slightly drift worker coords to simulate live GPS
-    WORKERS.forEach(w => {
-      if(w.status === 'idle') return;
-      w.coords[0] += (Math.random()-0.5)*0.0008;
-      w.coords[1] += (Math.random()-0.5)*0.0005;
-    });
-  }, 4000);
+  // Simulation removed — real worker GPS comes from Firebase onValue listener
 
 
 });
@@ -2492,13 +2471,7 @@ const SEARCH_DATA = [
   { type:'job',    name:'Pump Unit 14',    sub:'Wellbore Inspection · Lea County',    coords:[-102.52,32.345], color:'#F44336', badge:'URGENT',  icon:'📍' },
   { type:'job',    name:'Lease Road 22',   sub:'Equipment Check · Andrews County',    coords:[-102.58,32.285], color:'#F5A623', badge:'ACTIVE',  icon:'📍' },
   { type:'job',    name:'Tank Battery 7',  sub:'Level Reading · Andrews County',      coords:[-102.47,32.305], color:'#4488FF', badge:'PENDING', icon:'📍' },
-  // Workers
-  { type:'worker', name:'Juan Reyes',      sub:'On Site — Pump Unit 14',              coords:[-102.52,32.34],  color:'#4CAF50', badge:'ON SITE', icon:'👷' },
-  { type:'worker', name:'Miguel Torres',   sub:'Clocked In — Lease Road 22',          coords:[-102.58,32.29],  color:'#4CAF50', badge:'ACTIVE',  icon:'👷' },
-  { type:'worker', name:'David Garcia',    sub:'En Route — Tank Battery 7',           coords:[-102.48,32.31],  color:'#F5A623', badge:'EN ROUTE',icon:'👷' },
-  { type:'worker', name:'Ramon Chavez',    sub:'Idle — No Assignment',                coords:[-102.61,32.36],  color:'#6B7280', badge:'IDLE',    icon:'👷' },
-  { type:'worker', name:'Eddie Lopez',     sub:'On Site — Pump Unit 14',              coords:[-102.51,32.33],  color:'#4CAF50', badge:'ON SITE', icon:'👷' },
-  { type:'worker', name:'Rudy Salinas',    sub:'Off Clock',                           coords:[-102.55,32.31],  color:'#6B7280', badge:'OFF',     icon:'👷' },
+  // Workers — populated dynamically from Firebase GPS (see _updateSearchWorkers)
   // Lease roads
   { type:'lease',  name:'Lease Road 22',   sub:'Andrews County — Active Route',       coords:[-102.572,32.289],color:'#F5A623', badge:'LEASE',   icon:'🛣' },
   { type:'lease',  name:'Lease Road 7',    sub:'Andrews County — Access Road',        coords:[-102.470,32.305],color:'#4488FF', badge:'LEASE',   icon:'🛣' },
@@ -3890,6 +3863,20 @@ onAuthStateChanged(auth, user => {
 
 // ── GPS HELPERS (outside auth block so setInterval can call them) ─
 
+function _updateSearchWorkers(data) {
+  // Remove old worker entries from SEARCH_DATA, add fresh ones from GPS
+  const idx = SEARCH_DATA.findIndex(d => d._gpsWorker);
+  if (idx !== -1) SEARCH_DATA.splice(idx, SEARCH_DATA.filter(d => d._gpsWorker).length);
+  Object.values(data).forEach(w => {
+    if (!w.lat || !w.lng) return;
+    const age = Date.now() - (w.timestamp || 0);
+    const badge = w.clockedIn ? (age < 300000 ? 'ON SITE' : 'STALE') : 'OFF CLOCK';
+    const color = age < 300000 ? '#4CAF50' : age < 1200000 ? '#F5A623' : '#F44336';
+    SEARCH_DATA.push({ type:'worker', name: w.name, sub: w.jobsite || 'Field Worker',
+      coords:[w.lng, w.lat], color, badge, icon:'👷', _gpsWorker:true });
+  });
+}
+
 function _renderLiveGPS(data) {
   const map = window._oilMap;
   if (!map || !map.loaded()) return;
@@ -3933,6 +3920,9 @@ function _renderLiveGPS(data) {
       delete window._liveMarkers[wid];
     }
   });
+
+  // Keep search index in sync with live workers
+  _updateSearchWorkers(data);
 }
 
 function _gpsPopup(w, color, ageStr) {
