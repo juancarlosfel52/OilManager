@@ -2414,16 +2414,17 @@ window.addEventListener('load', function() {
   const WORDS = ['GPS','LIVE ROUTES','GLO MAP','RRC DATA','OILFIELD SUPPORT','WORKER ACCESS','LIVE TIME-CLOCK','BOSS DASHBOARD'];
   const HOLD_MS = 3200;
 
-  const heroEl = document.getElementById('hero-3d');
+  const heroEl = document.getElementById('hero');
   if (!heroEl) return;
 
-  // Simple div overlay — no canvas, no WebGPU, just CSS
+  // Pin to top-right under nav bar — stays inside hero, never bleeds
   const el = document.createElement('div');
   el.style.cssText = [
     'position:absolute',
-    'left:0','right:0',
-    'bottom:8%',
-    'text-align:center',
+    'top:108px',   // below nav (96px) + small gap
+    'right:2%',
+    'max-width:38%',
+    'text-align:right',
     'z-index:6',
     'pointer-events:none',
     'font-family:"Bebas Neue","Inter",sans-serif',
@@ -2431,6 +2432,8 @@ window.addEventListener('load', function() {
     'letter-spacing:6px',
     'text-transform:uppercase',
     'user-select:none',
+    'overflow:hidden',
+    'clip-path:inset(0)',  // hard clip — never bleeds outside hero
   ].join(';');
   heroEl.appendChild(el);
 
@@ -2438,9 +2441,9 @@ window.addEventListener('load', function() {
   var FADE = 600;  // ms fade in/out
 
   function setWord(word) {
-    var fs = word.length > 12 ? 'clamp(1.8rem,3.2vw,3.2rem)'
-           : word.length > 7  ? 'clamp(2.2rem,4vw,4rem)'
-           :                    'clamp(3rem,6vw,6rem)';
+    var fs = word.length > 12 ? 'clamp(1rem,1.8vw,1.8rem)'
+           : word.length > 7  ? 'clamp(1.2rem,2.2vw,2.2rem)'
+           :                    'clamp(1.6rem,2.8vw,2.8rem)';
 
     // Fake depth: stack 4 shadow layers offset diagonally + gold gradient fill
     el.style.fontSize  = fs;
