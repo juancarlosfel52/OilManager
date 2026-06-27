@@ -1539,8 +1539,9 @@ if(statsGrid) cardObserver.observe(statsGrid);
 <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
 
-<!-- ── OM LOGO SPHERE ── runs after THREE is loaded ── -->
+<!-- ── OM LOGO SPHERE ── -->
 <script>
+window.addEventListener('load', function() {
 (function(){
   const canvas = document.getElementById('om-canvas');
   if (!canvas) return;
@@ -1804,6 +1805,7 @@ if(statsGrid) cardObserver.observe(statsGrid);
     renderer.render(scene, camera);
   })();
 })();
+}); // end window load
 </script>
 <script>
 window.addEventListener('load', function() {
