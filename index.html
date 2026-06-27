@@ -124,8 +124,8 @@ nav{
   flex-shrink:0;
   border-radius:50%;
   display:block;
-  background:#F5A623;
-  box-shadow:0 0 14px rgba(245,166,35,0.6), 0 0 0 1px rgba(245,166,35,0.4);
+  background:#060810;
+  box-shadow:0 0 16px rgba(245,166,35,0.5), 0 0 0 1px rgba(245,166,35,0.25);
 }
 .nav-links{display:flex;gap:2rem;list-style:none}
 .nav-links a{
@@ -1547,161 +1547,228 @@ if(statsGrid) cardObserver.observe(statsGrid);
 <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
 
-<!-- ── OM LOGO SPHERE ── -->
+<!-- ── OM LOGO SPHERE — GLSL shader + curl flow + electric arcs ── -->
 <script>
 window.addEventListener('load', function() {
 (function(){
   const canvas = document.getElementById('om-canvas');
-  if (!canvas) return;
+  if (!canvas || typeof THREE === 'undefined') return;
 
-  // CSS size 64px, render at 2x for crispness — tell Three NOT to resize the canvas element
-  const DPR = Math.min(devicePixelRatio, 2);
+  // ── Canvas setup — never let Three touch CSS ───────────────
+  const DPR = Math.min(window.devicePixelRatio||1, 2);
   const W = 64, H = 64;
-  canvas.width  = W * DPR;
-  canvas.height = H * DPR;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
+  canvas.width  = W*DPR; canvas.height = H*DPR;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
-  renderer.setPixelRatio(1);
-  renderer.setSize(W * DPR, H * DPR, false);
-  renderer.setClearColor(0xF5A623, 1);
+  renderer.setSize(W*DPR, H*DPR, false);
+  renderer.setClearColor(0x060810, 1); // dark background — gold particles glow properly
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.6;
+  renderer.toneMappingExposure = 1.8;
 
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
   camera.position.set(0, 0, 3.2);
 
-  // Lights
-  scene.add(new THREE.AmbientLight(0x1a0800, 3));
-  const keyL = new THREE.DirectionalLight(0xF5A623, 8);
+  // Lights for PBR blob
+  scene.add(new THREE.AmbientLight(0x0a0500, 4));
+  const keyL = new THREE.DirectionalLight(0xF5A623, 10);
   keyL.position.set(2,3,2); scene.add(keyL);
-  const rimL = new THREE.DirectionalLight(0x4488ff, 4);
-  rimL.position.set(-3, -1, 1);
-  scene.add(rimL);
-  const fillL = new THREE.PointLight(0xE8860A, 5, 8);
-  fillL.position.set(0, -2, 2);
-  scene.add(fillL);
+  const rimL = new THREE.DirectionalLight(0x4488ff, 5);
+  rimL.position.set(-3,-1,1); scene.add(rimL);
+  const fillL = new THREE.PointLight(0xE8860A, 6, 8);
+  fillL.position.set(0,-2,2); scene.add(fillL);
 
-  // ── Circular soft-glow sprite texture ─────────────────────
-  function makeSprite() {
-    const c = document.createElement('canvas');
-    c.width = c.height = 64;
-    const ctx = c.getContext('2d');
-    const g = ctx.createRadialGradient(32,32,0, 32,32,32);
-    g.addColorStop(0,   'rgba(255,255,255,1.0)');
-    g.addColorStop(0.3, 'rgba(255,255,255,0.8)');
-    g.addColorStop(0.7, 'rgba(255,255,255,0.2)');
-    g.addColorStop(1,   'rgba(255,255,255,0.0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,64,64);
-    return new THREE.CanvasTexture(c);
-  }
+  // ── GLSL custom shader material (Feature 4) ───────────────
+  // Per-particle glow intensity, depth-based size, chromatic edge
+  const vertexShader = `
+    attribute float speed;
+    attribute vec3 baseColor;
+    varying vec3 vColor;
+    varying float vDepth;
+    varying float vSpeed;
+    uniform float uTime;
+    void main(){
+      vColor = baseColor;
+      vSpeed = speed;
+      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      vDepth = clamp((-mvPos.z - 1.0) / 4.0, 0.0, 1.0);
+      // Particles near equator (y≈0) are larger
+      float equatorBoost = 1.0 - abs(position.y) * 0.6;
+      float sz = (0.045 + equatorBoost * 0.025) * (1.0 - vDepth * 0.4);
+      gl_PointSize = sz * 300.0 / -mvPos.z;
+      gl_Position = projectionMatrix * mvPos;
+    }
+  `;
+  const fragmentShader = `
+    varying vec3 vColor;
+    varying float vDepth;
+    varying float vSpeed;
+    uniform float uTime;
+    void main(){
+      vec2 uv = gl_PointCoord * 2.0 - 1.0;
+      float d = length(uv);
+      if(d > 1.0) discard;
+      // Soft glow radial falloff
+      float glow = exp(-d * d * 2.5);
+      // Chromatic aberration at edges — RGB split
+      float ca = smoothstep(0.4, 1.0, d) * 0.3;
+      vec3 c = vColor;
+      c.r += ca * 0.4;
+      c.b += ca * 0.6;
+      // Density glow — brighter where speed is high (mid-morph)
+      float bright = 1.0 + vSpeed * 0.8;
+      // Fade back particles slightly
+      float alpha = glow * (1.0 - vDepth * 0.35) * bright;
+      gl_FragColor = vec4(c * alpha, alpha);
+    }
+  `;
 
-  // ── Sample OM positions ────────────────────────────────────
+  // ── Sample OM pixel positions ──────────────────────────────
   function getOMPositions(count) {
     const c = document.createElement('canvas');
-    c.width = 160; c.height = 72;
+    c.width=180; c.height=80;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#000'; ctx.fillRect(0,0,160,72);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 60px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('OM', 80, 36);
-    const px = ctx.getImageData(0,0,160,72).data;
-    const pts = [];
-    for (let y=0; y<72; y++) for (let x=0; x<160; x++)
-      if (px[(y*160+x)*4] > 100) pts.push([x,y]);
-    const out = [];
-    for (let i=0; i<count; i++) {
-      const p = pts[Math.floor(Math.random()*pts.length)];
-      out.push((p[0]/160-0.5)*2.6, -(p[1]/72-0.5)*1.3, (Math.random()-0.5)*0.1);
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,180,80);
+    ctx.fillStyle='#fff';
+    ctx.font='bold 64px serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('OM',90,40);
+    const px = ctx.getImageData(0,0,180,80).data;
+    const pts=[];
+    for(let y=0;y<80;y++) for(let x=0;x<180;x++)
+      if(px[(y*180+x)*4]>100) pts.push([x,y]);
+    const out=[];
+    for(let i=0;i<count;i++){
+      const p=pts[Math.floor(Math.random()*pts.length)];
+      out.push((p[0]/180-0.5)*2.7, -(p[1]/80-0.5)*1.35, (Math.random()-0.5)*0.08);
     }
     return out;
   }
 
-  // ── Particles ─────────────────────────────────────────────
+  // ── Curl noise helpers (Feature 5) ────────────────────────
+  // Curl noise = gradient of noise rotated 90° → divergence-free flow field
+  function hash(n){ return Math.sin(n)*43758.5453; }
+  function snoise(x,y,z){
+    return Math.sin(x*1.7+hash(y*2.3))*Math.cos(y*1.3+hash(z*1.9))*Math.sin(z*2.1+hash(x*1.5));
+  }
+  const EPS=0.01;
+  function curlNoise(x,y,z,t){
+    const tx=t, ty=t+31.4, tz=t+62.8;
+    // Partial derivatives for curl
+    const dFz_dy=(snoise(x,y+EPS,z+tx)-snoise(x,y-EPS,z+tx))/(2*EPS);
+    const dFy_dz=(snoise(x,y,z+EPS+ty)-snoise(x,y,z-EPS+ty))/(2*EPS);
+    const dFx_dz=(snoise(x+EPS,y,z+tz)-snoise(x-EPS,y,z+tz))/(2*EPS);
+    const dFz_dx=(snoise(x,y,z+EPS+tx)-snoise(x,y,z-EPS+tx))/(2*EPS);
+    const dFy_dx=(snoise(x+EPS,y,z+ty)-snoise(x-EPS,y,z+ty))/(2*EPS);
+    const dFx_dy=(snoise(x,y+EPS,z+tz)-snoise(x,y-EPS,z+tz))/(2*EPS);
+    return [dFz_dy-dFy_dz, dFx_dz-dFz_dx, dFy_dx-dFx_dy];
+  }
+
+  // ── Particle setup ─────────────────────────────────────────
   const COUNT = 5000;
   const geo = new THREE.BufferGeometry();
-  const pos = new Float32Array(COUNT*3);
-  const col = new Float32Array(COUNT*3);
+  const pos       = new Float32Array(COUNT*3);
+  const baseColor = new Float32Array(COUNT*3);
+  const speedArr  = new Float32Array(COUNT);
+  const vel       = new Float32Array(COUNT*3); // phase offsets
   const spherePos = new Float32Array(COUNT*3);
   const omPos     = new Float32Array(COUNT*3);
-  const vel       = new Float32Array(COUNT*3);
+  // Velocity buffer for curl — current velocity per particle
+  const cVel = new Float32Array(COUNT*3);
 
-  for (let i=0; i<COUNT; i++) {
-    const theta = Math.random()*Math.PI*2, phi = Math.acos(2*Math.random()-1);
-    const r = 0.88 + Math.random()*0.06;
-    spherePos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
-    spherePos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
-    spherePos[i*3+2] = r*Math.cos(phi);
+  for(let i=0;i<COUNT;i++){
+    const theta=Math.random()*Math.PI*2, phi=Math.acos(2*Math.random()-1);
+    const r=0.88+Math.random()*0.07;
+    spherePos[i*3]  =r*Math.sin(phi)*Math.cos(theta);
+    spherePos[i*3+1]=r*Math.sin(phi)*Math.sin(theta);
+    spherePos[i*3+2]=r*Math.cos(phi);
     vel[i*3]=Math.random()*6.28; vel[i*3+1]=Math.random()*6.28; vel[i*3+2]=Math.random()*6.28;
-    const t = Math.random();
-    if (Math.random()<0.07) { col[i*3]=0.27; col[i*3+1]=0.53; col[i*3+2]=1.0; }
-    else { col[i*3]=0.98-t*0.15; col[i*3+1]=0.67-t*0.35; col[i*3+2]=0.14-t*0.05; }
+    speedArr[i]=Math.random()*0.5;
+    const t=Math.random();
+    if(Math.random()<0.08){
+      baseColor[i*3]=0.27; baseColor[i*3+1]=0.53; baseColor[i*3+2]=1.0;
+    } else {
+      baseColor[i*3]=0.98-t*0.12; baseColor[i*3+1]=0.68-t*0.38; baseColor[i*3+2]=0.14;
+    }
   }
-  const omRaw = getOMPositions(COUNT);
-  for (let i=0; i<COUNT*3; i++) { omPos[i]=omRaw[i]; pos[i]=spherePos[i]; }
+  const omRaw=getOMPositions(COUNT);
+  for(let i=0;i<COUNT*3;i++){ omPos[i]=omRaw[i]; pos[i]=spherePos[i]; }
 
-  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+  geo.setAttribute('position',  new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('baseColor', new THREE.BufferAttribute(baseColor,3));
+  geo.setAttribute('speed',     new THREE.BufferAttribute(speedArr,1));
 
-  const mat = new THREE.PointsMaterial({
-    size: 0.055,
-    map: makeSprite(),
-    vertexColors: true,
+  const uTime = { value: 0 };
+  const shaderMat = new THREE.ShaderMaterial({
+    vertexShader, fragmentShader,
+    uniforms: { uTime },
     transparent: true,
-    opacity: 0.9,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
-    sizeAttenuation: true,
-    alphaTest: 0.01,
   });
-  scene.add(new THREE.Points(geo, mat));
+  scene.add(new THREE.Points(geo, shaderMat));
 
-  // ── Tendril / energy web ───────────────────────────────────
-  // Connect random particle pairs within a distance — creates electric web
-  const TENDRIL_COUNT = 180;
-  const tGeo = new THREE.BufferGeometry();
-  const tPos = new Float32Array(TENDRIL_COUNT * 6); // 2 verts per line
-  const tCol = new Float32Array(TENDRIL_COUNT * 6);
-  // Pre-assign random pairs
-  const pairA = new Int32Array(TENDRIL_COUNT);
-  const pairB = new Int32Array(TENDRIL_COUNT);
-  for (let i=0; i<TENDRIL_COUNT; i++) {
-    pairA[i] = Math.floor(Math.random()*COUNT);
-    pairB[i] = Math.floor(Math.random()*COUNT);
-  }
-  tGeo.setAttribute('position', new THREE.BufferAttribute(tPos,3));
-  tGeo.setAttribute('color',    new THREE.BufferAttribute(tCol,3));
-  const tMat = new THREE.LineBasicMaterial({
-    vertexColors: true, transparent: true, opacity: 0.0,
-    blending: THREE.AdditiveBlending, depthWrite: false,
+  // ── Electric arc sparks (Feature 8) ───────────────────────
+  // Pre-scan nearest neighbors — sparks jump between close particles
+  const SPARK_COUNT = 120;
+  const sparkGeo = new THREE.BufferGeometry();
+  const sparkPos = new Float32Array(SPARK_COUNT*6);
+  const sparkCol = new Float32Array(SPARK_COUNT*6);
+  const sparkLife= new Float32Array(SPARK_COUNT); // 0=dead, >0=alive countdown
+  const sparkA   = new Int32Array(SPARK_COUNT);
+  const sparkB   = new Int32Array(SPARK_COUNT);
+  // Init all sparks dead
+  for(let i=0;i<SPARK_COUNT;i++) sparkLife[i]=0;
+  sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos,3));
+  sparkGeo.setAttribute('color',    new THREE.BufferAttribute(sparkCol,3));
+  const sparkMat = new THREE.LineBasicMaterial({
+    vertexColors:true, transparent:true, opacity:0.9,
+    blending:THREE.AdditiveBlending, depthWrite:false
   });
-  scene.add(new THREE.LineSegments(tGeo, tMat));
+  scene.add(new THREE.LineSegments(sparkGeo, sparkMat));
 
-  // ── Energy arc tendrils (bezier curves) ────────────────────
-  const ARC_COUNT = 6;
-  const arcCurves = [], arcLines = [], arcPhases = [];
-  for (let i=0; i<ARC_COUNT; i++) {
-    const pts = new Array(12).fill(0).map(() => new THREE.Vector3());
-    const arcGeo = new THREE.BufferGeometry().setFromPoints(pts);
-    const arcMat = new THREE.LineBasicMaterial({
-      color: Math.random()<0.4 ? 0x4488ff : 0xF5A623,
-      transparent: true, opacity: 0,
-      blending: THREE.AdditiveBlending, depthWrite: false,
-    });
-    const line = new THREE.Line(arcGeo, arcMat);
-    scene.add(line);
-    arcLines.push(line);
-    arcPhases.push(Math.random()*Math.PI*2);
-    arcCurves.push(pts);
+  // Spawn new spark between two close particles
+  let sparkTimer=0;
+  function spawnSparks(posArr, count){
+    sparkTimer++;
+    if(sparkTimer % 3 !== 0) return; // throttle
+    for(let s=0;s<SPARK_COUNT;s++){
+      if(sparkLife[s]>0){ sparkLife[s]-=1; continue; }
+      if(Math.random()>0.3) continue;
+      // Pick random particle, find a nearby one
+      const a=Math.floor(Math.random()*count);
+      let best=-1, bestD=9999;
+      for(let k=0;k<8;k++){
+        const b=Math.floor(Math.random()*count);
+        if(b===a) continue;
+        const dx=posArr[a*3]-posArr[b*3], dy=posArr[a*3+1]-posArr[b*3+1], dz=posArr[a*3+2]-posArr[b*3+2];
+        const d=Math.sqrt(dx*dx+dy*dy+dz*dz);
+        if(d<bestD&&d<0.45){ bestD=d; best=b; }
+      }
+      if(best<0) continue;
+      sparkA[s]=a; sparkB[s]=best;
+      sparkLife[s]=4+Math.floor(Math.random()*6); // frames alive
+    }
+    // Write spark positions
+    for(let s=0;s<SPARK_COUNT;s++){
+      const alive=sparkLife[s]>0?1:0;
+      const a=sparkA[s]*3, b=sparkB[s]*3;
+      sparkPos[s*6+0]=posArr[a];   sparkPos[s*6+1]=posArr[a+1]; sparkPos[s*6+2]=posArr[a+2];
+      sparkPos[s*6+3]=posArr[b];   sparkPos[s*6+4]=posArr[b+1]; sparkPos[s*6+5]=posArr[b+2];
+      const bright=alive*(sparkLife[s]/8);
+      const isBlue=baseColor[sparkA[s]*3+2]>0.5;
+      sparkCol[s*6+0]=isBlue?0.3:bright;  sparkCol[s*6+1]=isBlue?0.6:bright*0.6; sparkCol[s*6+2]=isBlue?bright:0.1;
+      sparkCol[s*6+3]=isBlue?0.3:bright;  sparkCol[s*6+4]=isBlue?0.6:bright*0.6; sparkCol[s*6+5]=isBlue?bright:0.1;
+    }
+    sparkGeo.attributes.position.needsUpdate=true;
+    sparkGeo.attributes.color.needsUpdate=true;
   }
 
-  // ── PBR blob mesh ─────────────────────────────────────────
+  // ── PBR blob ──────────────────────────────────────────────
   const blobGeo = new THREE.SphereGeometry(0.72, 80, 80);
   const blobMat = new THREE.MeshStandardMaterial({
-    color:0xF5A623, metalness:0.96, roughness:0.06, transparent:true
+    color:0xF5A623, metalness:0.97, roughness:0.04, transparent:true
   });
   const blob = new THREE.Mesh(blobGeo, blobMat);
   scene.add(blob);
@@ -1709,104 +1776,91 @@ window.addEventListener('load', function() {
 
   // ── Helpers ───────────────────────────────────────────────
   function easeInOut(t){ return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2; }
-  function noise(x,y,z,t){ return Math.sin(x*2.1+t)*Math.cos(y*1.7+t*0.8)*Math.sin(z*2.4+t*1.2); }
-  function noise2(x,y,z,t){ return Math.cos(x*3.3+t*1.1)*Math.sin(y*2.9+t*0.7)*Math.cos(z*1.8+t*1.4); }
 
-  // ── State ─────────────────────────────────────────────────
+  // ── State machine ─────────────────────────────────────────
   let state=0, stateTime=0, camAngle=0;
   const DURATIONS=[3.5,1.8,2.5,1.8];
-  const clock = new THREE.Clock();
+  const clock=new THREE.Clock();
 
   (function animate(){
     requestAnimationFrame(animate);
     const dt=Math.min(clock.getDelta(),0.05), t=clock.getElapsedTime();
+    uTime.value=t;
     stateTime+=dt;
     if(stateTime>DURATIONS[state]){ stateTime=0; state=(state+1)%4; }
     const progress=easeInOut(Math.min(stateTime/DURATIONS[state],1));
 
-    let blobScale, blobOpacity, particleOpacity, tendrilOpacity;
-    let fromArr, toArr;
+    let blobScale,blobOpacity,particleOpacity,sparkOpacity;
+    let fromArr,toArr;
     if(state===0){
-      fromArr=spherePos;toArr=spherePos;blobScale=1;blobOpacity=0.92;particleOpacity=0;tendrilOpacity=0;
+      fromArr=spherePos;toArr=spherePos;
+      blobScale=1;blobOpacity=0.94;particleOpacity=0;sparkOpacity=0;
     } else if(state===1){
-      fromArr=spherePos;toArr=omPos;blobScale=1-progress*0.96;blobOpacity=1-progress;particleOpacity=progress;tendrilOpacity=progress*0.6;
+      fromArr=spherePos;toArr=omPos;
+      blobScale=1-progress;blobOpacity=1-progress;particleOpacity=progress;sparkOpacity=progress*0.8;
     } else if(state===2){
-      fromArr=omPos;toArr=omPos;blobScale=0.01;blobOpacity=0;particleOpacity=1;tendrilOpacity=0.5;
+      fromArr=omPos;toArr=omPos;
+      blobScale=0.001;blobOpacity=0;particleOpacity=1;sparkOpacity=0.8;
     } else {
-      fromArr=omPos;toArr=spherePos;blobScale=progress*0.96;blobOpacity=progress*0.92;particleOpacity=1-progress*0.4;tendrilOpacity=0.5*(1-progress);
+      fromArr=omPos;toArr=spherePos;
+      blobScale=progress;blobOpacity=progress*0.94;particleOpacity=1-progress*0.5;sparkOpacity=0.8*(1-progress);
     }
 
-    // Update particles
+    // ── Curl noise driven particle update (Feature 5) ────────
     const posArr=geo.attributes.position.array;
+    const spArr=geo.attributes.speed.array;
     for(let i=0;i<COUNT;i++){
       const ii=i*3;
       const p=state===0?0:state===2?1:progress;
-      let tx=fromArr[ii]+(toArr[ii]-fromArr[ii])*p;
-      let ty=fromArr[ii+1]+(toArr[ii+1]-fromArr[ii+1])*p;
-      let tz=fromArr[ii+2]+(toArr[ii+2]-fromArr[ii+2])*p;
-      const na=state===0?0.07:state===2?0:(state===1||state===3)?0.07*(1-progress):0;
-      tx+=noise(tx,ty,tz,t*0.55+vel[ii])*na;
-      ty+=noise(ty,tz,tx,t*0.45+vel[ii+1])*na;
-      tz+=noise2(tz,tx,ty,t*0.65+vel[ii+2])*na;
-      posArr[ii]=tx; posArr[ii+1]=ty; posArr[ii+2]=tz;
+      // Target position (lerp between states)
+      const tx=fromArr[ii]+(toArr[ii]-fromArr[ii])*p;
+      const ty=fromArr[ii+1]+(toArr[ii+1]-fromArr[ii+1])*p;
+      const tz=fromArr[ii+2]+(toArr[ii+2]-fromArr[ii+2])*p;
+
+      if(state===0 || (state===3 && progress>0.7)){
+        // Full curl flow field on sphere
+        const curl=curlNoise(posArr[ii],posArr[ii+1],posArr[ii+2],t*0.3+vel[ii]);
+        const strength=state===0?0.018:0.018*(1-(progress-0.7)/0.3);
+        cVel[ii]  =cVel[ii]  *0.92+curl[0]*strength;
+        cVel[ii+1]=cVel[ii+1]*0.92+curl[1]*strength;
+        cVel[ii+2]=cVel[ii+2]*0.92+curl[2]*strength;
+        // Attract back toward sphere surface
+        const len=Math.sqrt(posArr[ii]*posArr[ii]+posArr[ii+1]*posArr[ii+1]+posArr[ii+2]*posArr[ii+2]);
+        const targetR=0.9+Math.sin(vel[ii]+t*0.4)*0.05;
+        const attract=(targetR-len)*0.04;
+        posArr[ii]  +=cVel[ii]  +posArr[ii]  /len*attract;
+        posArr[ii+1]+=cVel[ii+1]+posArr[ii+1]/len*attract;
+        posArr[ii+2]+=cVel[ii+2]+posArr[ii+2]/len*attract;
+        spArr[i]=Math.min(1,Math.sqrt(cVel[ii]*cVel[ii]+cVel[ii+1]*cVel[ii+1]+cVel[ii+2]*cVel[ii+2])*30);
+      } else {
+        // Lerp to target with diminishing curl
+        const curlAmt=state===1?0.008*(1-progress):state===3?0.008*progress:0;
+        if(curlAmt>0){
+          const curl=curlNoise(posArr[ii],posArr[ii+1],posArr[ii+2],t*0.3+vel[ii]);
+          posArr[ii]  +=curl[0]*curlAmt;
+          posArr[ii+1]+=curl[1]*curlAmt;
+          posArr[ii+2]+=curl[2]*curlAmt;
+        }
+        posArr[ii]  +=(tx-posArr[ii]  )*0.06;
+        posArr[ii+1]+=(ty-posArr[ii+1])*0.06;
+        posArr[ii+2]+=(tz-posArr[ii+2])*0.06;
+        spArr[i]=progress*0.5;
+      }
     }
     geo.attributes.position.needsUpdate=true;
-    mat.opacity=Math.max(0,particleOpacity*0.9);
+    geo.attributes.speed.needsUpdate=true;
+    shaderMat.uniforms.uTime.value=t;
+    shaderMat.opacity=Math.max(0,particleOpacity);
 
-    // Update energy web tendrils
-    const tp=tGeo.attributes.position.array;
-    const tc=tGeo.attributes.color.array;
-    for(let i=0;i<TENDRIL_COUNT;i++){
-      const a=pairA[i]*3, b=pairB[i]*3;
-      const ax=posArr[a],ay=posArr[a+1],az=posArr[a+2];
-      const bx=posArr[b],by=posArr[b+1],bz=posArr[b+2];
-      const dist=Math.sqrt((bx-ax)**2+(by-ay)**2+(bz-az)**2);
-      const maxDist=0.55;
-      const alpha=dist<maxDist?1-dist/maxDist:0;
-      tp[i*6]=ax;tp[i*6+1]=ay;tp[i*6+2]=az;
-      tp[i*6+3]=bx;tp[i*6+4]=by;tp[i*6+5]=bz;
-      // Color: gold for close, blue for far
-      const gc=alpha, bc=alpha*0.3;
-      tc[i*6]=gc;tc[i*6+1]=gc*0.65;tc[i*6+2]=0.1;
-      tc[i*6+3]=gc;tc[i*6+4]=gc*0.65;tc[i*6+5]=0.1;
-    }
-    tGeo.attributes.position.needsUpdate=true;
-    tGeo.attributes.color.needsUpdate=true;
-    tMat.opacity=tendrilOpacity;
+    // Electric sparks
+    if(sparkOpacity>0.01) spawnSparks(posArr, COUNT);
+    sparkMat.opacity=sparkOpacity;
 
-    // Update energy arc tendrils
-    for(let i=0;i<ARC_COUNT;i++){
-      const phase=arcPhases[i]+t*1.2;
-      const r=0.98;
-      const pts=arcCurves[i];
-      const segments=pts.length;
-      // Arc goes from one point on sphere surface to another along a noisy path
-      const startTheta=phase, startPhi=Math.sin(phase*0.7)*Math.PI*0.5+Math.PI*0.5;
-      const endTheta=phase+Math.PI+Math.sin(t*0.5+i)*0.8;
-      const endPhi=Math.cos(phase*0.5)*Math.PI*0.5+Math.PI*0.5;
-      for(let j=0;j<segments;j++){
-        const s=j/(segments-1);
-        const theta=startTheta+(endTheta-startTheta)*s;
-        const phi=startPhi+(endPhi-startPhi)*s;
-        const bulge=1+Math.sin(s*Math.PI)*0.35+noise(Math.cos(theta),Math.sin(phi),s,t*1.5+i)*0.15;
-        pts[j].set(
-          r*bulge*Math.sin(phi)*Math.cos(theta),
-          r*bulge*Math.sin(phi)*Math.sin(theta),
-          r*bulge*Math.cos(phi)
-        );
-      }
-      arcLines[i].geometry.setFromPoints(pts);
-      arcLines[i].geometry.attributes.position.needsUpdate=true;
-      // Pulse opacity
-      const pulse=(Math.sin(t*2.5+arcPhases[i])*0.5+0.5);
-      arcLines[i].material.opacity=tendrilOpacity*pulse*0.8;
-    }
-
-    // Update blob deformation
+    // Blob deformation
     const bArr=blobGeo.attributes.position.array;
     for(let i=0;i<bArr.length;i+=3){
       const ox=blobOrig[i],oy=blobOrig[i+1],oz=blobOrig[i+2];
-      const n=noise(ox,oy,oz,t*0.7)*0.14 + noise2(ox,oy,oz,t*0.5)*0.06;
+      const n=snoise(ox*1.8,oy*1.8,oz*1.8+t*0.6)*0.16+snoise(ox*3.5,oy*3.5,oz*3.5+t*0.4)*0.04;
       bArr[i]=ox+ox*n; bArr[i+1]=oy+oy*n; bArr[i+2]=oz+oz*n;
     }
     blobGeo.attributes.position.needsUpdate=true;
@@ -1814,9 +1868,9 @@ window.addEventListener('load', function() {
     blob.scale.setScalar(Math.max(0.001,blobScale));
     blobMat.opacity=blobOpacity;
 
-    // Camera orbit
-    camAngle+=dt*0.22;
-    camera.position.set(Math.sin(camAngle)*3.2, Math.sin(camAngle*0.35)*0.5, Math.cos(camAngle)*3.2);
+    // Camera slow orbit
+    camAngle+=dt*0.2;
+    camera.position.set(Math.sin(camAngle)*3.2, Math.sin(camAngle*0.3)*0.4, Math.cos(camAngle)*3.2);
     camera.lookAt(0,0,0);
     keyL.position.set(Math.cos(camAngle+1)*3, 2.5, Math.sin(camAngle+1)*3);
 
