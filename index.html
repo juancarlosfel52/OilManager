@@ -2399,9 +2399,17 @@ window.addEventListener('load', function() {
     renderer.setSize(nW, nH);
   });
 
-  // GLB hover zoom — smoothly narrows FOV from 42 → 28
+  // GLB hover zoom — only zooms when mouse is within 200px of the model center
   var fovTarget = 42;
-  container.addEventListener('mouseenter', function(){ fovTarget = 28; });
+  var ZOOM_RADIUS = 200; // px — tighter detection zone
+  container.addEventListener('mousemove', function(e){
+    var rect = container.getBoundingClientRect();
+    // Model center is roughly middle of the container
+    var cx = rect.left + rect.width  * 0.5;
+    var cy = rect.top  + rect.height * 0.5;
+    var dist = Math.sqrt(Math.pow(e.clientX - cx, 2) + Math.pow(e.clientY - cy, 2));
+    fovTarget = dist < ZOOM_RADIUS ? 32 : 42;
+  });
   container.addEventListener('mouseleave', function(){ fovTarget = 42; });
   // lerp FOV in the existing animate loop by patching it
   var _origAnimate = window._oilAnimatePatch;
