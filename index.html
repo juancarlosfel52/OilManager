@@ -113,12 +113,12 @@ nav{
   display:flex;align-items:center;gap:10px;
   text-decoration:none;
 }
-.nav-logo-text{
-  font-family:'Maximum Voltage',sans-serif;
-  font-size:1.8rem;letter-spacing:2px;
-  color:var(--white);line-height:1;
+#om-text-canvas{
+  height:52px;
+  width:auto;
+  display:block;
+  flex-shrink:0;
 }
-.nav-logo-text span{color:var(--gold)}
 #om-canvas{
   width:64px;height:64px;
   flex-shrink:0;
@@ -1114,7 +1114,7 @@ footer p{color:var(--muted);font-size:0.85rem}
 <nav>
   <div class="nav-logo">
     <canvas id="om-canvas" width="128" height="128"></canvas>
-    <div class="nav-logo-text">Oil<span>Manager</span></div>
+    <canvas id="om-text-canvas"></canvas>
   </div>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
@@ -1879,6 +1879,82 @@ window.addEventListener('load', function() {
 })();
 }); // end window load
 </script>
+
+<!-- ── 3D OIL MANAGER GLB NAV LOGO ── -->
+<script>
+window.addEventListener('load', function(){
+  const canvas = document.getElementById('om-text-canvas');
+  if(!canvas || typeof THREE === 'undefined') return;
+
+  // Size: match nav height
+  const H = 52, W = 200;
+  const DPR = Math.min(window.devicePixelRatio||1, 2);
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setSize(W*DPR, H*DPR, false);
+  renderer.setClearColor(0x000000, 0);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.4;
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(28, W/H, 0.1, 100);
+  camera.position.set(0, 0, 5);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  const key = new THREE.DirectionalLight(0xF5A623, 4);
+  key.position.set(2, 3, 4); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x4488ff, 2);
+  rim.position.set(-3, -1, 1); scene.add(rim);
+  const fill = new THREE.PointLight(0xffffff, 1.5, 20);
+  fill.position.set(0, 2, 3); scene.add(fill);
+
+  const loader = new THREE.GLTFLoader();
+  loader.load(
+    encodeURI('./OilStack/3D OIL MANAGER (1).glb'),
+    function(gltf){
+      const model = gltf.scene;
+      // Center + scale to fit nav
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 2.2 / maxDim;
+      model.scale.setScalar(scale);
+      model.position.sub(center.multiplyScalar(scale));
+      // Gold PBR on all meshes
+      model.traverse(child => {
+        if(!child.isMesh) return;
+        child.material = new THREE.MeshStandardMaterial({
+          color: 0xF5A623,
+          metalness: 0.9,
+          roughness: 0.12,
+          envMapIntensity: 1.0,
+        });
+      });
+      scene.add(model);
+
+      // Animate — slow Y rotation
+      const clock = new THREE.Clock();
+      (function tick(){
+        requestAnimationFrame(tick);
+        const t = clock.getElapsedTime();
+        model.rotation.y = t * 0.3;
+        model.rotation.x = Math.sin(t * 0.4) * 0.08;
+        key.position.set(Math.cos(t*0.4)*3, 2, Math.sin(t*0.4)*3+3);
+        renderer.render(scene, camera);
+      })();
+    },
+    undefined,
+    function(err){ console.warn('GLB logo failed:', err); }
+  );
+});
+</script>
+
 <script>
 window.addEventListener('load', function() {
   const container = document.getElementById('hero-3d');
