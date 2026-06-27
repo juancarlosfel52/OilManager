@@ -110,7 +110,7 @@ nav{
   border-bottom:1px solid var(--border);
 }
 .nav-logo{
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;gap:4px;
   text-decoration:none;
 }
 #om-canvas{
@@ -123,8 +123,8 @@ nav{
   box-shadow:0 0 16px rgba(245,166,35,0.5), 0 0 0 1px rgba(245,166,35,0.25);
 }
 #om-text-canvas{
-  width:340px;height:66px;
-  min-width:340px;min-height:66px;
+  width:480px;height:68px;
+  min-width:480px;min-height:68px;
   display:block;
   flex-shrink:0;
 }
@@ -1886,7 +1886,7 @@ window.addEventListener('load', function(){
   if(!canvas || typeof THREE === 'undefined') return;
 
   const DPR = Math.min(window.devicePixelRatio||1, 2);
-  const W = 340, H = 66;
+  const W = 480, H = 68;
   canvas.width  = W*DPR; canvas.height = H*DPR;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
@@ -1896,7 +1896,7 @@ window.addEventListener('load', function(){
   renderer.toneMappingExposure = 1.6;
 
   const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(26, W/H, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(24, W/H, 0.1, 100);
   camera.position.set(0, 0, 5.5);
 
   // Scene lights — warm for lava glow
@@ -2046,7 +2046,7 @@ window.addEventListener('load', function(){
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 3.8 / maxDim; // sized to fill canvas
+      const scale = 5.0 / maxDim; // sized larger to fill canvas
       model.scale.setScalar(scale);
       model.position.sub(center.multiplyScalar(scale));
 
@@ -2076,9 +2076,9 @@ window.addEventListener('load', function(){
       (function tick(){
         requestAnimationFrame(tick);
         const t = clock.getElapsedTime();
-        // Gentle slow bob — no full rotation, keep text readable
-        model.rotation.y = Math.sin(t * 0.25) * 0.12;
-        model.rotation.x = Math.sin(t * 0.18) * 0.05;
+        // Full Y rotation + gentle X tilt
+        model.rotation.y = t * 0.4;
+        model.rotation.x = Math.sin(t * 0.3) * 0.1;
         lavaMat.uniforms.uTime.value = t;
         key.position.set(Math.cos(t*0.3)*3, 3, Math.sin(t*0.3)*2+3);
         renderer.render(scene, camera);
