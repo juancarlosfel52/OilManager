@@ -2227,6 +2227,69 @@ function saveSettings() {
   if(el){ el.style.display='block'; setTimeout(function(){ el.style.display='none'; }, 2500); }
 }
 
+// ── MAPBOX DIRECTIONS ROUTING ─────────────────────────────────
+let _activeRoute = null;
+
+async function getRouteToJob(destCoords, label) {
+  if (!destCoords || destCoords.length < 2) return;
+  const token = mapboxgl.accessToken;
+  if (!token || token === 'MAPBOX_TOKEN_HERE') return;
+
+  // Use boss viewport center as origin if no live worker GPS
+  const liveWorkers = Object.values(window._lastGPSSnap || {});
+  const origin = liveWorkers.length > 0
+    ? [liveWorkers[0].lng, liveWorkers[0].lat]
+    : [map.getCenter().lng, map.getCenter().lat];
+
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${origin[0]},${origin[1]};${destCoords[0]},${destCoords[1]}?geometries=geojson&overview=full&steps=false&access_token=${token}`;
+
+  addNotif('Routing', `Getting route to ${label}...`, 'info');
+
+  try {
+    const res  = await fetch(url);
+    const json = await res.json();
+    if (!json.routes?.length) { addNotif('Route', 'No route found', 'warning'); return; }
+
+    const route    = json.routes[0];
+    const geom     = route.geometry;
+    const distMi   = (route.distance * 0.000621371).toFixed(1);
+    const durMin   = Math.round(route.duration / 60);
+
+    // Add/update route source+layer on map
+    if (map.getSource('directions-route')) {
+      map.getSource('directions-route').setData(geom);
+    } else {
+      map.addSource('directions-route', { type:'geojson', data:geom });
+      map.addLayer({
+        id:'directions-route-line', type:'line', source:'directions-route',
+        layout:{ 'line-join':'round', 'line-cap':'round' },
+        paint:{ 'line-color':'#4CAF50', 'line-width':5, 'line-opacity':0.85 }
+      }, 'gl-draw-polygon-fill-inactive.cold'); // add below markers if possible
+    }
+
+    // Destination pin
+    if (_activeRoute) _activeRoute.remove();
+    const el = document.createElement('div');
+    el.style.cssText = `width:14px;height:14px;border-radius:50%;background:#4CAF50;border:3px solid #fff;box-shadow:0 0 10px #4CAF5088`;
+    _activeRoute = new mapboxgl.Marker({element:el}).setLngLat(destCoords).addTo(map);
+
+    // Fit bounds to route
+    const coords = geom.coordinates;
+    const bounds = coords.reduce((b,c) => b.extend(c), new mapboxgl.LngLatBounds(coords[0],coords[0]));
+    map.fitBounds(bounds, { padding:80, duration:1000 });
+
+    addNotif('Route Found', `${label} — ${distMi} mi · ~${durMin} min`, 'success');
+  } catch(e) {
+    addNotif('Route Error', 'Could not fetch route', 'warning');
+  }
+}
+
+function clearRoute() {
+  if (map.getLayer('directions-route-line')) map.removeLayer('directions-route-line');
+  if (map.getSource('directions-route'))    map.removeSource('directions-route');
+  if (_activeRoute) { _activeRoute.remove(); _activeRoute = null; }
+}
+
 
 // ── GOOGLE MAPS READY FLAG ───────────────────────────────
 let _googleReady = false;
@@ -2952,6 +3015,7 @@ function openDetailPanel(item) {
       <div class="dp-actions">
         <button class="dp-action-btn dp-btn-primary" onclick="alert('SMS: ${item.name}')">💬 Send SMS</button>
         <button class="dp-action-btn dp-btn-blue" onclick="map.flyTo({center:[${item.coords}],zoom:16,pitch:55})">🎯 Center on Map</button>
+        <button class="dp-action-btn" style="background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.35);color:var(--green)" onclick="getRouteToJob([${item.coords}],'${item.name||'Worker'}')">🗺 Route Here</button>
         <button class="dp-action-btn dp-btn-red" onclick="closeDetailPanel()">✕ Close</button>
       </div>`;
 
@@ -2983,6 +3047,7 @@ function openDetailPanel(item) {
       <div class="dp-actions">
         <button class="dp-action-btn dp-btn-primary" onclick="openModal()">+ Assign Workers</button>
         <button class="dp-action-btn dp-btn-blue" onclick="map.flyTo({center:[${item.coords}],zoom:16,pitch:55})">🎯 Center on Map</button>
+        <button class="dp-action-btn" style="background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.35);color:var(--green)" onclick="getRouteToJob([${item.coords}],'${item.name||'Job Site'}')">🗺 Get Route</button>
         <button class="dp-action-btn dp-btn-red" onclick="closeDetailPanel()">✕ Close</button>
       </div>`;
 

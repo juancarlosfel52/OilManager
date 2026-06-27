@@ -445,9 +445,24 @@ input,textarea,select{font-size:16px!important}
       </div>
     </div>
 
-    <!-- MAP SECTION -->
-    <div class="sec-title" style="margin-top:1rem">Field Map</div>
-    <div id="worker-map" style="width:100%;height:220px;border-radius:12px;border:1px solid var(--border);margin-bottom:1rem;overflow:hidden;background:var(--dark3)"></div>
+    <!-- MAP + ROUTE RECORDER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem;margin-bottom:0.5rem">
+      <div class="sec-title" style="margin:0">Field Map & Lease Roads</div>
+      <div style="display:flex;gap:0.4rem">
+        <button id="rec-btn" onclick="toggleRouteRecord()" style="padding:0.35rem 0.8rem;border-radius:8px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.3);color:var(--green)">⏺ Record Route</button>
+        <button id="save-route-btn" onclick="saveRoute()" style="display:none;padding:0.35rem 0.8rem;border-radius:8px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);color:var(--gold)">💾 Save Route</button>
+      </div>
+    </div>
+    <!-- Route recorder stats bar -->
+    <div id="route-stats" style="display:none;background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.25);border-radius:10px;padding:0.6rem 1rem;margin-bottom:0.5rem;display:none;align-items:center;gap:1rem;font-size:0.78rem">
+      <div style="display:flex;align-items:center;gap:0.4rem"><div id="rec-dot-worker" style="width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse-dot 1s infinite"></div><span id="rec-label" style="font-weight:700;color:var(--red)">RECORDING</span></div>
+      <span style="color:var(--muted)">📍 <span id="rec-pts">0</span> pts</span>
+      <span style="color:var(--muted)">📏 <span id="rec-dist">0.00</span> mi</span>
+      <span style="color:var(--muted)">⏱ <span id="rec-time">0:00</span></span>
+    </div>
+    <!-- Saved routes list -->
+    <div id="saved-routes-list" style="margin-bottom:0.5rem"></div>
+    <div id="worker-map" style="width:100%;height:260px;border-radius:12px;border:1px solid var(--border);margin-bottom:1rem;overflow:hidden;background:var(--dark3)"></div>
 
     <!-- EOD REPORT -->
     <div class="sec-title" style="margin-top:0.5rem">End of Day</div>
@@ -465,9 +480,9 @@ input,textarea,select{font-size:16px!important}
     <div class="bnav-icon">📋</div>
     <div class="bnav-label">My Jobs</div>
   </div>
-  <div class="bnav-item" ontouchstart="showTip(this,'🗺','Field Map','See your location and all job sites on the map. Tap any pin for directions.')" onclick="showTip(this,'🗺','Field Map','See your location and all job sites on the map. Tap any pin for directions.')">
-    <div class="bnav-icon">🗺</div>
-    <div class="bnav-label">Map</div>
+  <div class="bnav-item" ontouchstart="showTip(this,'🗺','Lease Roads','Record lease road routes, view your job sites on the map, and navigate to any location.')" onclick="showTip(this,'🗺','Lease Roads','Record lease road routes, view your job sites on the map, and navigate to any location.')">
+    <div class="bnav-icon">🛣</div>
+    <div class="bnav-label">Lease Roads</div>
   </div>
   <div class="bnav-item" ontouchstart="showTip(this,'⏱','Hours','Your weekly hours. Approved by your boss after each shift.')" onclick="showTip(this,'⏱','Hours','Your weekly hours. Approved by your boss after each shift.')">
     <div class="bnav-icon">⏱</div>
@@ -1094,6 +1109,113 @@ window.submitReport = () => {
   document.getElementById('report-modal').classList.remove('open');
   alert('Report submitted. Good work today 👊');
 };
+
+// ── ROUTE RECORDER ────────────────────────────────────────────
+let _rrRecording = false, _rrWatchId = null, _rrCoords = [], _rrTimer = null, _rrStart = 0;
+let _rrRouteLayers = []; // active drawn route IDs on map
+const ROUTE_STORAGE_KEY = `oilmgr_routes_${_bossId}_${_wid}`;
+
+function _rrDist(a, b) {
+  const R=3958.8, dLat=(b[1]-a[1])*Math.PI/180, dLon=(b[0]-a[0])*Math.PI/180;
+  const s=Math.sin(dLat/2)**2+Math.cos(a[1]*Math.PI/180)*Math.cos(b[1]*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));
+}
+function _rrTotalDist(coords){ let d=0; for(let i=1;i<coords.length;i++) d+=_rrDist(coords[i-1],coords[i]); return d; }
+function _rrFmtTime(ms){ const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60); return h>0?`${h}:${String(m%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`:`${m}:${String(s%60).padStart(2,'0')}`; }
+
+window.toggleRouteRecord = function() {
+  if (!_rrRecording) {
+    _rrRecording = true; _rrCoords = []; _rrStart = Date.now();
+    document.getElementById('rec-btn').textContent = '⏹ Stop';
+    document.getElementById('rec-btn').style.background = 'rgba(244,67,54,0.15)';
+    document.getElementById('rec-btn').style.borderColor = 'rgba(244,67,54,0.4)';
+    document.getElementById('rec-btn').style.color = 'var(--red)';
+    document.getElementById('save-route-btn').style.display = 'none';
+    const stats = document.getElementById('route-stats');
+    if (stats) { stats.style.display = 'flex'; }
+    _rrTimer = setInterval(() => {
+      document.getElementById('rec-time').textContent = _rrFmtTime(Date.now()-_rrStart);
+      document.getElementById('rec-pts').textContent  = _rrCoords.length;
+      document.getElementById('rec-dist').textContent = _rrTotalDist(_rrCoords).toFixed(2);
+    }, 2000);
+    _rrWatchId = navigator.geolocation.watchPosition(pos => {
+      const c = [pos.coords.longitude, pos.coords.latitude];
+      _rrCoords.push(c);
+      // Draw live on map
+      const wm = window._workerMapInstance;
+      if (wm && wm.loaded()) {
+        if (!wm.getSource('rr-live')) {
+          wm.addSource('rr-live', {type:'geojson', data:{type:'Feature',geometry:{type:'LineString',coordinates:_rrCoords}}});
+          wm.addLayer({id:'rr-live-line',type:'line',source:'rr-live',paint:{'line-color':'#F44336','line-width':3,'line-opacity':0.9,'line-dasharray':[2,1]}});
+        } else {
+          wm.getSource('rr-live').setData({type:'Feature',geometry:{type:'LineString',coordinates:_rrCoords}});
+        }
+      }
+    }, null, {enableHighAccuracy:true, maximumAge:3000, timeout:15000});
+  } else {
+    _rrRecording = false;
+    navigator.geolocation.clearWatch(_rrWatchId);
+    clearInterval(_rrTimer);
+    document.getElementById('rec-btn').textContent = '⏺ Record Route';
+    document.getElementById('rec-btn').style.background = 'rgba(76,175,80,0.12)';
+    document.getElementById('rec-btn').style.borderColor = 'rgba(76,175,80,0.3)';
+    document.getElementById('rec-btn').style.color = 'var(--green)';
+    if (_rrCoords.length > 2) document.getElementById('save-route-btn').style.display = 'block';
+    const stats = document.getElementById('route-stats');
+    if (stats) stats.style.display = 'none';
+  }
+};
+
+window.saveRoute = function() {
+  if (_rrCoords.length < 2) return;
+  const name = prompt('Name this lease road route:');
+  if (!name) return;
+  const routes = JSON.parse(localStorage.getItem(ROUTE_STORAGE_KEY)||'[]');
+  routes.unshift({ name, coords:_rrCoords, dist:_rrTotalDist(_rrCoords).toFixed(2), date:new Date().toLocaleDateString(), id:'r_'+Date.now() });
+  localStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(routes.slice(0,20)));
+  document.getElementById('save-route-btn').style.display = 'none';
+  _loadSavedRoutes();
+};
+
+function _loadSavedRoutes() {
+  const routes = JSON.parse(localStorage.getItem(ROUTE_STORAGE_KEY)||'[]');
+  const el = document.getElementById('saved-routes-list');
+  if (!el || !routes.length) return;
+  el.innerHTML = `<div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem">Saved Lease Roads (${routes.length})</div>` +
+    routes.map(r => `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:0.3rem;border:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text)">${r.name}</div>
+        <div style="font-size:0.7rem;color:var(--muted)">${r.dist} mi · ${r.date}</div>
+      </div>
+      <button onclick="_showRoute('${r.id}')" style="padding:0.25rem 0.6rem;background:rgba(68,136,255,0.12);border:1px solid rgba(68,136,255,0.3);border-radius:6px;color:var(--blue);font-size:0.7rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">Show</button>
+      <button onclick="_deleteRoute('${r.id}')" style="padding:0.25rem 0.5rem;background:transparent;border:none;color:var(--muted);font-size:0.8rem;cursor:pointer">✕</button>
+    </div>`).join('');
+}
+
+window._showRoute = function(id) {
+  const routes = JSON.parse(localStorage.getItem(ROUTE_STORAGE_KEY)||'[]');
+  const r = routes.find(r => r.id === id);
+  if (!r || !r.coords.length) return;
+  const wm = window._workerMapInstance;
+  if (!wm || !wm.loaded()) return;
+  const srcId = 'saved-'+id;
+  if (!wm.getSource(srcId)) {
+    wm.addSource(srcId, {type:'geojson', data:{type:'Feature',geometry:{type:'LineString',coordinates:r.coords}}});
+    wm.addLayer({id:srcId+'-line',type:'line',source:srcId,paint:{'line-color':'#F5A623','line-width':2.5,'line-opacity':0.85}});
+  }
+  const bounds = r.coords.reduce((b,c) => b.extend(c), new mapboxgl.LngLatBounds(r.coords[0],r.coords[0]));
+  wm.fitBounds(bounds, {padding:40, duration:800});
+};
+
+window._deleteRoute = function(id) {
+  let routes = JSON.parse(localStorage.getItem(ROUTE_STORAGE_KEY)||'[]');
+  routes = routes.filter(r => r.id !== id);
+  localStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(routes));
+  _loadSavedRoutes();
+};
+
+// Load saved routes after map is ready
+setTimeout(_loadSavedRoutes, 2000);
 
 // ── SERVICE WORKER ────────────────────────────────────────────
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
