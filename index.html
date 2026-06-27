@@ -822,6 +822,58 @@ footer p{color:var(--muted);font-size:0.85rem}
 @keyframes p1spin{ to{ --p1:360deg; } }
 @keyframes p2spin{ to{ --p2:540deg; } }
 
+/* ── DASHBOARD SCREENSHOT SLOTS ── */
+.dashboard-shots{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:1rem;
+  max-width:1300px;
+  margin:0 auto;
+}
+.dash-shot{
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  background:var(--card);
+  aspect-ratio:16/10;
+  position:relative;
+  transition:transform 0.3s ease,box-shadow 0.3s ease;
+}
+.dash-shot:hover{
+  transform:translateY(-4px);
+  box-shadow:0 12px 40px rgba(245,166,35,0.15);
+}
+.dash-shot-img{
+  width:100%;height:100%;
+  position:relative;
+}
+.dash-shot-img img{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+}
+.dash-shot-placeholder{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:var(--muted);font-size:0.72rem;
+  font-weight:600;letter-spacing:1px;
+  text-align:center;gap:0.4rem;
+  line-height:1.6;
+  background:var(--card);
+}
+.dash-shot-img img + .dash-shot-placeholder{
+  display:none; /* hide placeholder when img loads */
+}
+@media(max-width:900px){
+  .dashboard-shots{grid-template-columns:repeat(2,1fr)}
+  .dashboard-shots .dash-shot:last-child{grid-column:span 2}
+}
+@media(max-width:500px){
+  .dashboard-shots{grid-template-columns:1fr}
+  .dashboard-shots .dash-shot:last-child{grid-column:span 1}
+}
+
 .platform-pillars{
   display:grid;
   grid-template-columns:repeat(6,1fr);
@@ -1173,78 +1225,41 @@ footer p{color:var(--muted);font-size:0.85rem}
 <!-- WHAT IT DOES -->
 <section id="stack-section">
   <div class="stack-header reveal">
-    <div class="section-tag">Built For The Permian</div>
-    <div class="section-title">One Platform.<br>Your Whole Operation.</div>
+    <div class="section-tag">Boss Dashboard</div>
+    <div class="section-title">Everything Your Boss<br>Dashboard Contains!</div>
   </div>
 
-  <div class="platform-pillars">
-
-    <div class="pillar-wrap reveal">
-      <div class="pillar" onclick="this.classList.toggle('active')">
-        <img class="pillar-img" src="Card Photos/01_worker_tracking.jpg" alt="Live Worker Tracking">
-        <div class="pillar-foot">
-          <div class="pillar-icon">📍</div>
-          <div class="pillar-label">Live Worker Tracking</div>
-        </div>
-        <div class="pillar-popup">Workers clock in from their phones via GPS. Watch every operator on the map in real time — no calls, no guessing where your crew is.</div>
+  <div class="dashboard-shots">
+    <div class="dash-shot reveal">
+      <div class="dash-shot-img">
+        <img src="Card Photos/dash_01.jpg" alt="Boss Dashboard" onerror="this.style.display='none'">
+        <div class="dash-shot-placeholder">📸<br>Screenshot Coming Soon</div>
       </div>
     </div>
-
-    <div class="pillar-wrap reveal">
-      <div class="pillar" onclick="this.classList.toggle('active')">
-        <img class="pillar-img" src="Card Photos/02_job_dispatch.jpg" alt="Job Dispatch">
-        <div class="pillar-foot">
-          <div class="pillar-icon">📋</div>
-          <div class="pillar-label">Job Dispatch & Scheduling</div>
-        </div>
-        <div class="pillar-popup">Create jobs, assign your crew, and push live schedule updates the moment plans change. Workers see new assignments instantly on their phone.</div>
+    <div class="dash-shot reveal">
+      <div class="dash-shot-img">
+        <img src="Card Photos/dash_02.jpg" alt="Boss Dashboard" onerror="this.style.display='none'">
+        <div class="dash-shot-placeholder">📸<br>Screenshot Coming Soon</div>
       </div>
     </div>
-
-    <div class="pillar-wrap reveal">
-      <div class="pillar" onclick="this.classList.toggle('active')">
-        <img class="pillar-img" src="Card Photos/03_sms_workers.jpg" alt="SMS Workers">
-        <div class="pillar-foot">
-          <div class="pillar-icon">💬</div>
-          <div class="pillar-label">SMS to Workers</div>
-        </div>
-        <div class="pillar-popup">Send text dispatches straight from your dashboard. A dedicated phone number comes with every plan — workers reply back to the same number.</div>
+    <div class="dash-shot reveal">
+      <div class="dash-shot-img">
+        <img src="Card Photos/dash_03.jpg" alt="Boss Dashboard" onerror="this.style.display='none'">
+        <div class="dash-shot-placeholder">📸<br>Screenshot Coming Soon</div>
       </div>
     </div>
-
-    <div class="pillar-wrap reveal">
-      <div class="pillar" onclick="this.classList.toggle('active')">
-        <img class="pillar-img" src="Card Photos/GLO.png" alt="GLO Leases">
-        <div class="pillar-foot">
-          <div class="pillar-icon">🛢️</div>
-          <div class="pillar-label">GLO Leases & Land Grid</div>
-        </div>
-        <div class="pillar-popup">Active O&G leases, PSF lands, and the Texas land grid pulled live from Texas GLO. Navigate lease roads directly from the boss dashboard map.</div>
+    <div class="dash-shot reveal">
+      <div class="dash-shot-img">
+        <img src="Card Photos/dash_04.jpg" alt="Boss Dashboard" onerror="this.style.display='none'">
+        <div class="dash-shot-placeholder">📸<br>Screenshot Coming Soon</div>
       </div>
     </div>
-
-    <div class="pillar-wrap reveal">
-      <div class="pillar" onclick="this.classList.toggle('active')">
-        <img class="pillar-img" src="Card Photos/05_approve_hours.jpg" alt="Approve Hours">
-        <div class="pillar-foot">
-          <div class="pillar-icon">⏱️</div>
-          <div class="pillar-label">Confirm & Approve Hours</div>
-        </div>
-        <div class="pillar-popup">GPS-verified clock-ins with exact timestamps. Review, confirm, and approve time cards weekly. Export to PDF and hand straight to payroll.</div>
+    <div class="dash-shot reveal">
+      <div class="dash-shot-img">
+        <img src="Card Photos/dash_05.jpg" alt="Boss Dashboard" onerror="this.style.display='none'">
+        <div class="dash-shot-placeholder">📸<br>Screenshot Coming Soon</div>
       </div>
     </div>
-
-    <div class="pillar-wrap reveal">
-      <div class="pillar" onclick="this.classList.toggle('active')">
-        <img class="pillar-img" src="Card Photos/06_route_recorder.jpg" alt="Route Recorder">
-        <div class="pillar-foot">
-          <div class="pillar-icon">🛣️</div>
-          <div class="pillar-label">Route Recorder</div>
-        </div>
-        <div class="pillar-popup">Record your own lease road routes on the map. Save and name them so any worker can navigate to any location — no verbal directions needed.</div>
-      </div>
-    </div>
-
   </div>
 
   <div style="text-align:center;margin-top:3.5rem">
@@ -1256,7 +1271,7 @@ footer p{color:var(--muted);font-size:0.85rem}
 <section id="features">
   <div class="features-header reveal">
     <div class="section-tag">What We Built</div>
-    <div class="section-title">Everything Your Operation Needs</div>
+    <div class="section-title">Built For The Field</div>
     <p class="section-sub">From the boss's dashboard to the worker's phone — OilManager keeps your whole crew connected and accountable.</p>
   </div>
   <div class="features-grid">
