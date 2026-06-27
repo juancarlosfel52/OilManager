@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>OilManager — Route Recorder</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap" rel="stylesheet">
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -54,7 +52,7 @@ body{
 
 /* ── MAP ── */
 #map{flex:1;width:100%;position:relative}
-#mapbox-map{position:absolute;inset:0}
+#google-map{position:absolute;inset:0}
 
 /* ── STATS OVERLAY ── */
 .stats-overlay{
@@ -256,19 +254,55 @@ body{
 .sri-meta span{color:var(--gold);font-weight:600}
 .no-saved{padding:1rem;text-align:center;color:var(--muted);font-size:0.82rem}
 
-/* Mapbox controls */
-.mapboxgl-ctrl-logo{display:none!important}
-.mapboxgl-ctrl-attrib{display:none!important}
-.mapboxgl-ctrl-group{background:var(--card)!important;border:1px solid var(--border2)!important}
-.mapboxgl-ctrl-group button{background:var(--card)!important}
-.mapboxgl-ctrl-icon{filter:invert(1) brightness(0.7)}
-
-/* ── USER LOCATION DOT ── */
-.user-dot{
-  width:16px;height:16px;border-radius:50%;
-  background:var(--blue);border:3px solid #fff;
-  box-shadow:0 0 0 4px rgba(68,136,255,0.3);
+/* ── MAP TOOL BUTTONS ── */
+.map-tools{
+  position:absolute;top:58px;right:12px;z-index:10;
+  display:flex;flex-direction:column;gap:0.4rem;
 }
+.btn-map-tool{
+  background:rgba(6,8,16,0.88);border:1px solid var(--border2);
+  border-radius:8px;padding:6px 12px;
+  color:var(--text);font-size:0.75rem;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  white-space:nowrap;transition:all 0.15s;
+}
+.btn-map-tool:hover{border-color:var(--gold);color:var(--gold)}
+.btn-map-tool.active{border-color:var(--gold);background:rgba(245,166,35,0.15);color:var(--gold)}
+
+/* ── BBOX RESULTS PANEL ── */
+.bbox-panel{
+  position:absolute;bottom:180px;left:12px;z-index:10;
+  background:rgba(6,8,16,0.92);border:1px solid var(--gold);
+  border-radius:10px;padding:0.8rem 1rem;
+  display:none;align-items:center;gap:1rem;
+  font-size:0.82rem;
+}
+.bbox-count{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--gold);letter-spacing:1px}
+.bbox-label{color:var(--muted);font-size:0.72rem;line-height:1.3}
+.btn-bbox-clear{
+  background:transparent;border:1px solid rgba(244,67,54,0.4);
+  border-radius:6px;padding:4px 9px;color:var(--red);
+  font-size:0.72rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;
+}
+
+/* ── LEASE LOADING INDICATOR ── */
+.lease-loading{
+  position:absolute;bottom:180px;right:12px;z-index:10;
+  background:rgba(6,8,16,0.88);border:1px solid var(--border2);
+  border-radius:8px;padding:6px 12px;
+  display:none;align-items:center;gap:8px;
+  font-size:0.75rem;color:var(--muted);
+}
+.lease-loading-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--gold);animation:blink 0.8s ease-in-out infinite;
+}
+
+/* ── GOOGLE MAPS OVERRIDES ── */
+.gm-style-iw{background:var(--card)!important;border:1px solid var(--border2)!important}
+.gm-style-iw-d{overflow:hidden!important}
+.gm-style .gm-style-iw-c{background:var(--card)!important;box-shadow:0 8px 32px rgba(0,0,0,0.6)!important}
+.gm-ui-hover-effect{display:none!important}
 </style>
 </head>
 <body>
@@ -285,7 +319,7 @@ body{
 
 <!-- MAP -->
 <div id="map">
-  <div id="mapbox-map"></div>
+  <div id="google-map"></div>
 
   <!-- STATS OVERLAY -->
   <div class="stats-overlay">
@@ -301,6 +335,28 @@ body{
     <div class="stat-pill" id="pill-lm">
       <div><div class="stat-pill-val" id="val-lm">0</div><div class="stat-pill-label">landmarks</div></div>
     </div>
+  </div>
+
+  <!-- MAP TOOL BUTTONS -->
+  <div class="map-tools">
+    <button class="btn-map-tool" id="btn-bbox" onclick="toggleBbox()">⬚ BBox Filter</button>
+    <button class="btn-map-tool" id="btn-lease-toggle" onclick="toggleLeaseLayer()">🛢 Leases ON</button>
+    <button class="btn-map-tool" id="btn-locate" onclick="locateMe()">📍 My Location</button>
+  </div>
+
+  <!-- BBOX RESULTS -->
+  <div class="bbox-panel" id="bbox-panel">
+    <div>
+      <div class="bbox-count" id="bbox-count">0</div>
+      <div class="bbox-label">leases in<br>selection</div>
+    </div>
+    <button class="btn-bbox-clear" onclick="clearBbox()">✕ Clear</button>
+  </div>
+
+  <!-- LEASE LOADING -->
+  <div class="lease-loading" id="lease-loading">
+    <div class="lease-loading-dot"></div>
+    Loading lease data…
   </div>
 
   <!-- SAVED ROUTES -->
@@ -367,26 +423,11 @@ body{
 </div>
 
 <script>
-mapboxgl.accessToken = 'MAPBOX_TOKEN_HERE';
-
-const map = new mapboxgl.Map({
-  container: 'mapbox-map',
-  style: 'mapbox://styles/mapbox/navigation-night-v1',
-  center: [-102.55, 32.32],
-  zoom: 13,
-  pitch: 45,
-  antialias: true,
-});
-
-map.addControl(new mapboxgl.NavigationControl({ visualizePitch:true }), 'top-right');
-map.addControl(new mapboxgl.GeolocateControl({
-  positionOptions:{ enableHighAccuracy:true },
-  trackUserLocation:true,
-  showUserHeading:true,
-  showAccuracyCircle:true,
-}), 'top-right');
-
 // ── STATE ──────────────────────────────────────────────────
+let map;
+let routePolyline;
+let startMarker;
+let infoWindow;
 let recording  = false;
 let paused     = false;
 let watchId    = null;
@@ -398,75 +439,232 @@ let timerInt   = null;
 let currentPos = null;
 let selectedLandmarkType = 'Cattle Guard';
 let lmMarkers  = [];
+let drawingManager = null;
+let bboxRectangle  = null;
+let bboxMode       = false;
+let leaseVisible   = true;
 
-// ── MAP SOURCES SETUP ──────────────────────────────────────
-map.on('load', () => {
-  // 3D terrain
-  map.addSource('dem', { type:'raster-dem', url:'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize:512 });
-  map.setTerrain({ source:'dem', exaggeration:1.5 });
-  map.setFog({ color:'rgba(6,8,16,0.8)', 'high-color':'rgba(20,24,40,0.9)', 'horizon-blend':0.06, 'space-color':'rgba(4,6,14,1)', 'star-intensity':0.5 });
-
-  // Route line source
-  map.addSource('route', {
-    type:'geojson',
-    data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[] } }
+// ── GOOGLE MAPS INIT ───────────────────────────────────────
+function initMap() {
+  map = new google.maps.Map(document.getElementById('google-map'), {
+    center: { lat: 32.32, lng: -102.55 },
+    zoom: 13,
+    mapTypeId: 'hybrid',
+    fullscreenControl: false,
+    streetViewControl: false,
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
+    mapTypeControlOptions: {
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+      position: google.maps.ControlPosition.TOP_RIGHT,
+      mapTypeIds: ['hybrid', 'roadmap', 'terrain'],
+    },
   });
 
-  // Glow layer (wide soft)
-  map.addLayer({
-    id:'route-glow',
-    type:'line', source:'route',
-    paint:{
-      'line-color':'#F5A623',
-      'line-width':10,
-      'line-opacity':0.2,
-      'line-blur':4,
-    }
+  // Route polyline (gold trail)
+  routePolyline = new google.maps.Polyline({
+    path: [],
+    geodesic: true,
+    strokeColor: '#F5A623',
+    strokeOpacity: 0.95,
+    strokeWeight: 4,
+    map: map,
   });
 
-  // Main route line
-  map.addLayer({
-    id:'route-line',
-    type:'line', source:'route',
-    layout:{ 'line-join':'round', 'line-cap':'round' },
-    paint:{
-      'line-color':'#F5A623',
-      'line-width':4,
-      'line-opacity':0.95,
-    }
+  // Start dot marker
+  startMarker = new google.maps.Marker({
+    position: { lat: 0, lng: 0 },
+    map: map,
+    visible: false,
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: '#4CAF50',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 2,
+    },
+    zIndex: 10,
   });
 
-  // Start dot source
-  map.addSource('start-point', {
-    type:'geojson',
-    data:{ type:'Feature', geometry:{ type:'Point', coordinates:[] } }
-  });
-  map.addLayer({
-    id:'start-dot',
-    type:'circle', source:'start-point',
-    paint:{
-      'circle-radius':8,
-      'circle-color':'#4CAF50',
-      'circle-stroke-color':'#fff',
-      'circle-stroke-width':2,
-      'circle-opacity':0,
-    }
-  });
+  infoWindow = new google.maps.InfoWindow({ maxWidth: 260 });
 
-  // Try to center on user location
-  if(navigator.geolocation) {
+  // Center on user location
+  if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
-      map.flyTo({ center:[pos.coords.longitude, pos.coords.latitude], zoom:14, speed:1.5 });
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      map.setCenter(loc);
+      map.setZoom(14);
       currentPos = [pos.coords.longitude, pos.coords.latitude];
     }, () => {});
   }
 
+  // Load lease GeoJSON overlay
+  loadLeaseData();
+
+  // Drawing manager for BBOX
+  drawingManager = new google.maps.drawing.DrawingManager({
+    drawingMode: null,
+    drawingControl: false,
+    rectangleOptions: {
+      fillColor: '#F5A623',
+      fillOpacity: 0.12,
+      strokeColor: '#F5A623',
+      strokeWeight: 2,
+      clickable: false,
+      editable: true,
+      zIndex: 5,
+    },
+  });
+  drawingManager.setMap(map);
+  google.maps.event.addListener(drawingManager, 'rectanglecomplete', onBboxComplete);
+
   loadSavedRoutes();
-});
+}
+
+// ── LEASE GEOJSON ──────────────────────────────────────────
+function loadLeaseData() {
+  const loading = document.getElementById('lease-loading');
+  loading.style.display = 'flex';
+
+  map.data.loadGeoJson(
+    'google/Oil_and_Gas_Leases_In_Active_-2319755522309970979%20(1).geojson',
+    null,
+    () => { loading.style.display = 'none'; }
+  );
+
+  map.data.setStyle({
+    fillColor: '#F5A623',
+    fillOpacity: 0.08,
+    strokeColor: '#F5A623',
+    strokeWeight: 1,
+    strokeOpacity: 0.55,
+    clickable: true,
+  });
+
+  map.data.addListener('click', e => {
+    const props = {};
+    e.feature.forEachProperty((val, key) => { props[key] = val; });
+    const title = props.LEASE_NAME || props.LESSEE_NAME || props.COUNTY || 'Oil & Gas Lease';
+    infoWindow.setContent(`
+      <div style="font-family:'Inter',sans-serif;font-size:0.82rem;padding:4px 2px;max-width:230px">
+        <div style="font-weight:700;color:#111;margin-bottom:6px;font-size:0.9rem">🛢 ${title}</div>
+        ${props.LESSEE    ? `<div style="margin-bottom:2px"><b>Lessee:</b> ${props.LESSEE}</div>` : ''}
+        ${props.STATUS    ? `<div style="margin-bottom:2px"><b>Status:</b> ${props.STATUS}</div>` : ''}
+        ${props.ACRES     ? `<div style="margin-bottom:2px"><b>Acres:</b> ${props.ACRES}</div>` : ''}
+        ${props.COUNTY    ? `<div style="margin-bottom:2px"><b>County:</b> ${props.COUNTY}</div>` : ''}
+        ${props.API_NO    ? `<div style="margin-bottom:2px;color:#888;font-size:0.72rem">API: ${props.API_NO}</div>` : ''}
+      </div>
+    `);
+    infoWindow.setPosition(e.latLng);
+    infoWindow.open(map);
+  });
+}
+
+function toggleLeaseLayer() {
+  leaseVisible = !leaseVisible;
+  const btn = document.getElementById('btn-lease-toggle');
+  map.data.setStyle(f => ({
+    fillColor: '#F5A623',
+    fillOpacity: leaseVisible ? 0.08 : 0,
+    strokeColor: '#F5A623',
+    strokeWeight: leaseVisible ? 1 : 0,
+    strokeOpacity: leaseVisible ? 0.55 : 0,
+    clickable: leaseVisible,
+  }));
+  btn.textContent = leaseVisible ? '🛢 Leases ON' : '🛢 Leases OFF';
+  btn.classList.toggle('active', !leaseVisible);
+}
+
+// ── BBOX ───────────────────────────────────────────────────
+function toggleBbox() {
+  bboxMode = !bboxMode;
+  const btn = document.getElementById('btn-bbox');
+  if (bboxMode) {
+    // Clear previous rectangle
+    if (bboxRectangle) { bboxRectangle.setMap(null); bboxRectangle = null; }
+    drawingManager.setDrawingMode(google.maps.drawing.OverlayType.RECTANGLE);
+    btn.classList.add('active');
+    btn.textContent = '✕ Cancel BBox';
+    document.getElementById('bbox-panel').style.display = 'none';
+  } else {
+    drawingManager.setDrawingMode(null);
+    btn.classList.remove('active');
+    btn.textContent = '⬚ BBox Filter';
+    clearBbox();
+  }
+}
+
+function onBboxComplete(rect) {
+  if (bboxRectangle && bboxRectangle !== rect) { bboxRectangle.setMap(null); }
+  bboxRectangle = rect;
+  bboxMode = false;
+  drawingManager.setDrawingMode(null);
+  const btn = document.getElementById('btn-bbox');
+  btn.classList.remove('active');
+  btn.textContent = '⬚ BBox Filter';
+
+  runBboxFilter(rect.getBounds());
+
+  // Re-run filter when user resizes the rectangle
+  google.maps.event.addListener(rect, 'bounds_changed', () => {
+    runBboxFilter(rect.getBounds());
+  });
+}
+
+function runBboxFilter(bounds) {
+  let count = 0;
+  map.data.forEach(feature => {
+    const geo = feature.getGeometry();
+    if (!geo) return;
+    let inside = false;
+    const checkPaths = paths => {
+      if (!paths) return;
+      for (let i = 0; i < paths.getLength(); i++) {
+        if (bounds.contains(paths.getAt(i))) { inside = true; return; }
+      }
+    };
+    const type = geo.getType();
+    if (type === 'Polygon') {
+      geo.getArray().forEach(ring => checkPaths(ring));
+    } else if (type === 'MultiPolygon') {
+      geo.getArray().forEach(poly => poly.getArray().forEach(ring => checkPaths(ring)));
+    }
+    if (inside) {
+      count++;
+      map.data.overrideStyle(feature, {
+        fillColor: '#F5A623', fillOpacity: 0.35,
+        strokeColor: '#F5A623', strokeWeight: 2, strokeOpacity: 1,
+      });
+    } else {
+      map.data.overrideStyle(feature, {
+        fillColor: '#555', fillOpacity: 0.03,
+        strokeColor: '#555', strokeWeight: 0.5, strokeOpacity: 0.15,
+      });
+    }
+  });
+  document.getElementById('bbox-count').textContent = count;
+  document.getElementById('bbox-panel').style.display = 'flex';
+}
+
+function clearBbox() {
+  if (bboxRectangle) { bboxRectangle.setMap(null); bboxRectangle = null; }
+  map.data.revertStyle();
+  document.getElementById('bbox-panel').style.display = 'none';
+}
+
+// ── MY LOCATION ────────────────────────────────────────────
+function locateMe() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    map.panTo(loc);
+    map.setZoom(15);
+  }, () => alert('Could not get your location.'));
+}
 
 // ── HAVERSINE DISTANCE ─────────────────────────────────────
 function haversine(a, b) {
-  const R = 3958.8; // miles
+  const R = 3958.8;
   const dLat = (b[1]-a[1]) * Math.PI/180;
   const dLon = (b[0]-a[0]) * Math.PI/180;
   const s = Math.sin(dLat/2)*Math.sin(dLat/2) +
@@ -477,7 +675,7 @@ function haversine(a, b) {
 
 function totalDistance(coords) {
   let d = 0;
-  for(let i=1;i<coords.length;i++) d += haversine(coords[i-1], coords[i]);
+  for (let i = 1; i < coords.length; i++) d += haversine(coords[i-1], coords[i]);
   return d;
 }
 
@@ -486,7 +684,7 @@ function fmtTime(ms) {
   const s = Math.floor(ms/1000);
   const m = Math.floor(s/60);
   const h = Math.floor(m/60);
-  if(h > 0) return `${h}:${String(m%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  if (h > 0) return `${h}:${String(m%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
   return `${m}:${String(s%60).padStart(2,'0')}`;
 }
 
@@ -501,9 +699,9 @@ function updateStats() {
 
 // ── TOGGLE RECORD ──────────────────────────────────────────
 function toggleRecord() {
-  if(!recording) {
+  if (!recording) {
     startRecording();
-  } else if(!paused) {
+  } else if (!paused) {
     pauseRecording();
   } else {
     resumeRecording();
@@ -511,26 +709,21 @@ function toggleRecord() {
 }
 
 function startRecording() {
-  if(!navigator.geolocation) { alert('Geolocation not available on this device.'); return; }
-
+  if (!navigator.geolocation) { alert('Geolocation not available on this device.'); return; }
   recording = true;
   paused    = false;
   routeCoords = [];
   landmarks   = [];
-  lmMarkers.forEach(m => m.remove());
+  lmMarkers.forEach(m => m.setMap(null));
   lmMarkers = [];
   startTime = Date.now();
-
-  // Update UI
   setRecState('recording');
 
-  // Update route line on map to empty
-  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:[] } });
-  map.setPaintProperty('start-dot','circle-opacity',0);
+  routePolyline.setPath([]);
+  startMarker.setVisible(false);
 
   timerInt = setInterval(updateStats, 1000);
 
-  // Watch GPS position
   watchId = navigator.geolocation.watchPosition(onPosition, onGeoError, {
     enableHighAccuracy: true,
     maximumAge: 2000,
@@ -550,26 +743,25 @@ function resumeRecording() {
   startTime = Date.now() - elapsedMs;
   timerInt  = setInterval(updateStats, 1000);
   watchId   = navigator.geolocation.watchPosition(onPosition, onGeoError, {
-    enableHighAccuracy:true, maximumAge:2000, timeout:10000,
+    enableHighAccuracy: true, maximumAge: 2000, timeout: 10000,
   });
   setRecState('recording');
 }
 
 function stopRecording() {
-  if(!recording) return;
+  if (!recording) return;
   clearInterval(timerInt);
   navigator.geolocation.clearWatch(watchId);
   recording = false;
   paused    = false;
   setRecState('stopped');
 
-  if(routeCoords.length < 2) {
+  if (routeCoords.length < 2) {
     alert('Not enough GPS points recorded. Move around more before stopping.');
     setRecState('ready');
     return;
   }
 
-  // Show save modal
   document.getElementById('sum-dist').textContent = totalDistance(routeCoords).toFixed(2);
   document.getElementById('sum-time').textContent = fmtTime(elapsedMs);
   document.getElementById('sum-lm').textContent   = landmarks.length;
@@ -581,27 +773,24 @@ function onPosition(pos) {
   const coord = [pos.coords.longitude, pos.coords.latitude];
   currentPos  = coord;
 
-  // Minimum distance filter — only add point if moved > 5 meters
-  if(routeCoords.length > 0) {
-    const last = routeCoords[routeCoords.length-1];
-    const dist = haversine(last, coord) * 1609.34; // convert to meters
-    if(dist < 5) return;
+  if (routeCoords.length > 0) {
+    const dist = haversine(routeCoords[routeCoords.length-1], coord) * 1609.34;
+    if (dist < 5) return;
   }
 
   routeCoords.push(coord);
 
-  // Set start dot on first point
-  if(routeCoords.length === 1) {
-    map.getSource('start-point').setData({ type:'Feature', geometry:{ type:'Point', coordinates:coord } });
-    map.setPaintProperty('start-dot','circle-opacity',1);
-    map.flyTo({ center:coord, zoom:15, pitch:45 });
+  const gCoord = { lat: coord[1], lng: coord[0] };
+
+  if (routeCoords.length === 1) {
+    startMarker.setPosition(gCoord);
+    startMarker.setVisible(true);
+    map.panTo(gCoord);
+    map.setZoom(15);
   }
 
-  // Update route line
-  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:routeCoords } });
-
-  // Follow user
-  map.easeTo({ center:coord, duration:800 });
+  routePolyline.setPath(routeCoords.map(c => ({ lat: c[1], lng: c[0] })));
+  map.panTo(gCoord);
 }
 
 function onGeoError(err) {
@@ -616,8 +805,8 @@ function setRecState(state) {
   const stop  = document.getElementById('btn-stop');
   const lmbtn = document.getElementById('btn-landmark');
 
-  dot.className   = 'rec-dot';
-  if(state==='recording') {
+  dot.className = 'rec-dot';
+  if (state === 'recording') {
     dot.classList.add('recording');
     label.textContent = 'Recording';
     label.style.color = 'var(--red)';
@@ -625,7 +814,7 @@ function setRecState(state) {
     btn.innerHTML = '⏸ Pause';
     stop.disabled  = false;
     lmbtn.disabled = false;
-  } else if(state==='paused') {
+  } else if (state === 'paused') {
     dot.classList.add('paused');
     label.textContent = 'Paused';
     label.style.color = 'var(--gold)';
@@ -645,7 +834,7 @@ function setRecState(state) {
 
 // ── LANDMARK ───────────────────────────────────────────────
 function openLandmark() {
-  if(!recording || paused) return;
+  if (!recording || paused) return;
   document.getElementById('lm-desc').value = '';
   document.getElementById('lm-note').value = '';
   document.getElementById('lm-modal').classList.add('open');
@@ -667,7 +856,7 @@ const LM_ICONS = {
 function saveLandmark() {
   const desc = document.getElementById('lm-desc').value.trim();
   const note = document.getElementById('lm-note').value.trim();
-  if(!currentPos) { alert('No GPS position yet.'); return; }
+  if (!currentPos) { alert('No GPS position yet.'); return; }
 
   const dist = totalDistance(routeCoords);
   const lm = {
@@ -681,39 +870,42 @@ function saveLandmark() {
   };
   landmarks.push(lm);
 
-  // Drop marker on map
-  const el = document.createElement('div');
-  el.style.cssText = `
-    width:32px;height:32px;border-radius:50%;
-    background:rgba(6,8,16,0.9);
-    border:2px solid var(--gold);
-    display:flex;align-items:center;justify-content:center;
-    font-size:1rem;cursor:pointer;
-    box-shadow:0 0 10px rgba(245,166,35,0.5);
-  `;
-  el.textContent = lm.icon;
-
-  const popup = new mapboxgl.Popup({ offset:20, closeButton:false })
-    .setHTML(`
-      <div style="font-family:'Inter',sans-serif;font-size:0.8rem">
-        <div style="font-weight:700;color:#fff;margin-bottom:3px">${lm.icon} ${lm.type}</div>
-        ${lm.desc ? `<div style="color:#E8EAF0;margin-bottom:3px">${lm.desc}</div>` : ''}
-        ${lm.note ? `<div style="color:#6B7280;font-size:0.72rem;margin-bottom:3px">📝 ${lm.note}</div>` : ''}
-        <div style="color:#F5A623;font-size:0.7rem">@ ${lm.dist} mi · ${lm.time}</div>
-      </div>
-    `);
-
-  const marker = new mapboxgl.Marker({ element:el })
-    .setLngLat(currentPos)
-    .setPopup(popup)
-    .addTo(map);
-  el.addEventListener('click', () => popup.isOpen() ? popup.remove() : popup.addTo(map).setLngLat(currentPos));
-  lmMarkers.push(marker);
-
-  // Add to bottom list
+  dropLandmarkMarker(lm);
   renderLandmarkList();
   document.getElementById('val-lm').textContent = landmarks.length;
   closeLandmark();
+}
+
+function dropLandmarkMarker(lm) {
+  const pos = { lat: lm.coords[1], lng: lm.coords[0] };
+  const marker = new google.maps.Marker({
+    position: pos,
+    map: map,
+    label: { text: lm.icon, fontSize: '16px' },
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 16,
+      fillColor: 'rgba(6,8,16,0.9)',
+      fillOpacity: 0.9,
+      strokeColor: '#F5A623',
+      strokeWeight: 2,
+    },
+    zIndex: 20,
+  });
+
+  const content = `
+    <div style="font-family:'Inter',sans-serif;font-size:0.8rem;padding:2px">
+      <div style="font-weight:700;color:#111;margin-bottom:3px">${lm.icon} ${lm.type}</div>
+      ${lm.desc ? `<div style="color:#333;margin-bottom:3px">${lm.desc}</div>` : ''}
+      ${lm.note ? `<div style="color:#666;font-size:0.72rem;margin-bottom:3px">📝 ${lm.note}</div>` : ''}
+      <div style="color:#F5A623;font-size:0.7rem">@ ${lm.dist} mi · ${lm.time}</div>
+    </div>
+  `;
+  marker.addListener('click', () => {
+    infoWindow.setContent(content);
+    infoWindow.open(map, marker);
+  });
+  lmMarkers.push(marker);
 }
 
 function renderLandmarkList() {
@@ -758,10 +950,10 @@ function discardRoute() {
   document.getElementById('save-modal').classList.remove('open');
   routeCoords = [];
   landmarks   = [];
-  lmMarkers.forEach(m => m.remove());
+  lmMarkers.forEach(m => m.setMap(null));
   lmMarkers = [];
-  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:[] } });
-  map.setPaintProperty('start-dot','circle-opacity',0);
+  routePolyline.setPath([]);
+  startMarker.setVisible(false);
   document.getElementById('landmark-scroll').innerHTML = '';
   setRecState('ready');
   resetStats();
@@ -779,7 +971,7 @@ function resetStats() {
 function loadSavedRoutes() {
   const saved = JSON.parse(localStorage.getItem('om_routes') || '[]');
   const dd = document.getElementById('saved-dropdown');
-  if(!saved.length) {
+  if (!saved.length) {
     dd.innerHTML = '<div class="no-saved">No saved routes yet</div>';
     return;
   }
@@ -794,32 +986,19 @@ function loadSavedRoutes() {
 function loadRoute(idx) {
   const saved = JSON.parse(localStorage.getItem('om_routes') || '[]');
   const route = saved[idx];
-  if(!route || !route.coords.length) return;
+  if (!route || !route.coords.length) return;
 
-  // Draw route on map
-  map.getSource('route').setData({ type:'Feature', geometry:{ type:'LineString', coordinates:route.coords } });
-  map.getSource('start-point').setData({ type:'Feature', geometry:{ type:'Point', coordinates:route.coords[0] } });
-  map.setPaintProperty('start-dot','circle-opacity',1);
+  routePolyline.setPath(route.coords.map(c => ({ lat: c[1], lng: c[0] })));
+  startMarker.setPosition({ lat: route.coords[0][1], lng: route.coords[0][0] });
+  startMarker.setVisible(true);
 
-  // Clear old landmark markers
-  lmMarkers.forEach(m => m.remove());
+  lmMarkers.forEach(m => m.setMap(null));
   lmMarkers = [];
+  route.landmarks.forEach(lm => dropLandmarkMarker(lm));
 
-  // Drop landmark markers
-  route.landmarks.forEach(lm => {
-    const el = document.createElement('div');
-    el.style.cssText = `width:28px;height:28px;border-radius:50%;background:rgba(6,8,16,0.9);border:2px solid #F5A623;display:flex;align-items:center;justify-content:center;font-size:0.9rem;cursor:pointer;box-shadow:0 0 8px rgba(245,166,35,0.4)`;
-    el.textContent = lm.icon;
-    const popup = new mapboxgl.Popup({ offset:18, closeButton:false })
-      .setHTML(`<div style="font-family:'Inter',sans-serif;font-size:0.8rem"><div style="font-weight:700;color:#fff;margin-bottom:3px">${lm.icon} ${lm.type}</div>${lm.desc?`<div style="color:#E8EAF0;margin-bottom:3px">${lm.desc}</div>`:''}${lm.note?`<div style="color:#6B7280;font-size:0.72rem;margin-bottom:3px">📝 ${lm.note}</div>`:''}<div style="color:#F5A623;font-size:0.7rem">@ ${lm.dist} mi · ${lm.time}</div></div>`);
-    const marker = new mapboxgl.Marker({ element:el }).setLngLat(lm.coords).setPopup(popup).addTo(map);
-    el.addEventListener('click', () => popup.isOpen() ? popup.remove() : popup.addTo(map).setLngLat(lm.coords));
-    lmMarkers.push(marker);
-  });
-
-  // Fly to route
-  const bounds = route.coords.reduce((b,c) => b.extend(c), new mapboxgl.LngLatBounds(route.coords[0], route.coords[0]));
-  map.fitBounds(bounds, { padding:60, pitch:45, duration:1400 });
+  const bounds = new google.maps.LatLngBounds();
+  route.coords.forEach(c => bounds.extend({ lat: c[1], lng: c[0] }));
+  map.fitBounds(bounds, { top:60, right:60, bottom:200, left:60 });
 
   document.getElementById('route-name').value = route.name;
   toggleSaved();
@@ -830,8 +1009,12 @@ function toggleSaved() {
 }
 document.addEventListener('click', e => {
   const s = document.querySelector('.saved-section');
-  if(s && !s.contains(e.target)) document.getElementById('saved-dropdown').classList.remove('open');
+  if (s && !s.contains(e.target)) document.getElementById('saved-dropdown').classList.remove('open');
 });
+</script>
+
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA_sqNdMATzv9KhfTZz4p8nEFcT7SBzbuk&libraries=drawing&callback=initMap">
 </script>
 </body>
 </html>
