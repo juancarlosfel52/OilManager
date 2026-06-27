@@ -110,8 +110,13 @@ nav{
   border-bottom:1px solid var(--border);
 }
 .nav-logo{
-  display:flex;align-items:center;gap:4px;
+  display:flex;align-items:center;gap:8px;
   text-decoration:none;
+  flex-shrink:0;
+}
+.nav-auth-inline{
+  display:flex;align-items:center;gap:0.5rem;
+  flex-shrink:0;
 }
 #om-canvas{
   width:56px;height:56px;
@@ -1140,7 +1145,11 @@ footer p{color:var(--muted);font-size:0.85rem}
 <nav>
   <div class="nav-logo">
     <canvas id="om-canvas"></canvas>
-    <canvas id="om-text-canvas"></canvas>
+    <div class="nav-auth-inline">
+      <a href="login.html" class="nav-login">Log In</a>
+      <a href="login.html?signup=1" class="nav-signup">Sign Up</a>
+      <a href="#cta-banner" class="nav-cta">Request Demo</a>
+    </div>
   </div>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
@@ -1148,11 +1157,7 @@ footer p{color:var(--muted);font-size:0.85rem}
     <li><a href="#who">Who It's For</a></li>
     <li><a href="#pricing">Pricing</a></li>
   </ul>
-  <div class="nav-auth">
-    <a href="login.html" class="nav-login">Log In</a>
-    <a href="login.html?signup=1" class="nav-signup">Sign Up</a>
-  </div>
-  <a href="#cta-banner" class="nav-cta">Request Demo</a>
+  <canvas id="om-text-canvas"></canvas>
 </nav>
 
 <!-- HERO -->
