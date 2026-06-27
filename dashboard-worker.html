@@ -255,6 +255,98 @@ input,textarea,select{font-size:16px!important}
   .btn-clock{padding:0.6rem 1.6rem;font-size:0.88rem}
 }
 
+/* ── GPS PERMISSION OVERLAY ── */
+#gps-block{
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(4,6,12,0.97);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2rem;text-align:center;
+}
+#gps-block.hidden{display:none}
+.gps-block-icon{font-size:4rem;margin-bottom:1rem}
+.gps-block-title{font-size:1.4rem;font-weight:800;color:var(--red);margin-bottom:0.8rem;font-family:'Bebas Neue',sans-serif;letter-spacing:2px}
+.gps-block-sub{font-size:0.88rem;color:rgba(232,234,240,0.7);line-height:1.7;margin-bottom:1.5rem;max-width:320px}
+.gps-block-steps{text-align:left;background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.2);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.5rem;width:100%;max-width:320px}
+.gps-block-steps li{font-size:0.82rem;color:rgba(232,234,240,0.8);margin-bottom:0.5rem;line-height:1.5}
+.btn-gps-retry{padding:0.8rem 2rem;background:var(--gold);border:none;border-radius:10px;color:var(--dark);font-weight:700;font-size:0.95rem;cursor:pointer;font-family:'Inter',sans-serif}
+
+/* ── GPS INFO POPUP ── */
+#gps-info-popup{
+  position:fixed;inset:0;z-index:8000;
+  background:rgba(4,6,12,0.88);backdrop-filter:blur(12px);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:0 0 0;
+}
+#gps-info-popup.hidden{display:none}
+.gps-info-card{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:20px 20px 0 0;
+  padding:1.8rem 1.5rem 2.5rem;
+  width:100%;max-width:420px;
+}
+.gps-info-icon{font-size:2.5rem;text-align:center;margin-bottom:0.8rem}
+.gps-info-title{font-size:1.1rem;font-weight:800;color:#fff;text-align:center;margin-bottom:0.5rem}
+.gps-info-sub{font-size:0.82rem;color:var(--muted);text-align:center;line-height:1.6;margin-bottom:1.2rem}
+.gps-info-rows{display:flex;flex-direction:column;gap:0.7rem;margin-bottom:1.5rem}
+.gps-info-row{display:flex;align-items:flex-start;gap:0.8rem;padding:0.7rem;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid var(--border)}
+.gps-info-row-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px}
+.gps-info-row-text{font-size:0.8rem;color:rgba(232,234,240,0.8);line-height:1.5}
+.gps-info-row-text strong{color:var(--gold);display:block;margin-bottom:2px}
+.btn-gps-accept{width:100%;padding:0.9rem;background:var(--gold);border:none;border-radius:12px;color:var(--dark);font-weight:700;font-size:0.95rem;cursor:pointer;font-family:'Inter',sans-serif}
+
+/* ── ONBOARDING TOUR ── */
+#tour-overlay{
+  position:fixed;inset:0;z-index:7000;
+  pointer-events:none;
+}
+#tour-overlay.active{pointer-events:auto}
+.tour-backdrop{
+  position:fixed;inset:0;
+  background:rgba(4,6,12,0.82);
+  backdrop-filter:blur(3px);
+  z-index:7001;
+  pointer-events:none;
+}
+.tour-spotlight{
+  position:fixed;z-index:7002;
+  border-radius:14px;
+  box-shadow:0 0 0 4000px rgba(4,6,12,0.82);
+  pointer-events:none;
+  transition:all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+  border:2px solid var(--gold);
+}
+.tour-card{
+  position:fixed;z-index:7003;
+  background:var(--card);border:1px solid rgba(245,166,35,0.4);
+  border-radius:16px;padding:1.2rem 1.4rem;
+  width:calc(100% - 3rem);max-width:360px;
+  left:50%;transform:translateX(-50%);
+  box-shadow:0 20px 60px rgba(0,0,0,0.7),0 0 30px rgba(245,166,35,0.15);
+  pointer-events:auto;
+}
+.tour-step-tag{font-size:0.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:0.4rem}
+.tour-title{font-size:1rem;font-weight:800;color:#fff;margin-bottom:0.5rem}
+.tour-sub{font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:1rem}
+.tour-btns{display:flex;gap:0.6rem}
+.btn-tour-skip{flex:1;padding:0.6rem;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-tour-next{flex:2;padding:0.6rem;background:var(--gold);border:none;border-radius:8px;color:var(--dark);font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+
+/* ── GEOFENCE CLOCK-IN STATE ── */
+.btn-clock.locked{
+  background:rgba(107,114,128,0.15);
+  border:1px solid rgba(107,114,128,0.3);
+  color:var(--muted);cursor:not-allowed;
+}
+#geofence-banner{
+  background:rgba(244,67,54,0.08);
+  border-bottom:1px solid rgba(244,67,54,0.2);
+  padding:0.5rem 1.2rem;
+  font-size:0.72rem;color:rgba(244,67,54,0.9);
+  text-align:center;display:none;
+  font-weight:600;letter-spacing:0.3px;
+}
+#geofence-banner.show{display:block}
+
 /* Touch targets */
 .bnav-item{min-height:48px;justify-content:center;padding:0.3rem 1.2rem}
 .btn-cancel,.btn-submit-report{min-height:48px}
@@ -280,10 +372,62 @@ input,textarea,select{font-size:16px!important}
 </head>
 <body>
 
+<!-- ══ GPS BLOCKED OVERLAY ══ -->
+<div id="gps-block" class="hidden">
+  <div class="gps-block-icon">🚫📍</div>
+  <div class="gps-block-title">Location Access Required</div>
+  <div class="gps-block-sub">OilManager requires your location to verify you're on site and track your shift. Without it, you cannot clock in.</div>
+  <ul class="gps-block-steps">
+    <li>1. Tap the lock icon in your browser address bar</li>
+    <li>2. Find "Location" and set it to <strong>Allow</strong></li>
+    <li>3. Reload this page</li>
+  </ul>
+  <button class="btn-gps-retry" onclick="location.reload()">Try Again</button>
+</div>
+
+<!-- ══ GPS INFO POPUP ══ -->
+<div id="gps-info-popup" class="hidden">
+  <div class="gps-info-card">
+    <div class="gps-info-icon">📍</div>
+    <div class="gps-info-title">Location Tracking Active</div>
+    <div class="gps-info-sub">Here's how OilManager uses your location on shift.</div>
+    <div class="gps-info-rows">
+      <div class="gps-info-row">
+        <div class="gps-info-row-icon">✅</div>
+        <div class="gps-info-row-text"><strong>Clock-In Verification</strong>GPS confirms you're at your assigned job site before your time starts recording.</div>
+      </div>
+      <div class="gps-info-row">
+        <div class="gps-info-row-icon">🗺</div>
+        <div class="gps-info-row-text"><strong>Live Map (Boss Only)</strong>Your supervisor sees your dot on the field map while you're clocked in. Stops when you clock out.</div>
+      </div>
+      <div class="gps-info-row">
+        <div class="gps-info-row-icon">🔒</div>
+        <div class="gps-info-row-text"><strong>Your Privacy</strong>Location is only active during your shift. We never track you off the clock.</div>
+      </div>
+    </div>
+    <button class="btn-gps-accept" id="btn-gps-accept">Got It — Let's Go</button>
+  </div>
+</div>
+
+<!-- ══ ONBOARDING TOUR ══ -->
+<div id="tour-overlay">
+  <div class="tour-backdrop" id="tour-backdrop"></div>
+  <div class="tour-spotlight" id="tour-spotlight"></div>
+  <div class="tour-card" id="tour-card" style="bottom:2rem">
+    <div class="tour-step-tag" id="tour-step-tag">Step 1 of 3</div>
+    <div class="tour-title" id="tour-title"></div>
+    <div class="tour-sub" id="tour-sub"></div>
+    <div class="tour-btns">
+      <button class="btn-tour-skip" onclick="endTour()">Skip</button>
+      <button class="btn-tour-next" id="btn-tour-next" onclick="nextTourStep()">Next →</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-logo">Oil<span>Manager</span></div>
-  <div class="topbar-worker">Worker: <strong>JR-4821</strong></div>
+  <div class="topbar-worker">Welcome, <strong id="topbar-name">—</strong></div>
 </div>
 
 <!-- CLOCK IN/OUT BANNER -->
@@ -298,6 +442,9 @@ input,textarea,select{font-size:16px!important}
   <button class="btn-clock btn-clock-out" id="clock-btn" onclick="toggleClock()">Clock Out</button>
 </div>
 
+<!-- GEOFENCE WARNING -->
+<div id="geofence-banner">📍 You must be at your job site to clock in — <span id="geofence-dist"></span></div>
+
 <div class="worker-layout">
 
 <!-- BOTTOM NAV acts as sidebar on desktop — moved before content for flex order -->
@@ -305,7 +452,7 @@ input,textarea,select{font-size:16px!important}
 <div class="content">
 
   <!-- HOURS SUMMARY -->
-  <div class="hours-card">
+  <div class="hours-card" id="tour-hours">
     <div class="hours-row">
       <div class="hours-label">This Week</div>
       <div class="hours-val" id="week-hours">28.5 <span style="font-size:1rem;color:var(--muted)">hrs</span></div>
@@ -318,7 +465,7 @@ input,textarea,select{font-size:16px!important}
 
   <!-- TODAY'S JOBS -->
   <div class="sec-title">Today's Jobs</div>
-  <div class="jobs-grid">
+  <div class="jobs-grid" id="tour-jobs">
 
   <div class="job-card">
     <div class="job-card-head">
@@ -407,19 +554,21 @@ input,textarea,select{font-size:16px!important}
 </div>
 
 <script type="module">
-// ── Worker session — set by login.html after code verified ────
+// ── Session ───────────────────────────────────────────────────
 const _session = JSON.parse(sessionStorage.getItem('workerSession') || '{}');
-const _bossId  = _session.bossId  || '';
-const _wid     = _session.wid     || 'w0';
-const _wname   = _session.name    || 'Worker';
-
-// Redirect to login if no session
+const _bossId  = _session.bossId || '';
+const _wid     = _session.wid    || 'w0';
+const _wname   = _session.name   || 'Worker';
+const _firstName = _wname.split(' ')[0];
 if (!_bossId) { window.location.href = 'login.html?role=worker'; }
+
+// Show worker name
+const nameEl = document.getElementById('topbar-name');
+if (nameEl) nameEl.textContent = _firstName;
 
 // ── Firebase ──────────────────────────────────────────────────
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
 const _fbApp = initializeApp({
   apiKey:"AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
   authDomain:"oilmanager-118b7.firebaseapp.com",
@@ -430,84 +579,160 @@ const _fbApp = initializeApp({
   appId:"1:1062793158063:web:49023cc020e5e11e6d235a"
 }, 'worker-app');
 const _db = getDatabase(_fbApp);
-// Firebase Realtime DB has built-in offline persistence —
-// writes are queued locally and auto-synced when signal returns.
 
-// ── GPS state ─────────────────────────────────────────────────
-let _watchId = null;
+// ── State ─────────────────────────────────────────────────────
+let _watchId    = null;
+let clockedIn   = false;
+let clockStart  = null;
+let _onSite     = false;  // geofence: true when within 300m of job site
+let _lastLat    = null;
+let _lastLng    = null;
 
+// ── GPS BAR ───────────────────────────────────────────────────
 function _gpsBar(text, color) {
-  const bar  = document.getElementById('gps-bar');
+  const bar = document.getElementById('gps-bar');
   const span = document.getElementById('gps-bar-text');
   if (!bar) return;
   bar.style.display = 'block';
-  span.textContent  = text;
-  span.style.color  = color || 'var(--muted)';
+  span.textContent = text;
+  span.style.color = color || 'var(--muted)';
 }
 
-function _startGPS() {
-  if (!navigator.geolocation) {
-    _gpsBar('⚠️ GPS not supported on this device', 'var(--gold)');
-    return;
+// ── DISTANCE (haversine, meters) ──────────────────────────────
+function _distM(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── GEOFENCE CHECK ────────────────────────────────────────────
+// Job site coords come from session (future: from Firebase job assignment)
+// For now use boss HQ coords as the "shop" — workers must be within 300m to clock in
+const _shopLat = _session.shopLat || null;
+const _shopLng = _session.shopLng || null;
+const GEOFENCE_M = 300;
+
+function _checkGeofence(lat, lng) {
+  const btn = document.getElementById('clock-btn');
+  const banner = document.getElementById('geofence-banner');
+  const distEl = document.getElementById('geofence-dist');
+
+  // If no shop coords set yet — allow clock-in (boss hasn't configured shop location)
+  if (!_shopLat || !_shopLng) { _onSite = true; _unlockClock(); return; }
+
+  const dist = Math.round(_distM(lat, lng, _shopLat, _shopLng));
+  if (dist <= GEOFENCE_M) {
+    _onSite = true;
+    _unlockClock();
+    if (banner) banner.classList.remove('show');
+  } else {
+    _onSite = false;
+    if (!clockedIn) _lockClock();
+    if (banner) { banner.classList.add('show'); distEl.textContent = `You are ${dist}m away`; }
   }
+}
+
+function _lockClock() {
+  const btn = document.getElementById('clock-btn');
+  if (btn && !clockedIn) { btn.className = 'btn-clock locked'; btn.textContent = 'Clock In'; }
+}
+function _unlockClock() {
+  const btn = document.getElementById('clock-btn');
+  if (btn && !clockedIn) { btn.className = 'btn-clock btn-clock-in'; btn.textContent = 'Clock In'; }
+}
+
+// ── GPS ───────────────────────────────────────────────────────
+function _startGPS() {
+  if (!navigator.geolocation) { _gpsBar('⚠️ GPS not supported', 'var(--gold)'); return; }
   _gpsBar('📍 Acquiring GPS signal...', 'var(--muted)');
-  _watchId = navigator.geolocation.watchPosition(
-    _onPos,
-    _onErr,
-    { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
-  );
+  _watchId = navigator.geolocation.watchPosition(_onPos, _onErr,
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 15000 });
 }
 
 function _stopGPS() {
   if (_watchId !== null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
-  if (_bossId) set(ref(_db, `bosses/${_bossId}/gps/${_wid}/clockedIn`), false).catch(() => {});
+  if (_bossId) set(ref(_db, `bosses/${_bossId}/gps/${_wid}/clockedIn`), false).catch(()=>{});
   const bar = document.getElementById('gps-bar');
   if (bar) bar.style.display = 'none';
 }
 
 function _onPos(pos) {
-  const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+  const { latitude:lat, longitude:lng, accuracy } = pos.coords;
+  _lastLat = lat; _lastLng = lng;
 
-  // Skip fixes worse than 50m — common in dead zones or indoors
   if (accuracy > 50) {
     _gpsBar(`📍 Weak signal (±${Math.round(accuracy)}m) — waiting for better fix`, 'var(--gold)');
     return;
   }
-
   _gpsBar(`📍 GPS active · ±${Math.round(accuracy)}m`, 'var(--green)');
+  _checkGeofence(lat, lng);
 
-  if (!_bossId) return; // no boss link — GPS display only
-  // Firebase queues this write offline automatically if no signal
+  if (!_bossId || !clockedIn) return;
   set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
-    lat, lng,
-    accuracy:  Math.round(accuracy),
-    timestamp: Date.now(),
-    name:      _wname,
-    wid:       _wid,
-    clockedIn: true
-  }).catch(() => {
-    // Caught only on permanent failures — offline retries are silent/automatic
-    _gpsBar('📡 Cached — syncs when signal returns', 'var(--gold)');
-  });
+    lat, lng, accuracy: Math.round(accuracy),
+    timestamp: Date.now(), name: _wname, wid: _wid, clockedIn: true
+  }).catch(() => _gpsBar('📡 Cached — syncs when signal returns', 'var(--gold)'));
 }
 
 function _onErr(err) {
-  // Code 1 = permission denied, 2 = unavailable, 3 = timeout
-  // watchPosition auto-retries for codes 2 & 3 — no manual retry needed
-  const msg   = { 1:'🔒 Location blocked — allow in browser settings',
-                  2:'📡 No signal — last location held',
-                  3:'⏱ GPS timeout — retrying...' };
-  const color = { 1:'var(--red)', 2:'var(--gold)', 3:'var(--muted)' };
+  if (err.code === 1) {
+    // Permission denied — show block screen
+    document.getElementById('gps-block')?.classList.remove('hidden');
+    return;
+  }
+  const msg   = { 2:'📡 No signal — last location held', 3:'⏱ GPS timeout — retrying...' };
+  const color = { 2:'var(--gold)', 3:'var(--muted)' };
   _gpsBar(msg[err.code] || 'GPS error', color[err.code] || 'var(--gold)');
 }
 
-// ── Clock toggle ──────────────────────────────────────────────
-let clockedIn = true;
-let clockStart = Date.now() - (4*3600+22*60)*1000;
+// ── GPS PERMISSION FLOW ───────────────────────────────────────
+// Ask permission first — show info popup on allow, block screen on deny
+function _requestGPSPermission() {
+  if (!navigator.geolocation) {
+    document.getElementById('gps-block')?.classList.remove('hidden');
+    return;
+  }
+  // Check if already granted (Android/Chrome supports permissions API)
+  if (navigator.permissions) {
+    navigator.permissions.query({ name:'geolocation' }).then(result => {
+      if (result.state === 'granted') {
+        _showGPSInfoPopup();
+      } else if (result.state === 'denied') {
+        document.getElementById('gps-block')?.classList.remove('hidden');
+      } else {
+        // 'prompt' — will ask user
+        _showGPSInfoPopup();
+      }
+      result.onchange = () => {
+        if (result.state === 'denied') document.getElementById('gps-block')?.classList.remove('hidden');
+      };
+    });
+  } else {
+    // iOS Safari — no permissions API, just show info popup
+    _showGPSInfoPopup();
+  }
+}
 
-_startGPS(); // begin tracking immediately on load
+function _showGPSInfoPopup() {
+  const popup = document.getElementById('gps-info-popup');
+  if (popup) popup.classList.remove('hidden');
+  document.getElementById('btn-gps-accept')?.addEventListener('click', () => {
+    popup.classList.add('hidden');
+    _startGPS();
+    // Show welcome tour after GPS accepted
+    setTimeout(startTour, 600);
+  });
+}
 
+// ── CLOCK TOGGLE ─────────────────────────────────────────────
 window.toggleClock = function() {
+  if (!clockedIn && !_onSite) {
+    // Locked — not on site
+    document.getElementById('geofence-banner')?.classList.add('show');
+    return;
+  }
   clockedIn = !clockedIn;
   const banner = document.getElementById('clock-banner');
   const label  = document.getElementById('clock-label');
@@ -526,8 +751,15 @@ window.toggleClock = function() {
     btn.className        = 'btn-clock btn-clock-out';
     btn.textContent      = 'Clock Out';
     time.textContent     = 'Just clocked in';
-    _startGPS();
+    // Push clocked-in GPS immediately
+    if (_lastLat && _bossId) {
+      set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
+        lat:_lastLat, lng:_lastLng, accuracy:10,
+        timestamp:Date.now(), name:_wname, wid:_wid, clockedIn:true
+      }).catch(()=>{});
+    }
   } else {
+    clockedIn = false;
     banner.classList.add('clocked-out');
     label.textContent    = 'Clocked Out';
     label.style.color    = 'var(--gold)';
@@ -538,52 +770,132 @@ window.toggleClock = function() {
     btn.textContent      = 'Clock In';
     time.textContent     = 'Have a good one 👊';
     _stopGPS();
+    if (!_onSite) _lockClock();
   }
 };
 
-// ── Elapsed time ──────────────────────────────────────────────
+// Start clocked-out state
+(() => {
+  const banner = document.getElementById('clock-banner');
+  const label  = document.getElementById('clock-label');
+  const btn    = document.getElementById('clock-btn');
+  const dot    = document.getElementById('clock-dot');
+  if (banner) banner.classList.add('clocked-out');
+  if (label)  { label.textContent='Clocked Out'; label.style.color='var(--gold)'; }
+  if (dot)    { dot.style.background='var(--gold)'; dot.style.boxShadow='0 0 8px var(--gold)'; dot.style.animation='none'; }
+  if (btn)    { btn.className='btn-clock locked'; btn.textContent='Clock In'; }
+  const time = document.getElementById('clock-time');
+  if (time) time.textContent = 'Get to your job site to clock in';
+})();
+
+// ── ELAPSED TIME ─────────────────────────────────────────────
 setInterval(() => {
-  if (!clockedIn) return;
-  const el = (Date.now() - clockStart) / 1000;
-  const h  = Math.floor(el / 3600);
-  const m  = Math.floor((el % 3600) / 60);
-  const clkTime = document.getElementById('clock-time');
-  const since = new Date(clockStart).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-  clkTime.textContent = `Since ${since} · ${h}h ${m}m`;
+  if (!clockedIn || !clockStart) return;
+  const s = (Date.now() - clockStart) / 1000;
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+  const since = new Date(clockStart).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const el = document.getElementById('clock-time');
+  if (el) el.textContent = `Since ${since} · ${h}h ${m}m`;
 }, 10000);
 
-// ── Week bars ─────────────────────────────────────────────────
+// ── WEEK BARS ─────────────────────────────────────────────────
 const days = ['M','T','W','T','F','S','S'];
 const hrs  = [8.5, 9, 7.5, 3.5, 0, 0, 0];
 const wb   = document.getElementById('week-bars');
-days.forEach((d, i) => {
-  const ot = hrs[i] > 8;
+days.forEach((d,i) => {
   wb.innerHTML += `<div class="hours-day">
     <div class="hours-day-label">${d}</div>
-    <div class="hours-day-bar${ot?' ot':''}" id="bar-${i}" style="height:0"></div>
-    <div class="hours-day-num">${hrs[i]||''}</div>
-  </div>`;
+    <div class="hours-day-bar${hrs[i]>8?' ot':''}" id="bar-${i}" style="height:0"></div>
+    <div class="hours-day-num">${hrs[i]||''}</div></div>`;
 });
-setTimeout(() => {
-  days.forEach((_, i) => {
-    const el = document.getElementById(`bar-${i}`);
-    if (el) el.style.height = Math.round(hrs[i] / 10 * 50) + 'px';
-  });
-}, 300);
+setTimeout(() => days.forEach((_,i) => {
+  const el = document.getElementById(`bar-${i}`);
+  if (el) el.style.height = Math.round(hrs[i]/10*50)+'px';
+}), 300);
 
-// ── UI helpers exposed to HTML onclick ────────────────────────
-window.completeJob = function(btn) {
-  btn.textContent = '✓ Completed';
-  btn.classList.add('done');
-  btn.disabled = true;
-  const badge = btn.closest('.job-card').querySelector('.job-badge');
-  badge.textContent = 'Complete';
-  badge.className = 'job-badge badge-active';
+// ── ONBOARDING TOUR ──────────────────────────────────────────
+const TOUR_STEPS = [
+  {
+    target: 'clock-banner',
+    title:  `Welcome, ${_firstName}! 👊`,
+    sub:    'This is your Clock In/Out bar. Once you arrive at your job site, GPS confirms your location and the Clock In button activates.',
+    pos:    'bottom'
+  },
+  {
+    target: 'tour-jobs',
+    title:  'Your Jobs for Today',
+    sub:    'These are your assigned jobs. Tap Directions to navigate to a site. Tap Mark Complete when the job is done.',
+    pos:    'top'
+  },
+  {
+    target: 'tour-hours',
+    title:  'Your Hours This Week',
+    sub:    'Track your daily hours here. Your boss reviews and approves time cards every day.',
+    pos:    'bottom'
+  },
+];
+let _tourStep = 0;
+
+function startTour() {
+  if (localStorage.getItem('oilmgr_tour_done')) return;
+  _tourStep = 0;
+  document.getElementById('tour-overlay').classList.add('active');
+  document.getElementById('tour-backdrop').style.display = 'block';
+  _renderTourStep();
+}
+
+function _renderTourStep() {
+  const step = TOUR_STEPS[_tourStep];
+  if (!step) { endTour(); return; }
+  const target = document.getElementById(step.target);
+  const spotlight = document.getElementById('tour-spotlight');
+  const card = document.getElementById('tour-card');
+
+  document.getElementById('tour-step-tag').textContent = `Step ${_tourStep+1} of ${TOUR_STEPS.length}`;
+  document.getElementById('tour-title').textContent = step.title;
+  document.getElementById('tour-sub').textContent   = step.sub;
+  document.getElementById('btn-tour-next').textContent = _tourStep === TOUR_STEPS.length-1 ? "Let's Go ✓" : 'Next →';
+
+  if (target) {
+    const r = target.getBoundingClientRect();
+    spotlight.style.top    = (r.top - 6) + 'px';
+    spotlight.style.left   = (r.left - 6) + 'px';
+    spotlight.style.width  = (r.width + 12) + 'px';
+    spotlight.style.height = (r.height + 12) + 'px';
+    spotlight.style.display = 'block';
+    // Position card above or below
+    if (step.pos === 'bottom' || r.top < window.innerHeight * 0.5) {
+      card.style.bottom = 'auto';
+      card.style.top = Math.min(r.bottom + 16, window.innerHeight - 220) + 'px';
+    } else {
+      card.style.top = 'auto';
+      card.style.bottom = (window.innerHeight - r.top + 16) + 'px';
+    }
+  }
+}
+
+window.nextTourStep = function() {
+  _tourStep++;
+  if (_tourStep >= TOUR_STEPS.length) { endTour(); return; }
+  _renderTourStep();
 };
 
+window.endTour = function() {
+  document.getElementById('tour-overlay').classList.remove('active');
+  document.getElementById('tour-backdrop').style.display = 'none';
+  document.getElementById('tour-spotlight').style.display = 'none';
+  localStorage.setItem('oilmgr_tour_done', '1');
+};
+
+// ── UI HELPERS ────────────────────────────────────────────────
+window.completeJob = function(btn) {
+  btn.textContent = '✓ Completed'; btn.classList.add('done'); btn.disabled = true;
+  const badge = btn.closest('.job-card').querySelector('.job-badge');
+  badge.textContent = 'Complete'; badge.className = 'job-badge badge-active';
+};
 window.openReport  = () => document.getElementById('report-modal').classList.add('open');
 window.closeReport = (e) => {
-  if (!e || e.target === document.getElementById('report-modal'))
+  if (!e || e.target===document.getElementById('report-modal'))
     document.getElementById('report-modal').classList.remove('open');
 };
 window.submitReport = () => {
@@ -591,10 +903,11 @@ window.submitReport = () => {
   alert('Report submitted. Good work today 👊');
 };
 
-// ── Register service worker (PWA / iOS background keep-alive) ─
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
-}
+// ── SERVICE WORKER ────────────────────────────────────────────
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+// ── INIT ─────────────────────────────────────────────────────
+_requestGPSPermission();
 </script>
 </body>
 </html>
