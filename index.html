@@ -115,8 +115,9 @@ nav{
   flex-shrink:0;
 }
 .nav-auth-inline{
-  display:flex;align-items:center;gap:0.5rem;
+  display:flex;align-items:center;gap:1rem;
   flex-shrink:0;
+  margin-left:0.5rem;
 }
 #om-canvas{
   width:56px;height:56px;
@@ -180,6 +181,7 @@ nav{
   width:55%;
   pointer-events:auto;
   z-index:3;
+  transform:translateX(-100px);
 }
 #hero-3d canvas{width:100%!important;height:100%!important;transition:opacity 0.4s ease;background:transparent!important;}
 .hero-bg{
@@ -211,6 +213,22 @@ nav{
   padding:0.35rem 1rem;border-radius:20px;
   font-size:0.8rem;font-weight:700;letter-spacing:1px;
   text-transform:uppercase;margin-bottom:1.5rem;
+}
+.hero-badge-bottom{
+  position:absolute;
+  bottom:clamp(24px,4vh,56px);
+  left:50%;
+  transform:translateX(-50%);
+  z-index:6;
+  background:rgba(245,166,35,0.12);
+  border:1px solid rgba(245,166,35,0.5);
+  color:var(--gold);
+  padding:0.4rem 1.4rem;
+  border-radius:20px;
+  font-size:0.8rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+  backdrop-filter:blur(8px);
+  white-space:nowrap;
 }
 #hero h1{
   font-family:'Maximum Voltage',sans-serif;
@@ -1165,7 +1183,6 @@ footer p{color:var(--muted);font-size:0.85rem}
   <div class="hero-bg"></div>
   <div id="hero-3d"></div>
   <div class="hero-content">
-    <div class="hero-badge">Permian Basin Field Operations</div>
     <h1>Run Your Crew.<br><span>Own The Field.</span></h1>
     <p>Assign jobs, track workers, verify time cards, and navigate lease roads — all from one platform built for the oilfield.</p>
     <div class="hero-btns">
@@ -1173,6 +1190,8 @@ footer p{color:var(--muted);font-size:0.85rem}
       <a href="#features" class="btn-ghost">See Features</a>
     </div>
   </div>
+  <!-- Badge pinned to bottom center -->
+  <div class="hero-badge-bottom">Permian Basin Field Operations</div>
 </section>
 
 <!-- COMMAND CENTER STATS -->
