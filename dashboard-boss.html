@@ -1070,21 +1070,23 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 
 /* ── MOBILE ── */
 @media(max-width:768px){
-  body{overflow:hidden}
+  /* Never lock body scroll on Android — causes freeze */
+  body{overflow-x:hidden;overflow-y:auto}
 
   /* Hamburger visible */
   .mob-menu-btn{display:flex}
 
-  /* Sidebar slides in from left */
+  /* Sidebar slides in from left — fixed overlay, doesn't affect scroll */
   .sidebar{
     position:fixed;top:60px;left:-240px;height:calc(100vh - 60px);
     z-index:200;transition:left 0.25s ease;box-shadow:4px 0 20px rgba(0,0,0,0.4);
+    overflow-y:auto;
   }
   .sidebar.open{left:0}
 
-  /* Main takes full width */
-  .layout{height:calc(100vh - 60px)}
-  .main{padding:0.75rem}
+  /* Layout flows naturally — no height trap */
+  .layout{height:auto;min-height:calc(100vh - 60px);overflow:visible}
+  .main{padding:0.75rem;overflow:visible;height:auto}
 
   /* Stats stack 2x2 */
   .stats-row{grid-template-columns:1fr 1fr!important;gap:0.6rem}
