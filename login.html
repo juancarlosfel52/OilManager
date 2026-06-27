@@ -911,8 +911,15 @@ window._lookupWorkerCode = async (code) => {
 };
 
 // Handle redirect result from mobile Google sign-in
+// ── Handle Google redirect result FIRST before auth state redirect ──
+let _handlingRedirect = false;
 getRedirectResult(auth).then(async result => {
-  if(!result) return;
+  if(!result || !result.user) {
+    // No redirect in progress — safe to let onAuthStateChanged handle redirect
+    _handlingRedirect = false;
+    return;
+  }
+  _handlingRedirect = true;
   const user = result.user;
   const snap = await getDoc(doc(db,'bosses',user.uid));
   if(!snap.exists()){
@@ -927,13 +934,14 @@ getRedirectResult(auth).then(async result => {
   }
   window.location.href = 'dashboard-boss.html';
 }).catch(e => {
-  if(e.code !== 'auth/popup-closed-by-user')
-    showErr('boss-error','Google sign-in failed: '+e.message);
+  _handlingRedirect = false;
+  if(e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request')
+    showErr('boss-error','Google sign-in failed. Please try again.');
 });
 
-// Redirect if already logged in
+// Redirect if already logged in — but only if NOT handling a Google redirect
 onAuthStateChanged(auth, user => {
-  if(user) window.location.href = 'dashboard-boss.html';
+  if(user && !_handlingRedirect) window.location.href = 'dashboard-boss.html';
 });
 
 function showErr(id, msg){ const e=document.getElementById(id); e.textContent=msg; e.classList.add('show'); }
