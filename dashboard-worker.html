@@ -598,15 +598,38 @@ function _unlockClock() {
 }
 
 // ── GPS ───────────────────────────────────────────────────────
+let _heartbeatTimer = null;
+const HEARTBEAT_MS  = 5 * 60 * 1000; // 5 minutes
+
 function _startGPS() {
   if (!navigator.geolocation) { _gpsBar('⚠️ GPS not supported', 'var(--gold)'); return; }
   _gpsBar('📍 Acquiring GPS signal...', 'var(--muted)');
   _watchId = navigator.geolocation.watchPosition(_onPos, _onErr,
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 15000 });
+
+  // Heartbeat — re-ping Firebase every 5 min with last known position
+  // Keeps boss map green even when worker is stationary
+  _heartbeatTimer = setInterval(_sendHeartbeat, HEARTBEAT_MS);
+}
+
+function _sendHeartbeat() {
+  if (!clockedIn || !_bossId || !_lastLat || !_lastLng) return;
+  set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
+    lat: _lastLat, lng: _lastLng,
+    accuracy: 0, // heartbeat — not a fresh GPS fix
+    timestamp: Date.now(),
+    name: _wname, wid: _wid,
+    clockedIn: true,
+    connectionStatus: 'active',
+    clockInTime: clockStart,
+    isHeartbeat: true
+  }).catch(() => {});
+  _gpsBar('📍 GPS active · heartbeat', 'var(--green)');
 }
 
 function _stopGPS(clockOut = false) {
   if (_watchId !== null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
+  if (_heartbeatTimer !== null) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
   // Only write clockedIn:false when the worker explicitly clocks out — never on logout/exit
   if (clockOut && _bossId) {
     set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
