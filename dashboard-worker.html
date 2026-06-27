@@ -518,7 +518,7 @@ if (nameEl) nameEl.textContent = _firstName;
 
 // ── Firebase ──────────────────────────────────────────────────
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, set, onValue, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 const _fbApp = initializeApp({
   apiKey:"AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
   authDomain:"oilmanager-118b7.firebaseapp.com",
@@ -569,10 +569,13 @@ function _checkGeofence(lat, lng) {
   const banner = document.getElementById('geofence-banner');
   const distEl = document.getElementById('geofence-dist');
 
+  // Use live shop coords from listener if available
+  const shopLat = window._liveShopLat || _shopLat;
+  const shopLng = window._liveShopLng || _shopLng;
   // If no shop coords set yet — allow clock-in (boss hasn't configured shop location)
-  if (!_shopLat || !_shopLng) { _onSite = true; _unlockClock(); return; }
+  if (!shopLat || !shopLng) { _onSite = true; _unlockClock(); return; }
 
-  const dist = Math.round(_distM(lat, lng, _shopLat, _shopLng));
+  const dist = Math.round(_distM(lat, lng, shopLat, shopLng));
   if (dist <= GEOFENCE_M) {
     _onSite = true;
     _unlockClock();
@@ -796,18 +799,59 @@ function _revealDashboard() {
   dash.style.transition = 'opacity 0.6s ease';
   setTimeout(() => dash.style.opacity = '1', 50);
 
-  // Load real jobs from Firebase
   if (_bossId) {
+
+    // ── LISTENER 1: Jobs — fires instantly when boss assigns/updates ──
     onValue(ref(_db, `bosses/${_bossId}/jobs`), snap => {
       const jobs = snap.val() || {};
       _renderJobs(Object.values(jobs));
-    }, { onlyOnce: false });
+    });
 
-    // Load timecards for hours
+    // ── LISTENER 2: Worker own profile — name/role/jobsite changes ──
+    onValue(ref(_db, `bosses/${_bossId}/workers/${_wid}`), snap => {
+      const w = snap.val();
+      if (!w) return;
+      // Update topbar name if boss changed it
+      const nameEl = document.getElementById('topbar-name');
+      if (nameEl && w.name) nameEl.textContent = w.name.split(' ')[0];
+      // Update geofence coords if boss set a job site location
+      if (w.shopLat && w.shopLng) {
+        window._liveShopLat = w.shopLat;
+        window._liveShopLng = w.shopLng;
+      }
+    });
+
+    // ── LISTENER 3: Own GPS record — confirms boss can see worker ──
+    onValue(ref(_db, `bosses/${_bossId}/gps/${_wid}`), snap => {
+      const g = snap.val();
+      if (!g) return;
+      const age = Date.now() - (g.timestamp || 0);
+      const bar = document.getElementById('gps-bar');
+      const span = document.getElementById('gps-bar-text');
+      if (!bar || !span) return;
+      bar.style.display = 'block';
+      if (age < 60000) {
+        span.textContent = '📡 Boss can see you · Live';
+        span.style.color = 'var(--green)';
+      } else {
+        const m = Math.floor(age/60000);
+        span.textContent = `📡 Last synced ${m}m ago`;
+        span.style.color = 'var(--gold)';
+      }
+    });
+
+    // ── LISTENER 4: Timecards — hours update when boss approves ──
     onValue(ref(_db, `bosses/${_bossId}/timecards`), snap => {
       const tcs = snap.val() || {};
       _renderHours(Object.values(tcs).filter(t => t.wid === _wid));
-    }, { onlyOnce: false });
+    });
+
+    // ── onDisconnect: mark GPS offline if app closes unexpectedly ──
+    if (_bossId) {
+      onDisconnect(ref(_db, `bosses/${_bossId}/gps/${_wid}/clockedIn`))
+        .set(false)
+        .catch(() => {});
+    }
   }
 
   // Init worker map
