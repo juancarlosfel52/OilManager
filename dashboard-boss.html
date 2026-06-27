@@ -93,8 +93,14 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 .dash-panel.active{display:block}
 @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 /* time card rows */
-.tc-row{display:flex;align-items:center;gap:1rem;padding:0.8rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tc-row{display:flex;align-items:center;gap:1rem;padding:0.85rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .tc-row:last-child{border-bottom:none}
+.tc-pay{font-size:0.78rem;color:var(--green);font-weight:700;margin-left:auto;white-space:nowrap}
+.pr-th{padding:0.65rem 0.75rem;text-align:left;color:var(--muted);font-size:0.65rem;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.pr-td{padding:0.7rem 0.75rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.82rem;white-space:nowrap}
+.pr-td.num{text-align:right}
+.pr-tf{padding:0.75rem;font-weight:700;font-size:0.85rem;border-top:2px solid var(--border);white-space:nowrap}
+.pr-tf.num{text-align:right}
 .tc-worker{font-size:0.88rem;font-weight:700;color:var(--text);flex:1;min-width:110px}
 .tc-job{font-size:0.78rem;color:var(--muted);flex:1;min-width:120px}
 .tc-hours{font-size:0.95rem;font-weight:700;color:var(--gold);min-width:55px;text-align:right}
@@ -1629,17 +1635,35 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
     <!-- ══ TIME CARDS PANEL ══ -->
     <div id="panel-timecards" class="dash-panel">
       <div class="page-title">⏱ <span>Time Cards</span></div>
+
+      <!-- Summary bar -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:1.25rem">
+        <div class="panel" style="padding:1rem;text-align:center">
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Pending</div>
+          <div id="tc-count-pending" style="font-size:1.6rem;font-weight:800;color:var(--gold);font-family:'Bebas Neue',sans-serif">0</div>
+        </div>
+        <div class="panel" style="padding:1rem;text-align:center">
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Total Hours</div>
+          <div id="tc-total-hours" style="font-size:1.6rem;font-weight:800;color:var(--text);font-family:'Bebas Neue',sans-serif">0</div>
+        </div>
+        <div class="panel" style="padding:1rem;text-align:center">
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem">Est. Gross Pay</div>
+          <div id="tc-total-gross" style="font-size:1.6rem;font-weight:800;color:var(--green);font-family:'Bebas Neue',sans-serif">$0</div>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Pending Approval</div>
           <button class="panel-action" onclick="approveAllTC()">✓ Approve All</button>
         </div>
-        <div id="tc-panel-list">
-          <div class="tc-row"><div class="tc-worker">Juan Reyes</div><div class="tc-job">Pump Unit 14</div><div class="tc-hours">9.5 hrs</div><div class="tc-actions"><button class="btn-approve" onclick="approveTC(this)">✓ Approve</button><button class="btn-deny" onclick="denyTC(this)">✕</button></div></div>
-          <div class="tc-row"><div class="tc-worker">Miguel Torres</div><div class="tc-job">Lease Road 22</div><div class="tc-hours">8.0 hrs</div><div class="tc-actions"><button class="btn-approve" onclick="approveTC(this)">✓ Approve</button><button class="btn-deny" onclick="denyTC(this)">✕</button></div></div>
-          <div class="tc-row"><div class="tc-worker">David Garcia</div><div class="tc-job">Tank Battery 7</div><div class="tc-hours">7.5 hrs</div><div class="tc-actions"><button class="btn-approve" onclick="approveTC(this)">✓ Approve</button><button class="btn-deny" onclick="denyTC(this)">✕</button></div></div>
-          <div class="tc-row"><div class="tc-worker">Eddie Lopez</div><div class="tc-job">Pump Unit 14</div><div class="tc-hours">9.0 hrs</div><div class="tc-actions"><button class="btn-approve" onclick="approveTC(this)">✓ Approve</button><button class="btn-deny" onclick="denyTC(this)">✕</button></div></div>
-        </div>
+        <div id="tc-panel-list"></div>
+      </div>
+
+      <!-- Approved history -->
+      <div class="panel" style="margin-top:1rem">
+        <div class="panel-head"><div class="panel-title">Approved This Week</div></div>
+        <div id="tc-approved-list"></div>
       </div>
     </div>
 
@@ -1669,15 +1693,46 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 
     <!-- ══ PAYROLL PANEL ══ -->
     <div id="panel-payroll" class="dash-panel">
-      <div class="page-title">📊 <span>Payroll Export</span></div>
-      <div class="panel">
-        <div class="panel-head"><div class="panel-title">Approved Hours</div><button class="panel-action" onclick="exportPayrollCSV()">⬇ Export CSV</button></div>
-        <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
-          <thead><tr style="border-bottom:1px solid var(--border)"><th style="padding:0.7rem 1rem;text-align:left;color:var(--muted);font-size:0.68rem;letter-spacing:1px;text-transform:uppercase">Worker</th><th style="padding:0.7rem 1rem;text-align:left;color:var(--muted);font-size:0.68rem;letter-spacing:1px;text-transform:uppercase">Job</th><th style="padding:0.7rem 1rem;text-align:right;color:var(--muted);font-size:0.68rem;letter-spacing:1px;text-transform:uppercase">Hours</th><th style="padding:0.7rem 1rem;text-align:right;color:var(--muted);font-size:0.68rem;letter-spacing:1px;text-transform:uppercase">Status</th></tr></thead>
-          <tbody>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.04)"><td style="padding:0.75rem 1rem;color:var(--text)">Juan Reyes</td><td style="padding:0.75rem 1rem;color:var(--muted)">Pump Unit 14</td><td style="padding:0.75rem 1rem;text-align:right;color:var(--gold)">9.5</td><td style="padding:0.75rem 1rem;text-align:right"><span style="background:rgba(34,197,94,0.12);color:#22c55e;padding:2px 8px;border-radius:10px;font-size:0.7rem">Approved</span></td></tr>
-            <tr><td style="padding:0.75rem 1rem;color:var(--text)">Miguel Torres</td><td style="padding:0.75rem 1rem;color:var(--muted)">Lease Road 22</td><td style="padding:0.75rem 1rem;text-align:right;color:var(--gold)">8.0</td><td style="padding:0.75rem 1rem;text-align:right"><span style="background:rgba(245,166,35,0.12);color:var(--gold);padding:2px 8px;border-radius:10px;font-size:0.7rem">Pending</span></td></tr>
-          </tbody>
+      <div class="page-title">📊 <span>Payroll</span></div>
+
+      <!-- Pay period selector -->
+      <div class="panel" style="margin-bottom:1rem;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="font-size:0.78rem;font-weight:600;color:var(--muted)">Pay Period:</div>
+        <select id="payroll-period" onchange="renderPayroll()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.8rem;color:var(--text);font-family:'Inter',sans-serif;font-size:0.82rem;outline:none">
+          <option value="week">This Week</option>
+          <option value="biweek">Last 2 Weeks</option>
+          <option value="month">This Month</option>
+        </select>
+        <div style="margin-left:auto;display:flex;gap:0.5rem">
+          <button class="panel-action" onclick="exportPayrollCSV()">⬇ Export CSV</button>
+        </div>
+      </div>
+
+      <!-- Texas payroll notice -->
+      <div style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.75rem;color:var(--muted);line-height:1.6">
+        <strong style="color:var(--gold)">Texas Payroll:</strong> No state income tax. Federal withholding calculated using 2024 IRS Publication 15-T tables. Social Security 6.2% · Medicare 1.45% · Overtime 1.5x after 40hrs/week.
+      </div>
+
+      <!-- Payroll table -->
+      <div class="panel" style="overflow-x:auto">
+        <table id="payroll-table" style="width:100%;border-collapse:collapse;font-size:0.82rem;min-width:700px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th class="pr-th">Worker</th>
+              <th class="pr-th">Filing</th>
+              <th class="pr-th" style="text-align:right">Rate/hr</th>
+              <th class="pr-th" style="text-align:right">Reg Hrs</th>
+              <th class="pr-th" style="text-align:right">OT Hrs</th>
+              <th class="pr-th" style="text-align:right">Gross Pay</th>
+              <th class="pr-th" style="text-align:right">Fed Tax</th>
+              <th class="pr-th" style="text-align:right">SS 6.2%</th>
+              <th class="pr-th" style="text-align:right">Med 1.45%</th>
+              <th class="pr-th" style="text-align:right">TX State</th>
+              <th class="pr-th" style="text-align:right;color:var(--green)">Net Pay</th>
+            </tr>
+          </thead>
+          <tbody id="payroll-tbody"></tbody>
+          <tfoot id="payroll-tfoot"></tfoot>
         </table>
       </div>
     </div>
@@ -1720,6 +1775,23 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
     <input type="text" id="aw-jobsite" placeholder="e.g. Section 14 — Pad A">
     <label>Phone (optional)</label>
     <input type="tel" id="aw-phone" placeholder="e.g. 432-555-0100">
+
+    <!-- Payroll fields -->
+    <div style="border-top:1px solid var(--border);margin:0.8rem 0;padding-top:0.8rem">
+      <div style="font-size:0.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem">💰 Payroll Info</div>
+      <label>Hourly Rate ($/hr)</label>
+      <input type="number" id="aw-rate" placeholder="e.g. 22.50" min="0" step="0.01" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none;margin-bottom:0.5rem">
+      <label>W2 Filing Status</label>
+      <select id="aw-filing" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none;margin-bottom:0.5rem">
+        <option value="single">Single</option>
+        <option value="married">Married Filing Jointly</option>
+        <option value="hoh">Head of Household</option>
+      </select>
+      <label>Federal Allowances (W4 line 5)</label>
+      <input type="number" id="aw-allowances" placeholder="e.g. 1" min="0" step="1" value="1" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none;margin-bottom:0.5rem">
+      <label>SSN Last 4 (for records)</label>
+      <input type="text" id="aw-ssn4" placeholder="e.g. 1234" maxlength="4" pattern="\d{4}" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:'Inter',sans-serif;font-size:0.88rem;outline:none">
+    </div>
 
     <!-- Code + Login Link box -->
     <div id="aw-code-box" style="display:none;margin:1rem 0;padding:1rem;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);border-radius:10px;text-align:center">
@@ -1914,36 +1986,239 @@ function showPanel(name) {
   }
 }
 
-// ── TIME CARD HELPERS ─────────────────────────────────────────
-function approveTC(btn) {
-  var row = btn.closest('.tc-row');
-  row.style.opacity = '0.4';
-  row.querySelector('.tc-actions').innerHTML = '<span style="color:#22c55e;font-size:0.75rem;font-weight:700">✓ Approved</span>';
-  var badge = document.getElementById('badge-tc');
-  if(badge) badge.textContent = Math.max(0, parseInt(badge.textContent||0) - 1);
-}
-function denyTC(btn) {
-  var row = btn.closest('.tc-row');
-  row.style.opacity = '0.3';
-  row.querySelector('.tc-actions').innerHTML = '<span style="color:#ef4444;font-size:0.75rem">✕ Denied</span>';
-  var badge = document.getElementById('badge-tc');
-  if(badge) badge.textContent = Math.max(0, parseInt(badge.textContent||0) - 1);
-}
-function approveAllTC() {
-  document.querySelectorAll('#tc-panel-list .tc-row').forEach(function(row){
-    row.style.opacity = '0.4';
-    var a = row.querySelector('.tc-actions');
-    if(a) a.innerHTML = '<span style="color:#22c55e;font-size:0.75rem;font-weight:700">✓ Approved</span>';
-  });
-  var badge = document.getElementById('badge-tc');
-  if(badge) badge.textContent = '0';
+// ── TEXAS PAYROLL CALCULATIONS ────────────────────────────────
+// 2024 IRS Pub 15-T — Percentage Method Tables (weekly payroll)
+// Texas has NO state income tax — $0
+
+const FED_BRACKETS = {
+  single: [
+    { min:0,      max:44,     base:0,      rate:0.00 },
+    { min:44,     max:260,    base:0,      rate:0.10 },
+    { min:260,    max:832,    base:21.60,  rate:0.12 },
+    { min:832,    max:1692,   base:90.24,  rate:0.22 },
+    { min:1692,   max:3113,   base:279.44, rate:0.24 },
+    { min:3113,   max:3919,   base:620.48, rate:0.32 },
+    { min:3919,   max:9687,   base:878.40, rate:0.35 },
+    { min:9687,   max:Infinity,base:2897.45,rate:0.37 },
+  ],
+  married: [
+    { min:0,      max:158,    base:0,      rate:0.00 },
+    { min:158,    max:590,    base:0,      rate:0.10 },
+    { min:590,    max:1734,   base:43.20,  rate:0.12 },
+    { min:1734,   max:3354,   base:180.48, rate:0.22 },
+    { min:3354,   max:6197,   base:536.88, rate:0.24 },
+    { min:6197,   max:7809,   base:1219.20,rate:0.32 },
+    { min:7809,   max:11450,  base:1734.64,rate:0.35 },
+    { min:11450,  max:Infinity,base:3008.99,rate:0.37 },
+  ],
+  hoh: [
+    { min:0,      max:44,     base:0,      rate:0.00 },
+    { min:44,     max:455,    base:0,      rate:0.10 },
+    { min:455,    max:1545,   base:41.10,  rate:0.12 },
+    { min:1545,   max:2033,   base:171.90, rate:0.22 },
+    { min:2033,   max:3454,   base:279.26, rate:0.24 },
+    { min:3454,   max:4260,   base:620.30, rate:0.32 },
+    { min:4260,   max:10028,  base:878.22, rate:0.35 },
+    { min:10028,  max:Infinity,base:2897.22,rate:0.37 },
+  ]
+};
+
+const ALLOWANCE_AMT_WEEKLY = 103.85; // 2024 per-allowance weekly amount
+const SS_RATE    = 0.062;
+const MED_RATE   = 0.0145;
+const OT_MULT    = 1.5;
+const OT_THRESHOLD = 40; // hours/week
+
+function calcFedTax(weeklyWage, filing, allowances) {
+  const aw = Math.max(0, weeklyWage - (allowances * ALLOWANCE_AMT_WEEKLY));
+  const brackets = FED_BRACKETS[filing] || FED_BRACKETS.single;
+  for (const b of brackets) {
+    if (aw > b.min && aw <= b.max) {
+      return b.base + (aw - b.min) * b.rate;
+    }
+  }
+  return 0;
 }
 
+function calcPaycheck(hours, rate, filing, allowances) {
+  const regHrs = Math.min(hours, OT_THRESHOLD);
+  const otHrs  = Math.max(0, hours - OT_THRESHOLD);
+  const gross  = (regHrs * rate) + (otHrs * rate * OT_MULT);
+  const ss     = gross * SS_RATE;
+  const med    = gross * MED_RATE;
+  const fed    = calcFedTax(gross, filing, allowances);
+  const state  = 0; // Texas — no state income tax
+  const net    = gross - fed - ss - med;
+  return { regHrs, otHrs, gross, fed, ss, med, state, net };
+}
+
+function fmt$(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+
+// ── RENDER TIMECARDS FROM FIREBASE ────────────────────────────
+function _renderTimecards(timecards) {
+  const pending  = timecards.filter(t => t.status === 'pending');
+  const approved = timecards.filter(t => t.status === 'approved');
+
+  // Update summary
+  const totalHrs   = pending.reduce((s,t) => s + (t.hours||0), 0);
+  let   totalGross = 0;
+  pending.forEach(t => {
+    const w = Object.values(_fbWorkers).find(w => w.name === t.workerName);
+    if (w?.hourlyRate) totalGross += (t.hours||0) * w.hourlyRate;
+  });
+  const el = id => document.getElementById(id);
+  if (el('tc-count-pending')) el('tc-count-pending').textContent = pending.length;
+  if (el('tc-total-hours'))   el('tc-total-hours').textContent   = totalHrs.toFixed(1);
+  if (el('tc-total-gross'))   el('tc-total-gross').textContent   = fmt$(totalGross);
+
+  // Pending list
+  const pList = el('tc-panel-list');
+  if (pList) {
+    if (!pending.length) {
+      pList.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">✅ No pending time cards</div>';
+    } else {
+      pList.innerHTML = pending.map(t => {
+        const w = Object.values(_fbWorkers).find(w => w.name === t.workerName);
+        const rate = w?.hourlyRate || 0;
+        const gross = rate ? fmt$(t.hours * rate) : '—';
+        return `<div class="tc-row" data-tid="${t.id||''}">
+          <div class="worker-avatar" style="width:32px;height:32px;font-size:0.65rem">${(t.workerName||'?').split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:0.88rem;color:var(--text)">${t.workerName||'—'}</div>
+            <div style="font-size:0.75rem;color:var(--muted)">${t.jobsite||t.job||'—'} · ${new Date(t.date||Date.now()).toLocaleDateString()}</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--gold)">${(t.hours||0).toFixed(1)}<span style="font-size:0.7rem;color:var(--muted);font-family:'Inter',sans-serif"> hrs</span></div>
+            ${rate ? `<div style="font-size:0.72rem;color:var(--green)">${gross}</div>` : '<div style="font-size:0.7rem;color:var(--muted)">No rate set</div>'}
+          </div>
+          <div class="tc-actions" style="display:flex;gap:0.5rem">
+            <button class="btn-approve" onclick="approveTCById('${t.id||''}',this)">✓ Approve</button>
+            <button class="btn-deny"    onclick="denyTCById('${t.id||''}',this)">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Approved list
+  const aList = el('tc-approved-list');
+  if (aList) {
+    if (!approved.length) {
+      aList.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:0.82rem;text-align:center">No approved time cards yet</div>';
+    } else {
+      aList.innerHTML = approved.map(t => {
+        const w = Object.values(_fbWorkers).find(w => w.name === t.workerName);
+        const rate = w?.hourlyRate || 0;
+        return `<div class="tc-row" style="opacity:0.7">
+          <div style="flex:1;font-size:0.85rem;color:var(--text)">${t.workerName||'—'}</div>
+          <div style="font-size:0.82rem;color:var(--muted)">${(t.hours||0).toFixed(1)} hrs</div>
+          ${rate ? `<div style="font-size:0.78rem;color:var(--green);font-weight:600">${fmt$(t.hours * rate)}</div>` : ''}
+          <span style="background:rgba(34,197,94,0.12);color:#22c55e;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700">✓ Approved</span>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+// ── APPROVE / DENY by Firebase ID ─────────────────────────────
+function approveTCById(tid, btn) {
+  if (window._updateTCStatus) window._updateTCStatus(tid, 'approved');
+  const row = btn.closest('.tc-row');
+  if (row) { row.style.opacity='0.5'; row.querySelector('.tc-actions').innerHTML='<span style="color:#22c55e;font-size:0.75rem;font-weight:700">✓ Approved</span>'; }
+}
+function denyTCById(tid, btn) {
+  if (window._updateTCStatus) window._updateTCStatus(tid, 'denied');
+  const row = btn.closest('.tc-row');
+  if (row) { row.style.opacity='0.3'; row.querySelector('.tc-actions').innerHTML='<span style="color:var(--red);font-size:0.75rem">✕ Denied</span>'; }
+}
+function approveTC(btn) { approveTCById('', btn); } // legacy fallback
+function denyTC(btn)    { denyTCById('', btn); }
+function approveAllTC() {
+  if (window._approveAllTC) window._approveAllTC();
+}
+
+// ── PAYROLL RENDER ─────────────────────────────────────────────
+function renderPayroll() {
+  const tbody  = document.getElementById('payroll-tbody');
+  const tfoot  = document.getElementById('payroll-tfoot');
+  if (!tbody) return;
+
+  const workers = Object.values(_fbWorkers);
+  const tcs     = Object.values(_fbTimecards).filter(t => t.status === 'approved');
+
+  // Group approved hours by worker
+  const byWorker = {};
+  tcs.forEach(t => {
+    if (!byWorker[t.workerName]) byWorker[t.workerName] = 0;
+    byWorker[t.workerName] += (t.hours || 0);
+  });
+
+  if (!workers.length || !Object.keys(byWorker).length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="padding:1.5rem;text-align:center;color:var(--muted)">No approved time cards to calculate</td></tr>`;
+    tfoot.innerHTML = '';
+    return;
+  }
+
+  let totGross=0, totFed=0, totSS=0, totMed=0, totNet=0;
+
+  tbody.innerHTML = workers.map(w => {
+    const hours = byWorker[w.name] || 0;
+    if (!hours || !w.hourlyRate) return '';
+    const p = calcPaycheck(hours, w.hourlyRate, w.filingStatus||'single', w.allowances||1);
+    totGross += p.gross; totFed += p.fed; totSS += p.ss; totMed += p.med; totNet += p.net;
+    const ssn = w.ssn4 ? `****${w.ssn4}` : '—';
+    return `<tr>
+      <td class="pr-td"><div style="font-weight:700">${w.name||'—'}</div><div style="font-size:0.7rem;color:var(--muted)">${w.role||''} · SSN ${ssn}</div></td>
+      <td class="pr-td" style="font-size:0.75rem;color:var(--muted)">${(w.filingStatus||'single').charAt(0).toUpperCase()+(w.filingStatus||'single').slice(1)}</td>
+      <td class="pr-td num">${fmt$(w.hourlyRate)}</td>
+      <td class="pr-td num">${p.regHrs.toFixed(1)}</td>
+      <td class="pr-td num" style="color:${p.otHrs>0?'var(--gold)':'var(--muted)'}">${p.otHrs.toFixed(1)}</td>
+      <td class="pr-td num" style="font-weight:700">${fmt$(p.gross)}</td>
+      <td class="pr-td num" style="color:var(--red)">(${fmt$(p.fed)})</td>
+      <td class="pr-td num" style="color:var(--red)">(${fmt$(p.ss)})</td>
+      <td class="pr-td num" style="color:var(--red)">(${fmt$(p.med)})</td>
+      <td class="pr-td num" style="color:var(--muted)">$0.00</td>
+      <td class="pr-td num" style="font-weight:800;color:var(--green)">${fmt$(p.net)}</td>
+    </tr>`;
+  }).join('');
+
+  tfoot.innerHTML = `<tr>
+    <td class="pr-tf" colspan="5" style="color:var(--muted)">TOTALS</td>
+    <td class="pr-tf num">${fmt$(totGross)}</td>
+    <td class="pr-tf num" style="color:var(--red)">(${fmt$(totFed)})</td>
+    <td class="pr-tf num" style="color:var(--red)">(${fmt$(totSS)})</td>
+    <td class="pr-tf num" style="color:var(--red)">(${fmt$(totMed)})</td>
+    <td class="pr-tf num">$0.00</td>
+    <td class="pr-tf num" style="color:var(--green)">${fmt$(totNet)}</td>
+  </tr>`;
+}
+
+// ── EXPORT CSV ─────────────────────────────────────────────────
 function exportPayrollCSV() {
-  var csv = 'Worker,Job,Hours,Status\nJuan Reyes,Pump Unit 14,9.5,Approved\nMiguel Torres,Lease Road 22,8.0,Pending\n';
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = 'payroll_'+new Date().toISOString().split('T')[0]+'.csv';
+  const workers = Object.values(_fbWorkers);
+  const tcs     = Object.values(_fbTimecards).filter(t => t.status === 'approved');
+  const byWorker = {};
+  tcs.forEach(t => { byWorker[t.workerName] = (byWorker[t.workerName]||0) + (t.hours||0); });
+
+  const rows = ['Worker,Role,SSN Last4,Filing Status,Allowances,Hourly Rate,Reg Hours,OT Hours,Gross Pay,Federal Tax,Social Security,Medicare,TX State Tax,Net Pay'];
+  workers.forEach(w => {
+    const hours = byWorker[w.name] || 0;
+    if (!hours || !w.hourlyRate) return;
+    const p = calcPaycheck(hours, w.hourlyRate, w.filingStatus||'single', w.allowances||1);
+    rows.push([
+      w.name, w.role||'', w.ssn4||'', w.filingStatus||'single', w.allowances||1,
+      w.hourlyRate.toFixed(2), p.regHrs.toFixed(2), p.otHrs.toFixed(2),
+      p.gross.toFixed(2), p.fed.toFixed(2), p.ss.toFixed(2), p.med.toFixed(2),
+      '0.00', p.net.toFixed(2)
+    ].join(','));
+  });
+  rows.push('');
+  rows.push('NOTE: Texas has no state income tax (0%). Federal calculated per 2024 IRS Pub 15-T.');
+  rows.push(`Generated: ${new Date().toLocaleString()}`);
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download = `payroll_texas_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
 }
 
@@ -3737,10 +4012,14 @@ function openManageWorker(wid) {
   if (!w) return;
   _editingWid = wid;
   document.getElementById('aw-modal-title').textContent = '✏️ Manage Worker';
-  document.getElementById('aw-name').value    = w.name    || '';
-  document.getElementById('aw-phone').value   = w.phone   || '';
-  document.getElementById('aw-jobsite').value = w.jobsite || '';
-  document.getElementById('aw-role').value    = w.role    || 'Operator';
+  document.getElementById('aw-name').value       = w.name        || '';
+  document.getElementById('aw-phone').value      = w.phone       || '';
+  document.getElementById('aw-jobsite').value    = w.jobsite     || '';
+  document.getElementById('aw-role').value       = w.role        || 'Operator';
+  document.getElementById('aw-rate').value       = w.hourlyRate  || '';
+  document.getElementById('aw-filing').value     = w.filingStatus|| 'single';
+  document.getElementById('aw-allowances').value = w.allowances  || 1;
+  document.getElementById('aw-ssn4').value       = w.ssn4        || '';
   // Show code box with existing code
   document.getElementById('aw-code-display').textContent = w.code || '';
   document.getElementById('aw-code-box').style.display   = 'block';
@@ -3767,6 +4046,15 @@ function _genCode(name, existingCodes) {
   return code;
 }
 
+function _getPayrollFields() {
+  return {
+    hourlyRate:  parseFloat(document.getElementById('aw-rate')?.value) || 0,
+    filingStatus: document.getElementById('aw-filing')?.value || 'single',
+    allowances:  parseInt(document.getElementById('aw-allowances')?.value) || 1,
+    ssn4:        document.getElementById('aw-ssn4')?.value.trim() || '',
+  };
+}
+
 function saveWorker() {
   const name    = document.getElementById('aw-name').value.trim();
   const role    = document.getElementById('aw-role').value;
@@ -3778,7 +4066,7 @@ function saveWorker() {
   const existingCodes = Object.values(_fbWorkers).map(w => w.code).filter(Boolean);
   const code = _genCode(name, existingCodes);
 
-  window._pendingWorker = { name, role, jobsite, phone, code, clockedIn: false };
+  window._pendingWorker = { name, role, jobsite, phone, code, clockedIn: false, ..._getPayrollFields() };
 
   // Show the generated code — boss sees it before confirming
   document.getElementById('aw-code-display').textContent = code;
@@ -3810,7 +4098,7 @@ function saveWorkerChanges() {
   const phone   = document.getElementById('aw-phone').value.trim();
   const code    = document.getElementById('aw-code-display').textContent;
   if (!name) { alert('Name cannot be empty.'); return; }
-  const updated = { ...(_fbWorkers[_editingWid] || {}), name, role, jobsite, phone, code };
+  const updated = { ...(_fbWorkers[_editingWid] || {}), name, role, jobsite, phone, code, ..._getPayrollFields() };
   window._saveWorkerToFB(_editingWid, updated);
   addNotif('Worker Updated', `${name} — changes saved`, 'success');
   closeAddWorker();
@@ -3936,8 +4224,9 @@ onAuthStateChanged(auth, user => {
     const el = document.getElementById('stat-workers');
     if(el) el.textContent = active || workers.length || '0';
 
-    // Render worker cards
+    // Render worker cards + refresh payroll when rates change
     _renderWorkersList(workers);
+    renderPayroll();
 
     // Welcome steps
     updateWelcomeSteps(workers.length > 0, Object.keys(_fbJobs).length > 0);
@@ -3970,22 +4259,28 @@ onAuthStateChanged(auth, user => {
   // ── Realtime DB — Timecards ──
   onValue(ref(db, 'bosses/' + user.uid + '/timecards'), snap => {
     _fbTimecards = snap.val() || {};
-    const pending = Object.values(_fbTimecards).filter(t => t.status === 'pending');
+    const all     = Object.entries(_fbTimecards).map(([id,t]) => ({...t, id}));
+    const pending = all.filter(t => t.status === 'pending');
     const el = document.getElementById('stat-tc');
     if(el) el.textContent = pending.length || '0';
-
-    // Empty state
-    if(!pending.length) {
-      showEmptyState('tc-panel-list','✅','All clear',
-        'No time cards are pending approval right now.', '', '');
-    } else {
-      // Toast when new time cards come in
-      addNotif('Time Cards', pending.length + ' time card'+( pending.length>1?'s':'')+' pending approval', 'warning');
-    }
-    // Badge
     var b = document.getElementById('badge-tc');
     if(b) b.textContent = pending.length || '0';
+    if(pending.length) addNotif('Time Cards', pending.length + ' time card'+(pending.length>1?'s':'')+' pending approval', 'warning');
+    _renderTimecards(all);
+    renderPayroll();
   });
+
+  // ── TC Firebase helpers ───────────────────────────────────────
+  window._updateTCStatus = (tid, status) => {
+    if (!tid || !user?.uid) return;
+    set(ref(db, `bosses/${user.uid}/timecards/${tid}/status`), status).catch(console.error);
+  };
+  window._approveAllTC = () => {
+    const pending = Object.entries(_fbTimecards).filter(([,t]) => t.status==='pending');
+    pending.forEach(([id]) => {
+      set(ref(db, `bosses/${user.uid}/timecards/${id}/status`), 'approved').catch(console.error);
+    });
+  };
 
   // ── Realtime DB — Live Worker GPS ────────────────────────────
   window._liveMarkers = {};
