@@ -347,6 +347,8 @@ input,textarea,select{font-size:16px!important}
 }
 #geofence-banner.show{display:block}
 
+@keyframes liveRing{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.8);opacity:0}}
+
 /* Touch targets */
 .bnav-item{min-height:48px;justify-content:center;padding:0.3rem 1.2rem}
 .btn-cancel,.btn-submit-report{min-height:48px}
@@ -646,10 +648,8 @@ function _onPos(pos) {
   }
   _gpsBar(`📍 GPS active · ±${Math.round(accuracy)}m`, 'var(--green)');
   _checkGeofence(lat, lng);
-  // Update worker map center
-  if (window._workerMapInstance) {
-    window._workerMapInstance.setCenter([lng, lat]);
-  }
+  // Update worker map dot
+  if (_workerMapReady) _dropWorkerDot(lat, lng);
 
   if (!_bossId || !clockedIn) return;
   set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
@@ -901,6 +901,8 @@ function _revealDashboard() {
 }
 
 function _renderJobs(jobs) {
+  window._cachedJobs = jobs; // cache for map
+  if (_workerMapReady) _plotJobPins(jobs);
   const list = document.getElementById('tour-jobs');
   if (!list) return;
   const myJobs = jobs.filter(j => !j.assignedTo || j.assignedTo === _wid || j.assignedTo === _wname);
@@ -957,27 +959,105 @@ function _renderHours(timecards) {
     </div>`).join('');
 }
 
+let _workerMapReady = false;
+
 function _initWorkerMap() {
   const container = document.getElementById('worker-map');
   if (!container || !window.mapboxgl) return;
   const token = document.querySelector('meta[name="mb"]')?.content || '';
-  if (!token) { container.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:0.8rem;text-align:center">Map unavailable</div>'; return; }
+  if (!token) {
+    container.innerHTML = '<div style="padding:2rem;color:var(--muted);font-size:0.8rem;text-align:center">Map unavailable</div>';
+    return;
+  }
   mapboxgl.accessToken = token;
   const wMap = new mapboxgl.Map({
     container: 'worker-map',
     style: 'mapbox://styles/mapbox/navigation-night-v1',
-    center: [_lastLng||(-102.55), _lastLat||(32.32)],
-    zoom: 11, pitch: 30, interactive: true
+    center: [_lastLng || -102.55, _lastLat || 32.32],
+    zoom: 10, pitch: 20, interactive: true
   });
-  wMap.addControl(new mapboxgl.NavigationControl({ showCompass:false }), 'top-right');
-  // Drop worker's own marker
-  if (_lastLat && _lastLng) {
-    const el = document.createElement('div');
-    el.style.cssText = 'width:14px;height:14px;border-radius:50%;background:#4CAF50;border:2px solid #fff;box-shadow:0 0 8px #4CAF50';
-    new mapboxgl.Marker({element:el}).setLngLat([_lastLng,_lastLat]).addTo(wMap);
-  }
-  // Update marker as GPS fires
+  wMap.addControl(new mapboxgl.NavigationControl({ showCompass:false, visualizePitch:false }), 'top-right');
   window._workerMapInstance = wMap;
+
+  wMap.on('load', () => {
+    _workerMapReady = true;
+    // Drop worker's own position dot
+    if (_lastLat && _lastLng) _dropWorkerDot(_lastLat, _lastLng);
+    // Plot job pins from already-loaded jobs
+    if (window._cachedJobs) _plotJobPins(window._cachedJobs);
+  });
+}
+
+function _dropWorkerDot(lat, lng) {
+  const wMap = window._workerMapInstance;
+  if (!wMap || !_workerMapReady) return;
+  const el = document.createElement('div');
+  el.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#4CAF50;border:3px solid #fff;box-shadow:0 0 10px #4CAF50;position:relative';
+  // pulse ring
+  const ring = document.createElement('div');
+  ring.style.cssText = 'position:absolute;inset:-4px;border-radius:50%;border:2px solid #4CAF50;opacity:0.5;animation:liveRing 2s ease-out infinite';
+  el.appendChild(ring);
+  if (window._workerDotMarker) window._workerDotMarker.remove();
+  window._workerDotMarker = new mapboxgl.Marker({ element:el }).setLngLat([lng,lat]).addTo(wMap);
+}
+
+function _plotJobPins(jobs) {
+  const wMap = window._workerMapInstance;
+  if (!wMap || !_workerMapReady) return;
+  const bounds = new mapboxgl.LngLatBounds();
+  let hasBounds = false;
+
+  jobs.forEach(j => {
+    if (!j.lat || !j.lng) return;
+    const priority = j.priority || j.status || 'pending';
+    const color = priority === 'Urgent' ? '#F44336' : priority === 'active' ? '#4CAF50' : '#4488FF';
+
+    const el = document.createElement('div');
+    el.style.cssText = `width:36px;height:36px;border-radius:50%;background:${color};border:2px solid #fff;
+      display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;
+      box-shadow:0 0 12px ${color}88`;
+    el.textContent = '📍';
+
+    const popup = new mapboxgl.Popup({ offset:20, closeButton:false }).setHTML(`
+      <div style="font-weight:700;font-size:0.88rem;color:#fff;margin-bottom:4px">${j.title||'Job'}</div>
+      <div style="font-size:0.75rem;color:#9CA3AF;margin-bottom:8px">${j.location||j.jobsite||''}</div>
+      <a href="https://www.google.com/maps/dir/?api=1&destination=${j.lat},${j.lng}"
+         target="_blank"
+         style="display:block;padding:6px 12px;background:#F5A623;border-radius:6px;color:#060810;
+                font-weight:700;font-size:0.75rem;text-align:center;text-decoration:none">
+        🗺 Get Directions
+      </a>`);
+
+    new mapboxgl.Marker({ element:el })
+      .setLngLat([j.lng, j.lat])
+      .setPopup(popup)
+      .addTo(wMap);
+
+    bounds.extend([j.lng, j.lat]);
+    hasBounds = true;
+  });
+
+  // Also include worker position in bounds
+  if (_lastLat && _lastLng) { bounds.extend([_lastLng, _lastLat]); hasBounds = true; }
+
+  if (hasBounds) {
+    wMap.fitBounds(bounds, { padding:50, maxZoom:13, duration:800 });
+  }
+
+  // Draw straight route lines from worker to each job
+  if (_lastLat && _lastLng && wMap.getStyle()) {
+    jobs.forEach((j, i) => {
+      if (!j.lat || !j.lng) return;
+      const srcId = `route-${i}`;
+      if (wMap.getSource(srcId)) return;
+      wMap.addSource(srcId, { type:'geojson', data:{ type:'Feature',
+        geometry:{ type:'LineString', coordinates:[[_lastLng,_lastLat],[j.lng,j.lat]] }
+      }});
+      wMap.addLayer({ id:srcId+'-line', type:'line', source:srcId,
+        paint:{ 'line-color':'rgba(245,166,35,0.35)', 'line-width':1.5, 'line-dasharray':[3,3] }
+      });
+    });
+  }
 }
 
 // ── UI HELPERS ────────────────────────────────────────────────
