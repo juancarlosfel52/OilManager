@@ -124,8 +124,8 @@ nav{
   flex-shrink:0;
   border-radius:50%;
   display:block;
-  background:#060810;
-  box-shadow:0 0 12px rgba(245,166,35,0.4), 0 0 0 1px rgba(245,166,35,0.2);
+  background:#F5A623;
+  box-shadow:0 0 14px rgba(245,166,35,0.6), 0 0 0 1px rgba(245,166,35,0.4);
 }
 .nav-links{display:flex;gap:2rem;list-style:none}
 .nav-links a{
@@ -1561,10 +1561,10 @@ window.addEventListener('load', function() {
   canvas.height = H * DPR;
   canvas.style.width  = W + 'px';
   canvas.style.height = H + 'px';
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-  renderer.setPixelRatio(1); // we already scaled the canvas manually
-  renderer.setSize(W * DPR, H * DPR, false); // false = don't touch canvas CSS style
-  renderer.setClearColor(0x000000, 0);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+  renderer.setPixelRatio(1);
+  renderer.setSize(W * DPR, H * DPR, false);
+  renderer.setClearColor(0xF5A623, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.6;
 
