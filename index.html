@@ -1546,10 +1546,16 @@ window.addEventListener('load', function() {
   const canvas = document.getElementById('om-canvas');
   if (!canvas) return;
 
-  const W = 128, H = 128;
+  // CSS size 64px, render at 2x for crispness — tell Three NOT to resize the canvas element
+  const DPR = Math.min(devicePixelRatio, 2);
+  const W = 64, H = 64;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 3));
-  renderer.setSize(W, H);
+  renderer.setPixelRatio(1); // we already scaled the canvas manually
+  renderer.setSize(W * DPR, H * DPR, false); // false = don't touch canvas CSS style
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.6;
