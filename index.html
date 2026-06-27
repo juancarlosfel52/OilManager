@@ -120,7 +120,7 @@ nav{
 }
 .nav-logo-text span{color:var(--gold)}
 #om-canvas{
-  width:48px;height:48px;
+  width:64px;height:64px;
   flex-shrink:0;
   border-radius:50%;
   display:block;
@@ -1062,7 +1062,7 @@ footer p{color:var(--muted);font-size:0.85rem}
 <!-- NAV -->
 <nav>
   <div class="nav-logo">
-    <canvas id="om-canvas" width="96" height="96"></canvas>
+    <canvas id="om-canvas" width="128" height="128"></canvas>
     <div class="nav-logo-text">Oil<span>Manager</span></div>
   </div>
   <ul class="nav-links">
@@ -1544,83 +1544,156 @@ if(statsGrid) cardObserver.observe(statsGrid);
 (function(){
   const canvas = document.getElementById('om-canvas');
   if (!canvas) return;
-  const W = 96, H = 96;
+
+  const W = 128, H = 128;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 3));
   renderer.setSize(W, H);
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.4;
-  const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(0, 0, 3.2);
-  scene.add(new THREE.AmbientLight(0x1a0a00, 2));
-  const keyL = new THREE.DirectionalLight(0xF5A623, 6);
-  keyL.position.set(2, 3, 2); scene.add(keyL);
-  const rimL = new THREE.DirectionalLight(0x4488ff, 3);
-  rimL.position.set(-3, -1, 1); scene.add(rimL);
-  const fillL = new THREE.PointLight(0xE8860A, 4, 8);
-  fillL.position.set(0, -2, 2); scene.add(fillL);
+  renderer.toneMappingExposure = 1.6;
 
-  function getOMPositions(count) {
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+  camera.position.set(0, 0, 3.2);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0x1a0800, 3));
+  const keyL = new THREE.DirectionalLight(0xF5A623, 8);
+  keyL.position.set(2,3,2); scene.add(keyL);
+  scene.add(Object.assign(new THREE.DirectionalLight(0x4488ff,4), {position: new THREE.Vector3(-3,-1,1)}));
+  scene.add(Object.assign(new THREE.PointLight(0xE8860A,5,8), {position: new THREE.Vector3(0,-2,2)}));
+
+  // ── Circular soft-glow sprite texture ─────────────────────
+  function makeSprite() {
     const c = document.createElement('canvas');
-    c.width = 128; c.height = 64;
+    c.width = c.height = 64;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = '#000'; ctx.fillRect(0,0,128,64);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 52px serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('OM', 64, 32);
-    const px = ctx.getImageData(0,0,128,64).data;
-    const pts = [];
-    for (let y=0; y<64; y++) for (let x=0; x<128; x++)
-      if (px[(y*128+x)*4] > 128) pts.push([x,y]);
-    const result = [];
-    for (let i=0; i<count; i++) {
-      const p = pts[Math.floor(Math.random()*pts.length)];
-      result.push((p[0]/128-0.5)*2.8, -(p[1]/64-0.5)*1.4, (Math.random()-0.5)*0.12);
-    }
-    return result;
+    const g = ctx.createRadialGradient(32,32,0, 32,32,32);
+    g.addColorStop(0,   'rgba(255,255,255,1.0)');
+    g.addColorStop(0.3, 'rgba(255,255,255,0.8)');
+    g.addColorStop(0.7, 'rgba(255,255,255,0.2)');
+    g.addColorStop(1,   'rgba(255,255,255,0.0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,64,64);
+    return new THREE.CanvasTexture(c);
   }
 
-  const COUNT = 3200;
+  // ── Sample OM positions ────────────────────────────────────
+  function getOMPositions(count) {
+    const c = document.createElement('canvas');
+    c.width = 160; c.height = 72;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,160,72);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 60px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('OM', 80, 36);
+    const px = ctx.getImageData(0,0,160,72).data;
+    const pts = [];
+    for (let y=0; y<72; y++) for (let x=0; x<160; x++)
+      if (px[(y*160+x)*4] > 100) pts.push([x,y]);
+    const out = [];
+    for (let i=0; i<count; i++) {
+      const p = pts[Math.floor(Math.random()*pts.length)];
+      out.push((p[0]/160-0.5)*2.6, -(p[1]/72-0.5)*1.3, (Math.random()-0.5)*0.1);
+    }
+    return out;
+  }
+
+  // ── Particles ─────────────────────────────────────────────
+  const COUNT = 5000;
   const geo = new THREE.BufferGeometry();
-  const pos = new Float32Array(COUNT*3), col = new Float32Array(COUNT*3);
-  const spherePos = new Float32Array(COUNT*3), omPos = new Float32Array(COUNT*3);
-  const vel = new Float32Array(COUNT*3);
+  const pos = new Float32Array(COUNT*3);
+  const col = new Float32Array(COUNT*3);
+  const spherePos = new Float32Array(COUNT*3);
+  const omPos     = new Float32Array(COUNT*3);
+  const vel       = new Float32Array(COUNT*3);
+
   for (let i=0; i<COUNT; i++) {
     const theta = Math.random()*Math.PI*2, phi = Math.acos(2*Math.random()-1);
-    const r = 0.9 + Math.random()*0.05;
+    const r = 0.88 + Math.random()*0.06;
     spherePos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
     spherePos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
     spherePos[i*3+2] = r*Math.cos(phi);
     vel[i*3]=Math.random()*6.28; vel[i*3+1]=Math.random()*6.28; vel[i*3+2]=Math.random()*6.28;
+    const t = Math.random();
+    if (Math.random()<0.07) { col[i*3]=0.27; col[i*3+1]=0.53; col[i*3+2]=1.0; }
+    else { col[i*3]=0.98-t*0.15; col[i*3+1]=0.67-t*0.35; col[i*3+2]=0.14-t*0.05; }
   }
   const omRaw = getOMPositions(COUNT);
-  for (let i=0; i<COUNT*3; i++) omPos[i] = omRaw[i];
-  for (let i=0; i<COUNT; i++) {
-    const t = Math.random();
-    if (Math.random()<0.08) { col[i*3]=0.27; col[i*3+1]=0.53; col[i*3+2]=1.0; }
-    else { col[i*3]=0.96-t*0.14; col[i*3+1]=0.65-t*0.32; col[i*3+2]=0.14-t*0.05; }
-  }
-  for (let i=0; i<COUNT*3; i++) pos[i] = spherePos[i];
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  for (let i=0; i<COUNT*3; i++) { omPos[i]=omRaw[i]; pos[i]=spherePos[i]; }
+
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+
   const mat = new THREE.PointsMaterial({
-    size:0.045, vertexColors:true, transparent:true, opacity:0.92,
-    blending:THREE.AdditiveBlending, depthWrite:false, sizeAttenuation:true
+    size: 0.055,
+    map: makeSprite(),
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+    alphaTest: 0.01,
   });
   scene.add(new THREE.Points(geo, mat));
 
-  const blobGeo = new THREE.SphereGeometry(0.72, 64, 64);
-  const blobMat = new THREE.MeshStandardMaterial({ color:0xF5A623, metalness:0.95, roughness:0.08, transparent:true });
+  // ── Tendril / energy web ───────────────────────────────────
+  // Connect random particle pairs within a distance — creates electric web
+  const TENDRIL_COUNT = 180;
+  const tGeo = new THREE.BufferGeometry();
+  const tPos = new Float32Array(TENDRIL_COUNT * 6); // 2 verts per line
+  const tCol = new Float32Array(TENDRIL_COUNT * 6);
+  // Pre-assign random pairs
+  const pairA = new Int32Array(TENDRIL_COUNT);
+  const pairB = new Int32Array(TENDRIL_COUNT);
+  for (let i=0; i<TENDRIL_COUNT; i++) {
+    pairA[i] = Math.floor(Math.random()*COUNT);
+    pairB[i] = Math.floor(Math.random()*COUNT);
+  }
+  tGeo.setAttribute('position', new THREE.BufferAttribute(tPos,3));
+  tGeo.setAttribute('color',    new THREE.BufferAttribute(tCol,3));
+  const tMat = new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.0,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  scene.add(new THREE.LineSegments(tGeo, tMat));
+
+  // ── Energy arc tendrils (bezier curves) ────────────────────
+  const ARC_COUNT = 6;
+  const arcCurves = [], arcLines = [], arcPhases = [];
+  for (let i=0; i<ARC_COUNT; i++) {
+    const pts = new Array(12).fill(0).map(() => new THREE.Vector3());
+    const arcGeo = new THREE.BufferGeometry().setFromPoints(pts);
+    const arcMat = new THREE.LineBasicMaterial({
+      color: Math.random()<0.4 ? 0x4488ff : 0xF5A623,
+      transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const line = new THREE.Line(arcGeo, arcMat);
+    scene.add(line);
+    arcLines.push(line);
+    arcPhases.push(Math.random()*Math.PI*2);
+    arcCurves.push(pts);
+  }
+
+  // ── PBR blob mesh ─────────────────────────────────────────
+  const blobGeo = new THREE.SphereGeometry(0.72, 80, 80);
+  const blobMat = new THREE.MeshStandardMaterial({
+    color:0xF5A623, metalness:0.96, roughness:0.06, transparent:true
+  });
   const blob = new THREE.Mesh(blobGeo, blobMat);
   scene.add(blob);
-  const blobOrigPos = blobGeo.attributes.position.array.slice();
+  const blobOrig = blobGeo.attributes.position.array.slice();
 
+  // ── Helpers ───────────────────────────────────────────────
   function easeInOut(t){ return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2; }
   function noise(x,y,z,t){ return Math.sin(x*2.1+t)*Math.cos(y*1.7+t*0.8)*Math.sin(z*2.4+t*1.2); }
+  function noise2(x,y,z,t){ return Math.cos(x*3.3+t*1.1)*Math.sin(y*2.9+t*0.7)*Math.cos(z*1.8+t*1.4); }
 
+  // ── State ─────────────────────────────────────────────────
   let state=0, stateTime=0, camAngle=0;
   const DURATIONS=[3.5,1.8,2.5,1.8];
   const clock = new THREE.Clock();
@@ -1631,40 +1704,103 @@ if(statsGrid) cardObserver.observe(statsGrid);
     stateTime+=dt;
     if(stateTime>DURATIONS[state]){ stateTime=0; state=(state+1)%4; }
     const progress=easeInOut(Math.min(stateTime/DURATIONS[state],1));
+
+    let blobScale, blobOpacity, particleOpacity, tendrilOpacity;
+    let fromArr, toArr;
+    if(state===0){
+      fromArr=spherePos;toArr=spherePos;blobScale=1;blobOpacity=0.92;particleOpacity=0;tendrilOpacity=0;
+    } else if(state===1){
+      fromArr=spherePos;toArr=omPos;blobScale=1-progress*0.96;blobOpacity=1-progress;particleOpacity=progress;tendrilOpacity=progress*0.6;
+    } else if(state===2){
+      fromArr=omPos;toArr=omPos;blobScale=0.01;blobOpacity=0;particleOpacity=1;tendrilOpacity=0.5;
+    } else {
+      fromArr=omPos;toArr=spherePos;blobScale=progress*0.96;blobOpacity=progress*0.92;particleOpacity=1-progress*0.4;tendrilOpacity=0.5*(1-progress);
+    }
+
+    // Update particles
     const posArr=geo.attributes.position.array;
-    let fromArr,toArr,blobScale,blobOpacity,particleOpacity;
-    if(state===0){ fromArr=spherePos;toArr=spherePos;blobScale=1;blobOpacity=0.9;particleOpacity=0; }
-    else if(state===1){ fromArr=spherePos;toArr=omPos;blobScale=1-progress*0.95;blobOpacity=1-progress;particleOpacity=progress; }
-    else if(state===2){ fromArr=omPos;toArr=omPos;blobScale=0.05;blobOpacity=0;particleOpacity=1; }
-    else{ fromArr=omPos;toArr=spherePos;blobScale=progress*0.95;blobOpacity=progress*0.9;particleOpacity=1-progress*0.3; }
     for(let i=0;i<COUNT;i++){
       const ii=i*3;
       const p=state===0?0:state===2?1:progress;
       let tx=fromArr[ii]+(toArr[ii]-fromArr[ii])*p;
       let ty=fromArr[ii+1]+(toArr[ii+1]-fromArr[ii+1])*p;
       let tz=fromArr[ii+2]+(toArr[ii+2]-fromArr[ii+2])*p;
-      const na=state===0?0.06:state===3?0.06*(1-progress):state===1?0.06*(1-progress):0;
-      tx+=noise(tx,ty,tz,t*0.6+vel[ii])*na;
-      ty+=noise(ty,tz,tx,t*0.5+vel[ii+1])*na;
-      tz+=noise(tz,tx,ty,t*0.7+vel[ii+2])*na;
+      const na=state===0?0.07:state===2?0:(state===1||state===3)?0.07*(1-progress):0;
+      tx+=noise(tx,ty,tz,t*0.55+vel[ii])*na;
+      ty+=noise(ty,tz,tx,t*0.45+vel[ii+1])*na;
+      tz+=noise2(tz,tx,ty,t*0.65+vel[ii+2])*na;
       posArr[ii]=tx; posArr[ii+1]=ty; posArr[ii+2]=tz;
     }
     geo.attributes.position.needsUpdate=true;
-    mat.opacity=Math.max(0,particleOpacity*0.92);
-    const bPosArr=blobGeo.attributes.position.array;
-    for(let i=0;i<bPosArr.length;i+=3){
-      const ox=blobOrigPos[i],oy=blobOrigPos[i+1],oz=blobOrigPos[i+2];
-      const n=noise(ox,oy,oz,t*0.8)*0.12;
-      bPosArr[i]=ox+ox*n; bPosArr[i+1]=oy+oy*n; bPosArr[i+2]=oz+oz*n;
+    mat.opacity=Math.max(0,particleOpacity*0.9);
+
+    // Update energy web tendrils
+    const tp=tGeo.attributes.position.array;
+    const tc=tGeo.attributes.color.array;
+    for(let i=0;i<TENDRIL_COUNT;i++){
+      const a=pairA[i]*3, b=pairB[i]*3;
+      const ax=posArr[a],ay=posArr[a+1],az=posArr[a+2];
+      const bx=posArr[b],by=posArr[b+1],bz=posArr[b+2];
+      const dist=Math.sqrt((bx-ax)**2+(by-ay)**2+(bz-az)**2);
+      const maxDist=0.55;
+      const alpha=dist<maxDist?1-dist/maxDist:0;
+      tp[i*6]=ax;tp[i*6+1]=ay;tp[i*6+2]=az;
+      tp[i*6+3]=bx;tp[i*6+4]=by;tp[i*6+5]=bz;
+      // Color: gold for close, blue for far
+      const gc=alpha, bc=alpha*0.3;
+      tc[i*6]=gc;tc[i*6+1]=gc*0.65;tc[i*6+2]=0.1;
+      tc[i*6+3]=gc;tc[i*6+4]=gc*0.65;tc[i*6+5]=0.1;
+    }
+    tGeo.attributes.position.needsUpdate=true;
+    tGeo.attributes.color.needsUpdate=true;
+    tMat.opacity=tendrilOpacity;
+
+    // Update energy arc tendrils
+    for(let i=0;i<ARC_COUNT;i++){
+      const phase=arcPhases[i]+t*1.2;
+      const r=0.98;
+      const pts=arcCurves[i];
+      const segments=pts.length;
+      // Arc goes from one point on sphere surface to another along a noisy path
+      const startTheta=phase, startPhi=Math.sin(phase*0.7)*Math.PI*0.5+Math.PI*0.5;
+      const endTheta=phase+Math.PI+Math.sin(t*0.5+i)*0.8;
+      const endPhi=Math.cos(phase*0.5)*Math.PI*0.5+Math.PI*0.5;
+      for(let j=0;j<segments;j++){
+        const s=j/(segments-1);
+        const theta=startTheta+(endTheta-startTheta)*s;
+        const phi=startPhi+(endPhi-startPhi)*s;
+        const bulge=1+Math.sin(s*Math.PI)*0.35+noise(Math.cos(theta),Math.sin(phi),s,t*1.5+i)*0.15;
+        pts[j].set(
+          r*bulge*Math.sin(phi)*Math.cos(theta),
+          r*bulge*Math.sin(phi)*Math.sin(theta),
+          r*bulge*Math.cos(phi)
+        );
+      }
+      arcLines[i].geometry.setFromPoints(pts);
+      arcLines[i].geometry.attributes.position.needsUpdate=true;
+      // Pulse opacity
+      const pulse=(Math.sin(t*2.5+arcPhases[i])*0.5+0.5);
+      arcLines[i].material.opacity=tendrilOpacity*pulse*0.8;
+    }
+
+    // Update blob deformation
+    const bArr=blobGeo.attributes.position.array;
+    for(let i=0;i<bArr.length;i+=3){
+      const ox=blobOrig[i],oy=blobOrig[i+1],oz=blobOrig[i+2];
+      const n=noise(ox,oy,oz,t*0.7)*0.14 + noise2(ox,oy,oz,t*0.5)*0.06;
+      bArr[i]=ox+ox*n; bArr[i+1]=oy+oy*n; bArr[i+2]=oz+oz*n;
     }
     blobGeo.attributes.position.needsUpdate=true;
     blobGeo.computeVertexNormals();
     blob.scale.setScalar(Math.max(0.001,blobScale));
     blobMat.opacity=blobOpacity;
-    camAngle+=dt*0.25;
-    camera.position.set(Math.sin(camAngle)*3.2, Math.sin(camAngle*0.4)*0.4, Math.cos(camAngle)*3.2);
+
+    // Camera orbit
+    camAngle+=dt*0.22;
+    camera.position.set(Math.sin(camAngle)*3.2, Math.sin(camAngle*0.35)*0.5, Math.cos(camAngle)*3.2);
     camera.lookAt(0,0,0);
-    keyL.position.set(Math.cos(camAngle+1)*3, 2, Math.sin(camAngle+1)*3);
+    keyL.position.set(Math.cos(camAngle+1)*3, 2.5, Math.sin(camAngle+1)*3);
+
     renderer.render(scene, camera);
   })();
 })();
