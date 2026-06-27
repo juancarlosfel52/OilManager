@@ -531,12 +531,13 @@ const _fbApp = initializeApp({
 const _db = getDatabase(_fbApp);
 
 // ── State ─────────────────────────────────────────────────────
-let _watchId    = null;
-let clockedIn   = false;
-let clockStart  = null;
-let _onSite     = false;  // geofence: true when within 300m of job site
-let _lastLat    = null;
-let _lastLng    = null;
+let _watchId           = null;
+let clockedIn          = false;
+let clockStart         = null;
+let _onSite            = false;
+let _lastLat           = null;
+let _lastLng           = null;
+let _clockStateRestored = false; // only restore once on first load
 
 // ── GPS BAR ───────────────────────────────────────────────────
 function _gpsBar(text, color) {
@@ -604,9 +605,18 @@ function _startGPS() {
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 15000 });
 }
 
-function _stopGPS() {
+function _stopGPS(clockOut = false) {
   if (_watchId !== null) { navigator.geolocation.clearWatch(_watchId); _watchId = null; }
-  if (_bossId) set(ref(_db, `bosses/${_bossId}/gps/${_wid}/clockedIn`), false).catch(()=>{});
+  // Only write clockedIn:false when the worker explicitly clocks out — never on logout/exit
+  if (clockOut && _bossId) {
+    set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
+      lat: _lastLat, lng: _lastLng,
+      timestamp: Date.now(),
+      name: _wname, wid: _wid,
+      clockedIn: false,
+      connectionStatus: 'clocked_out'
+    }).catch(()=>{});
+  }
   const bar = document.getElementById('gps-bar');
   if (bar) bar.style.display = 'none';
 }
@@ -707,11 +717,13 @@ window.toggleClock = function() {
     btn.className        = 'btn-clock btn-clock-out';
     btn.textContent      = 'Clock Out';
     time.textContent     = 'Just clocked in';
-    // Push clocked-in GPS immediately
+    // Push clocked-in GPS + save clockInTime so state restores on re-login
     if (_lastLat && _bossId) {
       set(ref(_db, `bosses/${_bossId}/gps/${_wid}`), {
         lat:_lastLat, lng:_lastLng, accuracy:10,
-        timestamp:Date.now(), name:_wname, wid:_wid, clockedIn:true
+        timestamp:Date.now(), name:_wname, wid:_wid,
+        clockedIn:true, clockInTime:clockStart,
+        connectionStatus:'active'
       }).catch(()=>{});
     }
   } else {
@@ -725,7 +737,7 @@ window.toggleClock = function() {
     btn.className        = 'btn-clock btn-clock-in';
     btn.textContent      = 'Clock In';
     time.textContent     = 'Have a good one 👊';
-    _stopGPS();
+    _stopGPS(true); // true = explicit clock out, write to Firebase
     if (!_onSite) _lockClock();
   }
 };
@@ -821,16 +833,42 @@ function _revealDashboard() {
       }
     });
 
-    // ── LISTENER 3: Own GPS record — confirms boss can see worker ──
+    // ── LISTENER 3: Own GPS record — restore clock state + confirm visibility ──
     onValue(ref(_db, `bosses/${_bossId}/gps/${_wid}`), snap => {
       const g = snap.val();
       if (!g) return;
+
+      // Restore clock-in state from Firebase on first load
+      if (!_clockStateRestored) {
+        _clockStateRestored = true;
+        if (g.clockedIn === true) {
+          // Worker was clocked in — restore without resetting clockStart
+          clockedIn = true;
+          clockStart = g.clockInTime || (Date.now() - 3600000);
+          const banner = document.getElementById('clock-banner');
+          const label  = document.getElementById('clock-label');
+          const btn    = document.getElementById('clock-btn');
+          const dot    = document.getElementById('clock-dot');
+          const time   = document.getElementById('clock-time');
+          if (banner) banner.classList.remove('clocked-out');
+          if (label)  { label.textContent='Clocked In'; label.style.color='var(--green)'; }
+          if (dot)    { dot.style.background='var(--green)'; dot.style.boxShadow='0 0 8px var(--green)'; dot.style.animation='pulse-dot 2s ease-in-out infinite'; }
+          if (btn)    { btn.className='btn-clock btn-clock-out'; btn.textContent='Clock Out'; }
+          if (time)   { const since=new Date(clockStart).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); time.textContent=`Since ${since}`; }
+          _startGPS(); // resume GPS tracking
+        }
+      }
+
+      // GPS bar — show sync status
       const age = Date.now() - (g.timestamp || 0);
       const bar = document.getElementById('gps-bar');
       const span = document.getElementById('gps-bar-text');
       if (!bar || !span) return;
       bar.style.display = 'block';
-      if (age < 60000) {
+      if (g.connectionStatus === 'connection_issue') {
+        span.textContent = '⚠️ Connection issue — last known location held';
+        span.style.color = 'var(--gold)';
+      } else if (age < 60000) {
         span.textContent = '📡 Boss can see you · Live';
         span.style.color = 'var(--green)';
       } else {
@@ -846,10 +884,10 @@ function _revealDashboard() {
       _renderHours(Object.values(tcs).filter(t => t.wid === _wid));
     });
 
-    // ── onDisconnect: mark GPS offline if app closes unexpectedly ──
+    // ── onDisconnect: signal connection issue only — never touch clock state ──
     if (_bossId) {
-      onDisconnect(ref(_db, `bosses/${_bossId}/gps/${_wid}/clockedIn`))
-        .set(false)
+      onDisconnect(ref(_db, `bosses/${_bossId}/gps/${_wid}/connectionStatus`))
+        .set('connection_issue')
         .catch(() => {});
     }
   }

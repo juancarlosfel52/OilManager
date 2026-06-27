@@ -1306,6 +1306,16 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
             </div>
           </div>
         </div>
+        <!-- LIVE CALLOUT BAR -->
+        <div id="live-callout">
+          <div class="lc-left">
+            <div class="lc-dot" id="lc-dot"></div>
+            <span id="lc-status">Connecting...</span>
+          </div>
+          <div class="lc-center" id="lc-workers">— workers tracked</div>
+          <div class="lc-right" id="lc-ping">—</div>
+        </div>
+
         <div class="map-area" id="map-area">
           <div id="mapbox-map"></div>
 
@@ -3926,7 +3936,8 @@ function _renderLiveGPS(data) {
 }
 
 function _gpsPopup(w, color, ageStr) {
-  const status = w.clockedIn ? 'ON SHIFT' : 'CLOCKED OUT';
+  const status = w.connectionStatus === 'connection_issue' ? '⚠️ CONNECTION ISSUE'
+               : w.clockedIn ? 'ON SHIFT' : 'CLOCKED OUT';
   return new mapboxgl.Popup({ offset: 18, closeButton: false }).setHTML(
     `<div class="popup-name">${w.name || w.wid}</div>
      <div class="popup-detail">Last seen: ${ageStr}</div>
