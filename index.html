@@ -33,7 +33,7 @@
   --muted:#8B90A0;
   --white:#FFFFFF;
 }
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;scroll-snap-type:y proximity}
 body{
   font-family:'Inter',sans-serif;
   background:var(--dark);
@@ -520,7 +520,7 @@ nav{
 }
 
 /* ── SECTION SHARED ── */
-section{padding:4.5rem 5%}
+section{padding:4.5rem 5%;scroll-snap-align:start}
 .section-tag{
   display:inline-block;
   color:var(--gold);font-size:0.8rem;
