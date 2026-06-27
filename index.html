@@ -124,6 +124,8 @@ nav{
   flex-shrink:0;
   border-radius:50%;
   display:block;
+  background:#060810;
+  box-shadow:0 0 12px rgba(245,166,35,0.4), 0 0 0 1px rgba(245,166,35,0.2);
 }
 .nav-links{display:flex;gap:2rem;list-style:none}
 .nav-links a{
@@ -1574,8 +1576,12 @@ window.addEventListener('load', function() {
   scene.add(new THREE.AmbientLight(0x1a0800, 3));
   const keyL = new THREE.DirectionalLight(0xF5A623, 8);
   keyL.position.set(2,3,2); scene.add(keyL);
-  scene.add(Object.assign(new THREE.DirectionalLight(0x4488ff,4), {position: new THREE.Vector3(-3,-1,1)}));
-  scene.add(Object.assign(new THREE.PointLight(0xE8860A,5,8), {position: new THREE.Vector3(0,-2,2)}));
+  const rimL = new THREE.DirectionalLight(0x4488ff, 4);
+  rimL.position.set(-3, -1, 1);
+  scene.add(rimL);
+  const fillL = new THREE.PointLight(0xE8860A, 5, 8);
+  fillL.position.set(0, -2, 2);
+  scene.add(fillL);
 
   // ── Circular soft-glow sprite texture ─────────────────────
   function makeSprite() {
