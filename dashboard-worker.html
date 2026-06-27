@@ -294,42 +294,20 @@ input,textarea,select{font-size:16px!important}
 .gps-info-row-text strong{color:var(--gold);display:block;margin-bottom:2px}
 .btn-gps-accept{width:100%;padding:0.9rem;background:var(--gold);border:none;border-radius:12px;color:var(--dark);font-weight:700;font-size:0.95rem;cursor:pointer;font-family:'Inter',sans-serif}
 
-/* ── ONBOARDING TOUR ── */
-#tour-overlay{
-  position:fixed;inset:0;z-index:7000;
-  pointer-events:none;
+/* ── ICON TOOLTIP ── */
+.tip-popup{
+  position:fixed;z-index:8000;
+  background:var(--card);border:1px solid rgba(245,166,35,0.35);
+  border-radius:12px;padding:0.8rem 1rem;
+  max-width:220px;pointer-events:none;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+  opacity:0;transform:translateY(6px);
+  transition:opacity 0.18s ease,transform 0.18s ease;
 }
-#tour-overlay.active{pointer-events:auto}
-.tour-backdrop{
-  position:fixed;inset:0;
-  background:rgba(4,6,12,0.82);
-  backdrop-filter:blur(3px);
-  z-index:7001;
-  pointer-events:none;
-}
-.tour-spotlight{
-  position:fixed;z-index:7002;
-  border-radius:14px;
-  box-shadow:0 0 0 4000px rgba(4,6,12,0.82);
-  pointer-events:none;
-  transition:all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
-  border:2px solid var(--gold);
-}
-.tour-card{
-  position:fixed;z-index:7003;
-  background:var(--card);border:1px solid rgba(245,166,35,0.4);
-  border-radius:16px;padding:1.2rem 1.4rem;
-  width:calc(100% - 3rem);max-width:360px;
-  left:50%;transform:translateX(-50%);
-  box-shadow:0 20px 60px rgba(0,0,0,0.7),0 0 30px rgba(245,166,35,0.15);
-  pointer-events:auto;
-}
-.tour-step-tag{font-size:0.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:0.4rem}
-.tour-title{font-size:1rem;font-weight:800;color:#fff;margin-bottom:0.5rem}
-.tour-sub{font-size:0.82rem;color:var(--muted);line-height:1.6;margin-bottom:1rem}
-.tour-btns{display:flex;gap:0.6rem}
-.btn-tour-skip{flex:1;padding:0.6rem;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:0.8rem;cursor:pointer;font-family:'Inter',sans-serif}
-.btn-tour-next{flex:2;padding:0.6rem;background:var(--gold);border:none;border-radius:8px;color:var(--dark);font-size:0.8rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
+.tip-popup.show{opacity:1;transform:translateY(0)}
+.tip-icon{font-size:1.4rem;text-align:center;margin-bottom:0.3rem}
+.tip-title{font-size:0.82rem;font-weight:700;color:#fff;margin-bottom:0.25rem}
+.tip-desc{font-size:0.74rem;color:var(--muted);line-height:1.5}
 
 /* ── GEOFENCE CLOCK-IN STATE ── */
 .btn-clock.locked{
@@ -411,19 +389,11 @@ input,textarea,select{font-size:16px!important}
   </div>
 </div>
 
-<!-- ══ ONBOARDING TOUR ══ -->
-<div id="tour-overlay">
-  <div class="tour-backdrop" id="tour-backdrop"></div>
-  <div class="tour-spotlight" id="tour-spotlight"></div>
-  <div class="tour-card" id="tour-card" style="bottom:2rem">
-    <div class="tour-step-tag" id="tour-step-tag">Step 1 of 3</div>
-    <div class="tour-title" id="tour-title"></div>
-    <div class="tour-sub" id="tour-sub"></div>
-    <div class="tour-btns">
-      <button class="btn-tour-skip" onclick="endTour()">Skip</button>
-      <button class="btn-tour-next" id="btn-tour-next" onclick="nextTourStep()">Next →</button>
-    </div>
-  </div>
+<!-- ══ ICON TOOLTIP ══ -->
+<div class="tip-popup" id="tip-popup">
+  <div class="tip-icon" id="tip-icon"></div>
+  <div class="tip-title" id="tip-title"></div>
+  <div class="tip-desc" id="tip-desc"></div>
 </div>
 
 <!-- TOP BAR -->
@@ -491,15 +461,15 @@ input,textarea,select{font-size:16px!important}
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
-  <div class="bnav-item active">
+  <div class="bnav-item active" ontouchstart="showTip(this,'📋','My Jobs','Your assigned jobs for today. Tap a job to see details, get directions, or mark it complete.')" onclick="showTip(this,'📋','My Jobs','Your assigned jobs for today. Tap a job to see details, get directions, or mark it complete.')">
     <div class="bnav-icon">📋</div>
     <div class="bnav-label">My Jobs</div>
   </div>
-  <div class="bnav-item">
+  <div class="bnav-item" ontouchstart="showTip(this,'🗺','Field Map','See your location and all job sites on the map. Tap any pin for directions.')" onclick="showTip(this,'🗺','Field Map','See your location and all job sites on the map. Tap any pin for directions.')">
     <div class="bnav-icon">🗺</div>
     <div class="bnav-label">Map</div>
   </div>
-  <div class="bnav-item">
+  <div class="bnav-item" ontouchstart="showTip(this,'⏱','Hours','Your weekly hours. Approved by your boss after each shift.')" onclick="showTip(this,'⏱','Hours','Your weekly hours. Approved by your boss after each shift.')">
     <div class="bnav-icon">⏱</div>
     <div class="bnav-label">Hours</div>
   </div>
@@ -680,7 +650,9 @@ function _requestGPSPermission() {
   if (navigator.permissions) {
     navigator.permissions.query({ name:'geolocation' }).then(result => {
       if (result.state === 'granted') {
-        _showGPSInfoPopup();
+        // Already allowed — skip popup, go straight to dashboard
+        _startGPS();
+        _revealDashboard();
       } else if (result.state === 'denied') {
         document.getElementById('gps-block')?.classList.remove('hidden');
       } else {
@@ -703,8 +675,7 @@ function _showGPSInfoPopup() {
   document.getElementById('btn-gps-accept')?.addEventListener('click', () => {
     popup.classList.add('hidden');
     _startGPS();
-    // Show welcome tour after GPS accepted
-    setTimeout(startTour, 600);
+    _revealDashboard();
   });
 }
 
@@ -795,84 +766,27 @@ setTimeout(() => days.forEach((_,i) => {
   if (el) el.style.height = Math.round(hrs[i]/10*50)+'px';
 }), 300);
 
-// ── ONBOARDING TOUR ──────────────────────────────────────────
-const TOUR_STEPS = [
-  {
-    target: 'clock-banner',
-    title:  `Welcome, ${_firstName}! 👊`,
-    sub:    'This is your Clock In/Out bar. Once you arrive at your job site, GPS confirms your location and the Clock In button activates.',
-    pos:    'bottom'
-  },
-  {
-    target: 'tour-jobs',
-    title:  'Your Jobs for Today',
-    sub:    'These are your assigned jobs. Tap Directions to navigate to a site. Tap Mark Complete when the job is done.',
-    pos:    'top'
-  },
-  {
-    target: 'tour-hours',
-    title:  'Your Hours This Week',
-    sub:    'Track your daily hours here. Your boss reviews and approves time cards every day.',
-    pos:    'bottom'
-  },
-];
-let _tourStep = 0;
-
-function startTour() {
-  if (localStorage.getItem('oilmgr_tour_done')) {
-    // Already seen tour — go straight to real dashboard
-    _revealDashboard();
-    return;
-  }
-  _tourStep = 0;
-  document.getElementById('tour-overlay').classList.add('active');
-  document.getElementById('tour-backdrop').style.display = 'block';
-  _renderTourStep();
-}
-
-function _renderTourStep() {
-  const step = TOUR_STEPS[_tourStep];
-  if (!step) { endTour(); return; }
-  const target = document.getElementById(step.target);
-  const spotlight = document.getElementById('tour-spotlight');
-  const card = document.getElementById('tour-card');
-
-  document.getElementById('tour-step-tag').textContent = `Step ${_tourStep+1} of ${TOUR_STEPS.length}`;
-  document.getElementById('tour-title').textContent = step.title;
-  document.getElementById('tour-sub').textContent   = step.sub;
-  document.getElementById('btn-tour-next').textContent = _tourStep === TOUR_STEPS.length-1 ? "Let's Go ✓" : 'Next →';
-
-  if (target) {
-    const r = target.getBoundingClientRect();
-    spotlight.style.top    = (r.top - 6) + 'px';
-    spotlight.style.left   = (r.left - 6) + 'px';
-    spotlight.style.width  = (r.width + 12) + 'px';
-    spotlight.style.height = (r.height + 12) + 'px';
-    spotlight.style.display = 'block';
-    // Position card above or below
-    if (step.pos === 'bottom' || r.top < window.innerHeight * 0.5) {
-      card.style.bottom = 'auto';
-      card.style.top = Math.min(r.bottom + 16, window.innerHeight - 220) + 'px';
-    } else {
-      card.style.top = 'auto';
-      card.style.bottom = (window.innerHeight - r.top + 16) + 'px';
-    }
-  }
-}
-
-window.nextTourStep = function() {
-  _tourStep++;
-  if (_tourStep >= TOUR_STEPS.length) { endTour(); return; }
-  _renderTourStep();
+// ── ICON TOOLTIPS ─────────────────────────────────────────────
+let _tipTimer = null;
+window.showTip = function(el, icon, title, desc) {
+  const popup = document.getElementById('tip-popup');
+  if (!popup) return;
+  document.getElementById('tip-icon').textContent  = icon;
+  document.getElementById('tip-title').textContent = title;
+  document.getElementById('tip-desc').textContent  = desc;
+  const r = el.getBoundingClientRect();
+  popup.style.left = Math.max(8, Math.min(r.left - 10, window.innerWidth - 240)) + 'px';
+  popup.style.top  = (r.top - popup.offsetHeight - 12) + 'px';
+  // If off top, show below
+  if (r.top - popup.offsetHeight - 12 < 0) popup.style.top = (r.bottom + 8) + 'px';
+  popup.classList.add('show');
+  clearTimeout(_tipTimer);
+  _tipTimer = setTimeout(() => popup.classList.remove('show'), 3000);
 };
-
-window.endTour = function() {
-  document.getElementById('tour-overlay').classList.remove('active');
-  document.getElementById('tour-backdrop').style.display = 'none';
-  document.getElementById('tour-spotlight').style.display = 'none';
-  localStorage.setItem('oilmgr_tour_done', '1');
-  _revealDashboard();
-};
+// Tap anywhere else hides tooltip
+document.addEventListener('touchstart', e => {
+  if (!e.target.closest('.bnav-item')) document.getElementById('tip-popup')?.classList.remove('show');
+}, { passive:true });
 
 function _revealDashboard() {
   const dash = document.getElementById('real-dashboard');
