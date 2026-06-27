@@ -173,15 +173,14 @@ nav{
   display:flex;align-items:flex-end;justify-content:flex-start;
   text-align:left;
   padding:0 5% clamp(24px,4vh,48px);
-  overflow:hidden;
+  overflow:clip; /* clips without creating scroll — GLBs stay visible */
 }
 #hero-3d{
   position:absolute;
-  right:-20px;top:0;bottom:0;
+  right:0;top:0;bottom:0;
   width:55%;
   pointer-events:auto;
   z-index:3;
-  transform:translateX(-100px);
 }
 #hero-3d canvas{width:100%!important;height:100%!important;transition:opacity 0.4s ease;background:transparent!important;}
 .hero-bg{
@@ -204,7 +203,7 @@ nav{
   background:linear-gradient(to bottom, transparent, var(--dark));
   pointer-events:none;
 }
-.hero-content{position:relative;z-index:5;max-width:620px;margin:0;transform:translate(-40px,0px)}
+.hero-content{position:relative;z-index:5;max-width:620px;margin:0;transform:translate(-40px,14px)}
 .hero-badge{
   display:inline-block;
   background:var(--gold);
@@ -2445,13 +2444,14 @@ window.addEventListener('load', function() {
            : word.length > 7  ? 'clamp(1.2rem,2.2vw,2.2rem)'
            :                    'clamp(1.6rem,2.8vw,2.8rem)';
 
-    // Fake depth: stack 4 shadow layers offset diagonally + gold gradient fill
-    el.style.fontSize  = fs;
-    el.style.lineHeight = '1';
-    el.style.background = 'linear-gradient(180deg,#fff8e1 0%,#F5A623 45%,#b86b00 100%)';
-    el.style.webkitBackgroundClip = 'text';
-    el.style.webkitTextFillColor  = 'transparent';
-    el.style.backgroundClip = 'text';
+    el.style.fontSize        = fs;
+    el.style.lineHeight      = '1';
+    el.style.background      = 'transparent';
+    el.style.backgroundColor = 'transparent';
+    el.style.color           = '#F5A623';
+    el.style.webkitTextFillColor = '#F5A623';
+    el.style.webkitBackgroundClip = 'unset';
+    el.style.backgroundClip  = 'unset';
     // depth layers: dark far → warm near
     el.style.textShadow = [
       '4px 4px 0px rgba(80,30,0,0.9)',
