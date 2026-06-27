@@ -113,19 +113,20 @@ nav{
   display:flex;align-items:center;gap:10px;
   text-decoration:none;
 }
-#om-text-canvas{
-  height:52px;
-  width:auto;
-  display:block;
-  flex-shrink:0;
-}
 #om-canvas{
-  width:64px;height:64px;
+  width:56px;height:56px;
+  min-width:56px;min-height:56px;
   flex-shrink:0;
   border-radius:50%;
   display:block;
   background:#060810;
   box-shadow:0 0 16px rgba(245,166,35,0.5), 0 0 0 1px rgba(245,166,35,0.25);
+}
+#om-text-canvas{
+  width:180px;height:50px;
+  min-width:180px;min-height:50px;
+  display:block;
+  flex-shrink:0;
 }
 .nav-links{display:flex;gap:2rem;list-style:none}
 .nav-links a{
@@ -1113,7 +1114,7 @@ footer p{color:var(--muted);font-size:0.85rem}
 <!-- NAV -->
 <nav>
   <div class="nav-logo">
-    <canvas id="om-canvas" width="128" height="128"></canvas>
+    <canvas id="om-canvas"></canvas>
     <canvas id="om-text-canvas"></canvas>
   </div>
   <ul class="nav-links">
@@ -1554,12 +1555,10 @@ window.addEventListener('load', function() {
   const canvas = document.getElementById('om-canvas');
   if (!canvas || typeof THREE === 'undefined') return;
 
-  // ── Canvas setup — never let Three touch CSS ───────────────
   const DPR = Math.min(window.devicePixelRatio||1, 2);
-  const W = 64, H = 64;
+  const W = 56, H = 56;
   canvas.width  = W*DPR; canvas.height = H*DPR;
-  canvas.style.width = W+'px'; canvas.style.height = H+'px';
-
+  // Never override CSS size
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
   renderer.setSize(W*DPR, H*DPR, false);
   renderer.setClearColor(0x060810, 1); // dark background — gold particles glow properly
@@ -1886,14 +1885,10 @@ window.addEventListener('load', function(){
   const canvas = document.getElementById('om-text-canvas');
   if(!canvas || typeof THREE === 'undefined') return;
 
-  // Size: match nav height
-  const H = 52, W = 200;
   const DPR = Math.min(window.devicePixelRatio||1, 2);
-  canvas.width  = W * DPR;
-  canvas.height = H * DPR;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
-
+  const W = 180, H = 50;
+  canvas.width  = W*DPR; canvas.height = H*DPR;
+  // CSS size locked via stylesheet — don't touch style here
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
   renderer.setSize(W*DPR, H*DPR, false);
   renderer.setClearColor(0x000000, 0);
@@ -1901,7 +1896,7 @@ window.addEventListener('load', function(){
   renderer.toneMappingExposure = 1.4;
 
   const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(28, W/H, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(28, 180/50, 0.1, 100);
   camera.position.set(0, 0, 5);
 
   // Lights
