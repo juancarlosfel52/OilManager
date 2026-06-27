@@ -104,7 +104,7 @@ body{
 nav{
   position:fixed;top:0;left:0;right:0;z-index:100;
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 5%;height:70px;
+  padding:0 5%;height:96px;
   background:rgba(10,11,13,0.85);
   backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
@@ -123,8 +123,8 @@ nav{
   box-shadow:0 0 16px rgba(245,166,35,0.5), 0 0 0 1px rgba(245,166,35,0.25);
 }
 #om-text-canvas{
-  width:480px;height:68px;
-  min-width:480px;min-height:68px;
+  width:640px;height:90px;
+  min-width:640px;min-height:90px;
   display:block;
   flex-shrink:0;
 }
@@ -1886,7 +1886,7 @@ window.addEventListener('load', function(){
   if(!canvas || typeof THREE === 'undefined') return;
 
   const DPR = Math.min(window.devicePixelRatio||1, 2);
-  const W = 480, H = 68;
+  const W = 640, H = 90;
   canvas.width  = W*DPR; canvas.height = H*DPR;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
@@ -1896,7 +1896,7 @@ window.addEventListener('load', function(){
   renderer.toneMappingExposure = 1.6;
 
   const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(24, W/H, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(24, 640/90, 0.1, 100);
   camera.position.set(0, 0, 5.5);
 
   // Scene lights — warm for lava glow
@@ -2046,7 +2046,7 @@ window.addEventListener('load', function(){
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 5.0 / maxDim; // sized larger to fill canvas
+      const scale = 6.5 / maxDim;
       model.scale.setScalar(scale);
       model.position.sub(center.multiplyScalar(scale));
 
