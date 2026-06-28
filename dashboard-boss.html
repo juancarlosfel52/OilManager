@@ -1247,23 +1247,23 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
     <div class="stats-row">
       <div class="stat-card green">
         <div class="stat-card-label">Clocked In</div>
-        <div class="stat-card-val" id="stat-workers">6</div>
-        <div class="stat-card-sub">of 9 workers active</div>
+        <div class="stat-card-val" id="stat-workers">0</div>
+        <div class="stat-card-sub" id="stat-workers-sub">of 0 workers total</div>
       </div>
       <div class="stat-card gold">
         <div class="stat-card-label">Open Jobs</div>
-        <div class="stat-card-val" id="stat-jobs">3</div>
-        <div class="stat-card-sub">2 in progress</div>
+        <div class="stat-card-val" id="stat-jobs">0</div>
+        <div class="stat-card-sub" id="stat-jobs-sub">0 in progress</div>
       </div>
       <div class="stat-card blue">
         <div class="stat-card-label">Today's Hours</div>
-        <div class="stat-card-val">47.5</div>
+        <div class="stat-card-val" id="stat-hours">0</div>
         <div class="stat-card-sub">across all workers</div>
       </div>
       <div class="stat-card red">
         <div class="stat-card-label">Pending Approvals</div>
-        <div class="stat-card-val" id="stat-tc">4</div>
-        <div class="stat-card-sub">time cards waiting</div>
+        <div class="stat-card-val" id="stat-tc">0</div>
+        <div class="stat-card-sub" id="stat-tc-sub">time cards waiting</div>
       </div>
     </div>
 
@@ -1818,27 +1818,22 @@ body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);min
 <!-- ══ NEW JOB MODAL ══ -->
 <div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
   <div class="modal">
-    <div class="modal-title">Create New Job</div>
+    <div class="modal-title">📍 Create New Job</div>
     <label>Job Title</label>
-    <input type="text" placeholder="e.g. Pump Unit 14 — Inspection">
+    <input type="text" id="job-title-input" placeholder="e.g. Pump Unit 14 — Inspection">
     <label>Location / Lease Name</label>
-    <input type="text" placeholder="e.g. Lea County, Lease Road 22">
+    <input type="text" id="job-location-input" placeholder="e.g. Lea County, Lease Road 22">
     <label>Priority</label>
-    <select>
-      <option>Normal</option>
-      <option>Urgent</option>
+    <select id="job-priority-select">
+      <option value="Normal">Normal</option>
+      <option value="Urgent">Urgent</option>
     </select>
     <label>Assign Workers</label>
-    <select multiple style="height:90px">
-      <option>Juan Reyes</option>
-      <option>Miguel Torres</option>
-      <option>David Garcia</option>
-      <option>Ramon Chavez</option>
-      <option>Eddie Lopez</option>
-      <option>Rudy Salinas</option>
+    <select id="job-worker-select" multiple style="height:90px">
+      <option disabled value="">Loading workers...</option>
     </select>
     <label>Notes</label>
-    <textarea placeholder="Job details, safety notes, equipment needed..."></textarea>
+    <textarea id="job-notes-input" placeholder="Job details, safety notes, equipment needed..."></textarea>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
       <button class="btn-create" onclick="createJob()">Create & Dispatch</button>
@@ -2417,28 +2412,7 @@ map.touchPitch.enable();
 // Scale bar
 map.addControl(new mapboxgl.ScaleControl({ maxWidth:120, unit:'imperial' }), 'bottom-right');
 
-// Workers data
-const WORKERS = [
-  { id:'JR', name:'Juan Reyes',    job:'Pump Unit 14',    coords:[-102.52, 32.34], status:'active' },
-  { id:'MT', name:'Miguel Torres', job:'Lease Road 22',   coords:[-102.58, 32.29], status:'active' },
-  { id:'DG', name:'David Garcia',  job:'En Route → Tk7',  coords:[-102.48, 32.31], status:'route'  },
-  { id:'RC', name:'Ramon Chavez',  job:'No assignment',   coords:[-102.61, 32.36], status:'idle'   },
-  { id:'EL', name:'Eddie Lopez',   job:'Pump Unit 14',    coords:[-102.51, 32.33], status:'active' },
-];
-
-// Jobs data
-const JOBS = [
-  { title:'Pump Unit 14',   sub:'Wellbore Inspection',  coords:[-102.52, 32.345], color:'#F44336', priority:'URGENT'  },
-  { title:'Lease Road 22',  sub:'Equipment Check',      coords:[-102.58, 32.285], color:'#F5A623', priority:'ACTIVE'  },
-  { title:'Tank Battery 7', sub:'Level Reading',        coords:[-102.47, 32.305], color:'#4488FF', priority:'PENDING' },
-];
-
-// Lease road polylines (custom private roads)
-const LEASE_ROADS = [
-  { name:'Lease Rd 22', color:'#F5A623', coords:[[-102.595,32.295],[-102.572,32.289],[-102.555,32.283]] },
-  { name:'Lease Rd 7',  color:'#4488FF', coords:[[-102.485,32.310],[-102.470,32.305],[-102.455,32.298]] },
-  { name:'Access Rd A', color:'#4CAF50', coords:[[-102.530,32.350],[-102.520,32.340],[-102.515,32.335]] },
-];
+// ── All data comes from Firebase. No hardcoded demo arrays. ──
 
 map.on('load', () => {
 
@@ -2489,100 +2463,9 @@ map.on('load', () => {
     'star-intensity': 0.6
   });
 
-  // ── Lease road overlays ──
-  LEASE_ROADS.forEach((road, i) => {
-    const id = 'lease-road-' + i;
-    map.addSource(id, {
-      type:'geojson',
-      data:{ type:'Feature', geometry:{ type:'LineString', coordinates: road.coords } }
-    });
-    // Glow layer (wide, soft)
-    map.addLayer({
-      id: id + '-glow',
-      type:'line', source: id,
-      paint:{ 'line-color': road.color, 'line-width': 8, 'line-opacity': 0.15 }
-    });
-    // Main line
-    map.addLayer({
-      id: id + '-line',
-      type:'line', source: id,
-      paint:{
-        'line-color': road.color,
-        'line-width': 2.5,
-        'line-opacity': 0.85,
-        'line-dasharray': [4, 2]
-      }
-    });
-  });
-
-  // ── Geofence circles around job pins ──
-  JOBS.forEach((job, i) => {
-    const id = 'geofence-' + i;
-    map.addSource(id, {
-      type:'geojson',
-      data:{
-        type:'Feature',
-        geometry:{ type:'Point', coordinates: job.coords },
-        properties:{}
-      }
-    });
-    map.addLayer({
-      id: id + '-fill',
-      type:'circle', source: id,
-      paint:{
-        'circle-radius': 40,
-        'circle-color': job.color,
-        'circle-opacity': 0.06,
-        'circle-stroke-color': job.color,
-        'circle-stroke-width': 1.2,
-        'circle-stroke-opacity': 0.4
-      }
-    });
-  });
-
-  // ── Dispatch lines (worker → job) ──
-  const dispatchLines = [
-    { from:[-102.52,32.34], to:[-102.52,32.345] }, // JR → Pump14
-    { from:[-102.58,32.29], to:[-102.58,32.285] }, // MT → Rd22
-    { from:[-102.48,32.31], to:[-102.47,32.305] }, // DG → Tk7
-  ];
-  dispatchLines.forEach((l,i) => {
-    const id = 'dispatch-' + i;
-    map.addSource(id, {
-      type:'geojson',
-      data:{ type:'Feature', geometry:{ type:'LineString', coordinates:[l.from, l.to] } }
-    });
-    map.addLayer({
-      id: id,
-      type:'line', source: id,
-      paint:{
-        'line-color':'#F5A623',
-        'line-width':1.5,
-        'line-opacity':0.5,
-        'line-dasharray':[3,3]
-      }
-    });
-  });
-
-  // ── Job pins — stored for detail panel ──
-  window._jobMarkers = {};
-  JOBS.forEach(job => {
-    const el = document.createElement('div');
-    el.className = 'job-marker';
-    el.innerHTML = `
-      <div class="job-marker-pin" style="background:${job.color};border-color:${job.color};box-shadow:0 0 12px ${job.color}88"></div>
-      <div class="job-marker-label" style="border-color:${job.color}44;color:${job.color}">${job.title}</div>
-    `;
-    const popup = new mapboxgl.Popup({ offset:20, closeButton:false })
-      .setHTML(`<div class="popup-name">${job.title}</div><div class="popup-detail">${job.sub}</div><div class="popup-status" style="color:${job.color}">${job.priority}</div>`);
-    const marker = new mapboxgl.Marker({ element:el, anchor:'bottom' })
-      .setLngLat(job.coords).setPopup(popup).addTo(map);
-    window._jobMarkers[job.title] = marker;
-    el.addEventListener('click', () => openDetailPanel({type:'job', ...job}));
-  });
-
-  // ── Worker markers — live from Firebase GPS only ──
-  // Dots appear when real workers log in with their code and clock in
+  // ── Job markers — driven entirely by Firebase ──────────────
+  // Populated by _renderJobMarkers() called from Firebase onValue listener
+  window._jobMarkers  = {};
   window._workerMarkers = {};
 
   // ── PLSS / Land Grid sources (empty until toggled on) ──
@@ -4113,6 +3996,162 @@ function _genCode(name, existingCodes) {
   return code;
 }
 
+// ── TASK 1.5 — Job map markers from Firebase ─────────────────
+function _renderJobMarkers(jobs) {
+  if (!map || !map.loaded()) return;
+  const active = jobs.filter(j => j.status !== 'complete' && j.status !== 'archived');
+
+  // Remove markers for jobs no longer active
+  const activeIds = new Set(active.map(j => j.id));
+  Object.keys(window._jobMarkers).forEach(jid => {
+    if (!activeIds.has(jid)) {
+      window._jobMarkers[jid].remove();
+      delete window._jobMarkers[jid];
+    }
+  });
+
+  active.forEach(job => {
+    if (!job.lat || !job.lng) return;
+    const color = job.priority === 'Urgent' ? '#F44336' : job.status === 'active' ? '#F5A623' : '#4488FF';
+    const coords = [job.lng, job.lat];
+
+    if (window._jobMarkers[job.id]) {
+      window._jobMarkers[job.id].setLngLat(coords);
+      return;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'job-marker';
+    el.innerHTML = `
+      <div class="job-marker-pin" style="background:${color};border-color:${color};box-shadow:0 0 12px ${color}88"></div>
+      <div class="job-marker-label" style="border-color:${color}44;color:${color}">${job.title||'Job'}</div>`;
+    const popup = new mapboxgl.Popup({ offset:20, closeButton:false })
+      .setHTML(`<div class="popup-name">${job.title||'Job'}</div>
+                <div class="popup-detail">${job.location||''}</div>
+                <div class="popup-status" style="color:${color}">${(job.priority||job.status||'').toUpperCase()}</div>`);
+    const marker = new mapboxgl.Marker({ element:el, anchor:'bottom' })
+      .setLngLat(coords).setPopup(popup).addTo(map);
+    window._jobMarkers[job.id] = marker;
+    el.addEventListener('click', () => openDetailPanel({
+      type:'job', id:job.id, name:job.title, sub:job.location,
+      coords, color, badge:(job.priority||job.status||'').toUpperCase()
+    }));
+  });
+
+  // Keep search index in sync
+  const workerEntries = SEARCH_DATA.filter(d => d._fbWorker);
+  const jobEntries    = SEARCH_DATA.filter(d => d._fbJob);
+  jobEntries.forEach(e => { const i = SEARCH_DATA.indexOf(e); if(i>-1) SEARCH_DATA.splice(i,1); });
+  active.forEach(j => {
+    if (!j.lat || !j.lng) return;
+    const color = j.priority==='Urgent'?'#F44336':j.status==='active'?'#F5A623':'#4488FF';
+    SEARCH_DATA.push({ type:'job', name:j.title||'Job', sub:j.location||'',
+      coords:[j.lng,j.lat], color, badge:(j.priority||j.status||'').toUpperCase(), _fbJob:true });
+  });
+}
+
+// ── TASK 1.6 — Active Jobs panel from Firebase ───────────────
+function _renderActiveJobsPanel(jobs) {
+  const container = document.querySelector('#panel-dashboard .job-list');
+  if (!container) return;
+  const active = jobs.filter(j => j.status !== 'complete' && j.status !== 'archived');
+  if (!active.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:1.5rem;text-align:center">
+      <div style="font-size:2rem;margin-bottom:0.5rem">📍</div>
+      <div style="font-size:0.85rem;color:var(--muted)">No active jobs. Create one to dispatch workers.</div>
+    </div>`;
+    return;
+  }
+  container.innerHTML = active.slice(0,5).map(j => {
+    const color = j.priority==='Urgent' ? '#F44336' : j.status==='active' ? '#F5A623' : '#4488FF';
+    const badge = j.priority==='Urgent' ? 'priority-urgent' : 'priority-normal';
+    const assigned = [].concat(j.assignedTo||[]);
+    const initials = assigned.slice(0,3).map(wid => {
+      const w = _fbWorkers[wid];
+      return w ? `<div class="crew-dot">${(w.name||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()}</div>` : '';
+    }).join('');
+    return `<div class="job-item" onclick="openDetailPanel({type:'job',id:'${j.id}',name:'${(j.title||'').replace(/'/g,'&apos;')}',sub:'${(j.location||'').replace(/'/g,'&apos;')}',color:'${color}',badge:'${(j.priority||j.status||'').toUpperCase()}'})">
+      <div class="job-row1">
+        <div class="job-title">${j.title||'Untitled'}</div>
+        <div class="job-priority ${badge}">${j.priority||'Normal'}</div>
+      </div>
+      <div class="job-row2">
+        <div class="job-meta">📍 ${j.location||'Location TBD'} · ${assigned.length} worker${assigned.length!==1?'s':''}</div>
+        <div class="job-crew">${initials||'<div class="crew-dot" style="color:var(--muted)">?</div>'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TASK 1.7 — Crew Status panel from Firebase ───────────────
+function _renderCrewStatus(gpsData) {
+  const container = document.querySelector('#panel-dashboard .worker-list');
+  if (!container) return;
+  const workers = Object.values(_fbWorkers);
+  if (!workers.length) {
+    container.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">No workers added yet.</div>`;
+    return;
+  }
+  const now = Date.now();
+  container.innerHTML = Object.entries(_fbWorkers).map(([wid, w]) => {
+    const gps = gpsData[wid];
+    const age = gps ? now - (gps.timestamp||0) : Infinity;
+    const statusClass = !gps ? 'status-idle'
+      : gps.connectionStatus==='connection_issue' ? 'status-route'
+      : gps.clockedIn && age < 300000 ? 'status-active'
+      : gps.clockedIn ? 'status-route' : 'status-idle';
+    const statusText = !gps ? 'Off Clock'
+      : gps.connectionStatus==='connection_issue' ? '⚠️ Signal Issue'
+      : gps.clockedIn && age < 300000 ? 'On Site'
+      : gps.clockedIn ? 'Clocked In'
+      : 'Off Clock';
+    const initials = (w.name||'?').split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    return `<div class="worker-item">
+      <div class="worker-avatar">${initials}</div>
+      <div class="worker-info">
+        <div class="worker-name">${w.name||'—'}</div>
+        <div class="worker-job">${w.jobsite||w.role||'No assignment'}</div>
+      </div>
+      <div class="worker-status ${statusClass}">${statusText}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── TASK 1.8 — TC summary widget on main dashboard ───────────
+function _renderTCSummaryWidget(timecards) {
+  const list = document.getElementById('tc-list');
+  if (!list) return;
+  const pending = timecards.filter(t => t.status === 'pending');
+  if (!pending.length) {
+    list.innerHTML = `<div style="padding:1rem;text-align:center;color:var(--muted);font-size:0.82rem">✅ No pending time cards</div>`;
+    return;
+  }
+  list.innerHTML = pending.slice(0,3).map(t => `
+    <div class="tc-item">
+      <div class="tc-name">${t.workerName||'—'}</div>
+      <div class="tc-date">${new Date(t.date||Date.now()).toLocaleDateString()}</div>
+      <div class="tc-hours">${(t.hours||0).toFixed(1)} hrs</div>
+      <button class="tc-approve" onclick="approveTCById('${t.id||''}',this)">Approve</button>
+    </div>`).join('');
+  if (pending.length > 3) {
+    list.innerHTML += `<div style="padding:0.6rem 1rem;text-align:center;font-size:0.75rem;color:var(--gold);cursor:pointer" onclick="showPanel('timecards')">View all ${pending.length} →</div>`;
+  }
+}
+
+// ── TASK 1.9 — Stat card sub-text helpers ────────────────────
+function _updateStatSubtext(workers, jobs, timecards) {
+  const total   = workers.length;
+  const clocked = workers.filter(w => w.clockedIn).length;
+  const active  = jobs.filter(j => j.status!=='complete'&&j.status!=='archived').length;
+  const inProg  = jobs.filter(j => j.status==='active').length;
+  const pending = timecards.filter(t => t.status==='pending').length;
+
+  const sub = id => document.getElementById(id);
+  if (sub('stat-workers-sub')) sub('stat-workers-sub').textContent = `of ${total} worker${total!==1?'s':''} total`;
+  if (sub('stat-jobs-sub'))    sub('stat-jobs-sub').textContent    = `${inProg} in progress`;
+  if (sub('stat-tc-sub'))      sub('stat-tc-sub').textContent      = `time cards waiting`;
+}
+
 function _getPayrollFields() {
   return {
     hourlyRate:  parseFloat(document.getElementById('aw-rate')?.value) || 0,
@@ -4209,14 +4248,63 @@ function copyWorkerCode() {
   });
 }
 
-function openModal(){document.getElementById('modal-bg').classList.add('open')}
-function closeModal(e){
-  if(!e||e.target===document.getElementById('modal-bg'))
+function openModal() {
+  // Populate worker select from real Firebase workers
+  const sel = document.getElementById('job-worker-select');
+  if (sel) {
+    const workers = Object.entries(_fbWorkers);
+    if (!workers.length) {
+      sel.innerHTML = '<option disabled value="">No workers added yet</option>';
+    } else {
+      sel.innerHTML = workers.map(([wid, w]) =>
+        `<option value="${wid}">${w.name||'Worker'} — ${w.role||''}</option>`
+      ).join('');
+    }
+  }
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-bg'))
     document.getElementById('modal-bg').classList.remove('open');
 }
-function createJob(){
-  document.getElementById('modal-bg').classList.remove('open');
-  // Future: POST to backend
+
+function createJob() {
+  const title    = document.getElementById('job-title-input')?.value.trim();
+  const location = document.getElementById('job-location-input')?.value.trim();
+  const priority = document.getElementById('job-priority-select')?.value || 'Normal';
+  const notes    = document.getElementById('job-notes-input')?.value.trim() || '';
+  const sel      = document.getElementById('job-worker-select');
+  const assignedTo = sel ? Array.from(sel.selectedOptions).map(o => o.value).filter(Boolean) : [];
+
+  if (!title) { alert('Enter a job title.'); return; }
+
+  const jobData = {
+    title,
+    location: location || '',
+    lat: null,
+    lng: null,
+    priority,
+    status: 'pending',
+    assignedTo,
+    notes,
+    createdAt: Date.now()
+  };
+
+  if (typeof window._saveJobToFB !== 'function') {
+    alert('Not authenticated. Refresh and try again.');
+    return;
+  }
+
+  window._saveJobToFB(jobData)
+    .then(() => {
+      document.getElementById('modal-bg').classList.remove('open');
+      showToast('Job Created', `"${title}" dispatched`, 'success');
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Failed to save job. Check console.');
+    });
 }
 
 // Approve time card
@@ -4228,7 +4316,7 @@ function approveTC(btn){
 <script type="module">
 import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getDatabase, ref, onValue, set, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, set, push, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -4256,9 +4344,19 @@ window._removeWorkerFromFB = (wid) => {
   const uid = _firebaseUser?.uid;
   if (!uid) return;
   remove(ref(db, `bosses/${uid}/workers/${wid}`)).catch(console.error);
-  // Also clear their GPS entry
   remove(ref(db, `bosses/${uid}/gps/${wid}`)).catch(console.error);
 };
+
+// ── Expose Firebase job save to non-module JS ─────────────────
+window._saveJobToFB = (jobData) => {
+  const uid = _firebaseUser?.uid;
+  if (!uid) return Promise.reject('Not authenticated');
+  const jobRef = push(ref(db, `bosses/${uid}/jobs`));
+  return set(jobRef, jobData);
+};
+
+// ── Expose boss UID for SMS dispatch ─────────────────────────
+window._getBossUid = () => _firebaseUser?.uid || '';
 
 // ── AUTH GUARD ────────────────────────────────────────────────
 onAuthStateChanged(auth, user => {
@@ -4289,15 +4387,21 @@ onAuthStateChanged(auth, user => {
     const workers = Object.values(_fbWorkers);
     const active  = workers.filter(w => w.clockedIn).length;
     const el = document.getElementById('stat-workers');
-    if(el) el.textContent = active || workers.length || '0';
+    if(el) el.textContent = active || '0';
 
-    // Render worker cards + refresh payroll when rates change
+    // Today's total hours from clocked-in workers (rough live estimate)
+    const todayHrs = workers.reduce((sum, w) => {
+      if (w.clockedIn && w.clockInTime) sum += (Date.now() - w.clockInTime) / 3600000;
+      return sum;
+    }, 0);
+    const hEl = document.getElementById('stat-hours');
+    if (hEl) hEl.textContent = todayHrs.toFixed(1);
+
     _renderWorkersList(workers);
+    _renderCrewStatus(window._lastGPSSnap || {});
+    _updateStatSubtext(workers, Object.values(_fbJobs), Object.values(_fbTimecards));
     renderPayroll();
-
-    // Welcome steps
     updateWelcomeSteps(workers.length > 0, Object.keys(_fbJobs).length > 0);
-    // Badge
     var b = document.getElementById('badge-workers');
     if(b) b.textContent = workers.length;
   });
@@ -4305,22 +4409,43 @@ onAuthStateChanged(auth, user => {
   // ── Realtime DB — Jobs ──
   onValue(ref(db, 'bosses/' + user.uid + '/jobs'), snap => {
     _fbJobs = snap.val() || {};
-    const jobs   = Object.values(_fbJobs);
-    const active = jobs.filter(j => j.status === 'active' || j.status === 'pending').length;
+    // Attach Firebase key as id on each job
+    const jobs = Object.entries(_fbJobs).map(([id, j]) => ({...j, id}));
+    const openJobs = jobs.filter(j => j.status !== 'complete' && j.status !== 'archived');
     const el = document.getElementById('stat-jobs');
-    if(el) el.textContent = active || '0';
+    if(el) el.textContent = openJobs.length || '0';
 
-    // Empty state in jobs panel
-    if(!jobs.length) {
-      showEmptyState('jobs-panel-list','📍','No jobs created',
-        'Create your first job assignment and dispatch workers to the field.',
-        '+ New Job', "openModal()");
+    // Render panels from real data
+    _renderActiveJobsPanel(jobs);
+    _renderJobMarkers(jobs);
+    _updateStatSubtext(Object.values(_fbWorkers), jobs, Object.values(_fbTimecards));
+
+    // Jobs panel empty state
+    const jpl = document.getElementById('jobs-panel-list');
+    if (jpl) {
+      if (!jobs.length) {
+        showEmptyState('jobs-panel-list','📍','No jobs created',
+          'Create your first job assignment and dispatch workers to the field.',
+          '+ New Job', "openModal()");
+      } else {
+        jpl.innerHTML = jobs.filter(j=>j.status!=='archived').map(j => {
+          const color = j.priority==='Urgent'?'#F44336':j.status==='active'?'#F5A623':'#4488FF';
+          const badge = j.status==='complete'?'<span style="color:#22c55e;font-size:0.72rem;font-weight:700">✓ Complete</span>'
+            :`<span style="color:${color};font-size:0.72rem;font-weight:700">${(j.priority||j.status||'Pending').toUpperCase()}</span>`;
+          return `<div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.75rem">
+            <div style="flex:1">
+              <div style="font-size:0.88rem;font-weight:700;color:var(--text)">${j.title||'Untitled'}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">📍 ${j.location||'Location TBD'}</div>
+            </div>
+            ${badge}
+          </div>`;
+        }).join('');
+      }
     }
-    // Welcome steps
+
     updateWelcomeSteps(Object.keys(_fbWorkers).length > 0, jobs.length > 0);
-    // Badge
     var b = document.getElementById('badge-jobs');
-    if(b) b.textContent = active || '0';
+    if(b) b.textContent = openJobs.length || '0';
   });
 
   // ── Realtime DB — Timecards ──
@@ -4334,6 +4459,8 @@ onAuthStateChanged(auth, user => {
     if(b) b.textContent = pending.length || '0';
     if(pending.length) addNotif('Time Cards', pending.length + ' time card'+(pending.length>1?'s':'')+' pending approval', 'warning');
     _renderTimecards(all);
+    _renderTCSummaryWidget(all);
+    _updateStatSubtext(Object.values(_fbWorkers), Object.values(_fbJobs), all);
     renderPayroll();
   });
 
@@ -4356,10 +4483,14 @@ onAuthStateChanged(auth, user => {
   onValue(ref(db, 'bosses/' + user.uid + '/gps'), snap => {
     window._lastGPSSnap = snap.val() || {};
     _renderLiveGPS(window._lastGPSSnap);
+    _renderCrewStatus(window._lastGPSSnap);
   });
 
   // Re-run every 60s so staleness colors update even without new Firebase events
-  setInterval(() => _renderLiveGPS(window._lastGPSSnap || {}), 60000);
+  setInterval(() => {
+    _renderLiveGPS(window._lastGPSSnap || {});
+    _renderCrewStatus(window._lastGPSSnap || {});
+  }, 60000);
 });
 
 // ── GPS HELPERS (outside auth block so setInterval can call them) ─

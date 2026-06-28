@@ -528,83 +528,103 @@ textarea#msg-body::placeholder{color:rgba(255,255,255,0.18)}
 
 </div>
 
-<script>
-const API = '';  // same origin — served by server.js
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-let workers  = [];
-let selected = new Set();
+const _fbApp = initializeApp({
+  apiKey:"AIzaSyDdhuvVta1wGLSOOK1LADoGmQRbRJTFKrM",
+  authDomain:"oilmanager-118b7.firebaseapp.com",
+  databaseURL:"https://oilmanager-118b7-default-rtdb.firebaseio.com",
+  projectId:"oilmanager-118b7",
+  storageBucket:"oilmanager-118b7.firebasestorage.app",
+  messagingSenderId:"1062793158063",
+  appId:"1:1062793158063:web:49023cc020e5e11e6d235a"
+}, 'sms-app');
 
-// ── Load ───────────────────────────────────────────────────────
-async function loadWorkers() {
-  try {
-    const res = await fetch(API + '/api/workers');
-    workers = await res.json();
-    renderWorkers();
-  } catch {
-    document.getElementById('worker-list').innerHTML =
-      '<div style="color:var(--red);font-size:0.8rem;text-align:center;padding:1rem">Could not load workers — is the server running?</div>';
-  }
+const _auth = getAuth(_fbApp);
+const _db   = getDatabase(_fbApp);
+
+const API     = '';
+const API_KEY = 'oilmgr-internal-k7x2mq9p4w8nz3j1';
+
+window.workers  = [];
+window.selected = new Set();
+
+function apiHeaders() {
+  return { 'Content-Type': 'application/json', 'x-api-key': API_KEY };
 }
 
-async function loadLog() {
+// ── Load workers from Firebase (not workers.json) ─────────────
+onAuthStateChanged(_auth, user => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  onValue(ref(_db, `bosses/${user.uid}/workers`), snap => {
+    const data = snap.val() || {};
+    window.workers = Object.entries(data).map(([id, w]) => ({ id, ...w }));
+    window.renderWorkers();
+  });
+});
+
+window.loadLog = async function() {
   try {
-    const res = await fetch(API + '/api/sms/log');
+    const res = await fetch(API + '/api/sms/log', { headers: apiHeaders() });
     const log = await res.json();
-    renderLog(log);
+    window.renderLog(log);
   } catch { /* silent */ }
-}
+};
 
 // ── Workers ────────────────────────────────────────────────────
-function renderWorkers() {
+window.renderWorkers = function() {
   const list = document.getElementById('worker-list');
-  if (!workers.length) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem">No workers found.</div>';
+  if (!window.workers.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:1rem">No workers found. Add workers in the boss dashboard first.</div>';
     return;
   }
-  list.innerHTML = workers.map(w => `
-    <div class="worker-row ${selected.has(w.id)?'selected':''}" onclick="toggleWorker('${w.id}')">
-      <input type="checkbox" ${selected.has(w.id)?'checked':''} onclick="event.stopPropagation();toggleWorker('${w.id}')">
+  list.innerHTML = window.workers.map(w => `
+    <div class="worker-row ${window.selected.has(w.id)?'selected':''}" onclick="toggleWorker('${w.id}')">
+      <input type="checkbox" ${window.selected.has(w.id)?'checked':''} onclick="event.stopPropagation();toggleWorker('${w.id}')">
       <div class="worker-info">
-        <div class="worker-name">${w.name}</div>
-        <div class="worker-role">${w.role}</div>
-        <div class="worker-site">${w.jobsite}</div>
+        <div class="worker-name">${w.name||'—'}</div>
+        <div class="worker-role">${w.role||''}</div>
+        <div class="worker-site">${w.jobsite||''}</div>
       </div>
       <span class="worker-phone-tag ${w.phone?'has-phone':'no-phone'}">${w.phone?'SMS Ready':'No Number'}</span>
     </div>
   `).join('');
   document.getElementById('selected-count').textContent =
-    selected.size ? `${selected.size} selected` : '';
-}
+    window.selected.size ? `${window.selected.size} selected` : '';
+};
 
-function toggleWorker(id) {
-  selected.has(id) ? selected.delete(id) : selected.add(id);
-  renderWorkers();
-}
-function selectAll()  { workers.forEach(w => selected.add(w.id)); renderWorkers(); }
-function selectNone() { selected.clear(); renderWorkers(); }
+window.toggleWorker = function(id) {
+  window.selected.has(id) ? window.selected.delete(id) : window.selected.add(id);
+  window.renderWorkers();
+};
+window.selectAll  = function() { window.workers.forEach(w => window.selected.add(w.id)); window.renderWorkers(); };
+window.selectNone = function() { window.selected.clear(); window.renderWorkers(); };
 
 // ── Templates ─────────────────────────────────────────────────
-function useTemplate(btn) {
+window.useTemplate = function(btn) {
   document.getElementById('msg-body').value = btn.textContent;
-  updateChar();
-}
+  window.updateChar();
+};
 
-function updateChar() {
+window.updateChar = function() {
   const len = document.getElementById('msg-body').value.length;
   const el  = document.getElementById('char-count');
   el.textContent = `${len} / 160`;
   el.className = 'char-count' + (len > 160 ? ' over' : '');
-}
+};
 
 // ── Boss Phone ────────────────────────────────────────────────
-async function saveBossPhone() {
+window.saveBossPhone = async function() {
   const phone  = document.getElementById('boss-phone').value.trim();
   const status = document.getElementById('phone-status');
   if (!phone) { status.className='phone-status err'; status.textContent='Enter a phone number first.'; return; }
   status.className='phone-status'; status.textContent='Saving…';
   try {
     const res  = await fetch(API + '/api/config/boss-phone', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers: apiHeaders(),
       body: JSON.stringify({ phone })
     });
     const data = await res.json();
@@ -620,29 +640,33 @@ async function saveBossPhone() {
     status.className = 'phone-status err';
     status.textContent = 'Server not reachable. Is node server.js running?';
   }
-}
+};
 
 // ── Send SMS ──────────────────────────────────────────────────
-async function sendSMS() {
+window.sendSMS = async function() {
   const message = document.getElementById('msg-body').value.trim();
   const status  = document.getElementById('send-status');
   if (!message) { status.className='send-status err'; status.textContent='Write a message first.'; return; }
-  if (!selected.size) { status.className='send-status err'; status.textContent='Select at least one worker.'; return; }
-  setSendBusy(true);
+  if (!window.selected.size) { status.className='send-status err'; status.textContent='Select at least one worker.'; return; }
+  window.setSendBusy(true);
   status.className = 'send-status sending';
-  status.textContent = `Sending to ${selected.size} worker${selected.size>1?'s':''}…`;
+  status.textContent = `Sending to ${window.selected.size} worker${window.selected.size>1?'s':''}…`;
   try {
     const res  = await fetch(API + '/api/sms/send', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ workerIds: [...selected], message })
+      method:'POST', headers: apiHeaders(),
+      body: JSON.stringify({
+        workerIds: [...window.selected],
+        message,
+        workers: window.workers  // pass Firebase workers so server doesn't need workers.json
+      })
     });
     const data = await res.json();
     if (res.ok) {
       status.className = 'send-status ok';
       status.textContent = `✓ Sent to ${data.sent} worker${data.sent!==1?'s':''}${data.failed?' — '+data.failed+' failed':''}`;
       document.getElementById('msg-body').value = '';
-      updateChar();
-      loadLog();
+      window.updateChar();
+      window.loadLog();
     } else {
       status.className = 'send-status err';
       status.textContent = data.error || 'Send failed.';
@@ -651,29 +675,29 @@ async function sendSMS() {
     status.className = 'send-status err';
     status.textContent = 'Server not reachable.';
   }
-  setSendBusy(false);
-}
+  window.setSendBusy(false);
+};
 
-async function broadcastSMS() {
+window.broadcastSMS = async function() {
   const message = document.getElementById('msg-body').value.trim();
   const status  = document.getElementById('send-status');
   if (!message) { status.className='send-status err'; status.textContent='Write a message first.'; return; }
-  if (!confirm(`Broadcast to ALL ${workers.length} workers?`)) return;
-  setSendBusy(true);
+  if (!confirm(`Broadcast to ALL ${window.workers.length} workers?`)) return;
+  window.setSendBusy(true);
   status.className = 'send-status sending';
-  status.textContent = `Broadcasting to all ${workers.length} workers…`;
+  status.textContent = `Broadcasting to all ${window.workers.length} workers…`;
   try {
     const res  = await fetch(API + '/api/sms/broadcast', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ message })
+      method:'POST', headers: apiHeaders(),
+      body: JSON.stringify({ message, workers: window.workers })
     });
     const data = await res.json();
     if (res.ok) {
       status.className = 'send-status ok';
       status.textContent = `✓ Broadcast sent to ${data.sent} worker${data.sent!==1?'s':''}${data.failed?' — '+data.failed+' failed':''}`;
       document.getElementById('msg-body').value = '';
-      updateChar();
-      loadLog();
+      window.updateChar();
+      window.loadLog();
     } else {
       status.className = 'send-status err';
       status.textContent = data.error || 'Broadcast failed.';
@@ -682,16 +706,16 @@ async function broadcastSMS() {
     status.className = 'send-status err';
     status.textContent = 'Server not reachable.';
   }
-  setSendBusy(false);
-}
+  window.setSendBusy(false);
+};
 
-function setSendBusy(busy) {
+window.setSendBusy = function(busy) {
   document.getElementById('btn-send').disabled = busy;
   document.getElementById('btn-broadcast').disabled = busy;
-}
+};
 
 // ── Log ───────────────────────────────────────────────────────
-function renderLog(log) {
+window.renderLog = function renderLog(log) {
   const el = document.getElementById('log-list');
   if (!log.length) { el.innerHTML = '<div class="log-empty">No messages sent yet.</div>'; return; }
   el.innerHTML = log.slice(0, 30).map(entry => {
@@ -710,9 +734,9 @@ function renderLog(log) {
   }).join('');
 }
 
-// ── Init ──────────────────────────────────────────────────────
-loadWorkers();
-loadLog();
+// Workers load automatically via Firebase onAuthStateChanged above
+// Log loads on page ready
+window.loadLog();
 </script>
 </body>
 </html>

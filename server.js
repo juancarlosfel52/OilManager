@@ -11,6 +11,18 @@ const PORT = process.env.PORT || 5600;
 app.use(cors());
 app.use(express.json());
 
+// ── Internal API key auth ──────────────────────────────────────
+// All /api/* routes require x-api-key header matching INTERNAL_API_KEY
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
+
+function requireApiKey(req, res, next) {
+  const key = req.headers['x-api-key'];
+  if (!INTERNAL_API_KEY || key !== INTERNAL_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  next();
+}
+
 // ── Inject Mapbox token into dashboards via meta tag ──────────
 const _injectToken = (file) => (req, res) => {
   let html = fs.readFileSync(path.join(__dirname, file), 'utf8');
@@ -31,13 +43,7 @@ const twilioClient = twilio(
 );
 
 // ── Data helpers ───────────────────────────────────────────────
-const WORKERS_FILE = path.join(__dirname, 'data', 'workers.json');
-const CONFIG_FILE  = path.join(__dirname, 'data', 'config.json');
-
-function readWorkers() {
-  if (!fs.existsSync(WORKERS_FILE)) return [];
-  return JSON.parse(fs.readFileSync(WORKERS_FILE, 'utf8'));
-}
+const CONFIG_FILE = path.join(__dirname, 'data', 'config.json');
 
 function readConfig() {
   if (!fs.existsSync(CONFIG_FILE)) return {};
@@ -50,25 +56,19 @@ function writeConfig(data) {
 
 // ── Routes ─────────────────────────────────────────────────────
 
-// GET workers list
-app.get('/api/workers', (req, res) => {
-  res.json(readWorkers());
-});
-
-// GET boss config (phone number)
-app.get('/api/config', (req, res) => {
+// GET boss config (phone number) — protected
+app.get('/api/config', requireApiKey, (req, res) => {
   const cfg = readConfig();
-  // Never return full phone — mask middle digits for display
   if (cfg.bossPhone) {
     const p = cfg.bossPhone;
     cfg.bossPhoneMasked = p.slice(0, 3) + '***' + p.slice(-4);
   }
-  delete cfg.bossPhone; // never send raw number to frontend
+  delete cfg.bossPhone;
   res.json(cfg);
 });
 
-// POST save boss phone number
-app.post('/api/config/boss-phone', (req, res) => {
+// POST save boss phone number — protected
+app.post('/api/config/boss-phone', requireApiKey, (req, res) => {
   const { phone } = req.body;
   if (!phone || !/^\+?[1-9]\d{9,14}$/.test(phone.replace(/[\s\-().]/g, ''))) {
     return res.status(400).json({ error: 'Invalid phone number format.' });
@@ -79,9 +79,11 @@ app.post('/api/config/boss-phone', (req, res) => {
   res.json({ ok: true, message: 'Company phone saved.' });
 });
 
-// POST send SMS to one or more workers
-app.post('/api/sms/send', async (req, res) => {
-  const { workerIds, message } = req.body;
+// POST send SMS — protected
+// Body: { workerIds: string[], message: string, workers: [{id,name,phone}] }
+// workers array is passed directly from Firebase data in the frontend
+app.post('/api/sms/send', requireApiKey, async (req, res) => {
+  const { workerIds, message, workers: fbWorkers } = req.body;
 
   if (!message || !message.trim()) {
     return res.status(400).json({ error: 'Message cannot be empty.' });
@@ -90,8 +92,11 @@ app.post('/api/sms/send', async (req, res) => {
     return res.status(400).json({ error: 'Select at least one recipient.' });
   }
 
-  const workers = readWorkers();
-  const targets = workers.filter(w => workerIds.includes(w.id) && w.phone);
+  // Use Firebase workers passed from frontend — no JSON file needed
+  let targets = [];
+  if (fbWorkers && fbWorkers.length) {
+    targets = fbWorkers.filter(w => workerIds.includes(w.id) && w.phone);
+  }
 
   if (!targets.length) {
     return res.status(400).json({ error: 'No valid phone numbers found for selected workers.' });
@@ -120,7 +125,7 @@ app.post('/api/sms/send', async (req, res) => {
   const logFile = path.join(__dirname, 'data', 'sms-log.json');
   const log = fs.existsSync(logFile) ? JSON.parse(fs.readFileSync(logFile, 'utf8')) : [];
   log.unshift(logEntry);
-  fs.writeFileSync(logFile, JSON.stringify(log.slice(0, 200), null, 2)); // keep last 200
+  fs.writeFileSync(logFile, JSON.stringify(log.slice(0, 200), null, 2));
 
   const failed = results.filter(r => r.status === 'failed').length;
   res.json({
@@ -131,11 +136,15 @@ app.post('/api/sms/send', async (req, res) => {
   });
 });
 
-// POST broadcast to ALL workers
-app.post('/api/sms/broadcast', async (req, res) => {
-  const workers = readWorkers();
-  req.body.workerIds = workers.map(w => w.id);
-  // reuse send logic
+// POST broadcast to ALL workers — protected
+// Body: { message: string, workers: [{id,name,phone}] }
+app.post('/api/sms/broadcast', requireApiKey, async (req, res) => {
+  const { message, workers: fbWorkers } = req.body;
+  if (!fbWorkers || !fbWorkers.length) {
+    return res.status(400).json({ error: 'No workers provided.' });
+  }
+  // Reuse send route logic with all worker IDs
+  req.body.workerIds = fbWorkers.map(w => w.id);
   return app._router.handle(
     Object.assign(req, { url: '/api/sms/send', method: 'POST' }),
     res,
@@ -143,8 +152,8 @@ app.post('/api/sms/broadcast', async (req, res) => {
   );
 });
 
-// GET dispatch history
-app.get('/api/sms/log', (req, res) => {
+// GET dispatch history — protected
+app.get('/api/sms/log', requireApiKey, (req, res) => {
   const logFile = path.join(__dirname, 'data', 'sms-log.json');
   if (!fs.existsSync(logFile)) return res.json([]);
   res.json(JSON.parse(fs.readFileSync(logFile, 'utf8')));
